@@ -5,7 +5,6 @@ Functions to compare a SV call sets against a truth set.
 ## Installation
 
 ```r
-.libPaths('~/R/library/')
 source('http://bioconductor.org/biocLite.R')
 biocLite('jmonlong/sveval')
 ```
