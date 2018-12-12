@@ -1,0 +1,20 @@
+Package: sveval
+Title: SV evaluation
+Version: 0.0.0.9000
+Authors@R: person("First", "Last", email = "first.last@example.com", role = c("aut", "cre"))
+Description: Evaluate SV in a call set against a truth set using overlap-based approaches and sequence comparison for insertions.
+Depends: R (>= 3.4.4)
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 6.1.0
+Imports:
+	VariantAnnotation,
+	GenomicRanges,
+	magrittr,
+	dplyr,
+	rlang,
+	DelayedArray,
+	Biostrings,
+	parallel,
+	testthat
