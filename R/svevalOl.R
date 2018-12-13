@@ -32,12 +32,17 @@ svevalOl <- function(calls.gr, truth.gr, max.ins.dist=20, min.cov=.5,
     message('Importing ', truth.gr)
     truth.gr = readSVvcf(truth.gr, keep.ins.seq=ins.seq.comp, sample.name=sample.name)
   }
+  ol.l = suppressWarnings(
+    annotateOl(calls.gr, truth.gr, max.ins.gap=max.ins.dist,
+               min.del.rol=min.del.rol, ins.seq.comp=ins.seq.comp,
+               nb.cores=nb.cores)
+  )
   if(min.size>0 | !is.infinite(max.size)){
     message('Filtering SVs by size.')
-    calls.gr = calls.gr[which(calls.gr$size>=min.size &
-                              calls.gr$size<=max.size)]
-    truth.gr = truth.gr[which(truth.gr$size>=min.size &
-                              truth.gr$size<=max.size)]
+    ol.l$calls = ol.l$calls[which(ol.l$calls$size>=min.size &
+                                  ol.l$calls$size<=max.size)]
+    ol.l$truth = ol.l$truth[which(ol.l$truth$size>=min.size &
+                                  ol.l$truth$size<=max.size)]
   }
   if(!is.null(bed.regions)){
     message('Keeping SVs overlapping regions of interest')
@@ -46,14 +51,9 @@ svevalOl <- function(calls.gr, truth.gr, max.ins.dist=20, min.cov=.5,
       colnames(bed.regions)[1:3] = c('chr','start','end')
       bed.regions = GenomicRanges::makeGRangesFromDataFrame(bed.regions)
     }
-    calls.gr = filterSVs(calls.gr, bed.regions, ol.prop=bed.regions.ol)
-    truth.gr = filterSVs(truth.gr, bed.regions, ol.prop=bed.regions.ol)
+    ol.l$calls = filterSVs(ol.l$calls, bed.regions, ol.prop=bed.regions.ol)
+    ol.l$truth = filterSVs(ol.l$truth, bed.regions, ol.prop=bed.regions.ol)
   }
-  ol.l = suppressWarnings(
-    annotateOl(calls.gr, truth.gr, max.ins.gap=max.ins.dist,
-               min.del.rol=min.del.rol, ins.seq.comp=ins.seq.comp,
-               nb.cores=nb.cores)
-  )
   eval.df = evalOl(ol.l, min.cov=min.cov, outprefix=out.bed.prefix)
   if(!is.null(outfile)){
     utils::write.table(eval.df, file=outfile, sep='\t', row.names=FALSE, quote=FALSE)
