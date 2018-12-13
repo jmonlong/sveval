@@ -26,7 +26,7 @@ svevalOl('calls.vcf', 'truth.vcf')
 
 Outputs a data.frame with TP, FP, TN, precision, recall and F1 for all variants and for each SV type.
 
-The most important parameters might be:
+Some of the most important other parameters:
 
 - `max.ins.dist=` maximum distance for insertions to be clustered. Default is 20.
 - `min.cov=` the minimum coverage to be considered a match. Default is 0.5
@@ -36,11 +36,15 @@ The most important parameters might be:
 - `outfile=` the TSV file to output the results. If NULL (default), returns a data.frame.
 - `ins.seq.comp=TRUE` compare sequence instead of insertion sizes. Default is *FALSE*.
 
-See other parameters in the [manual](docs/sveval-manual.pdf) or by typing `?svevalOl`.
+See full list of parameters in the [manual](docs/sveval-manual.pdf) or by typing `?svevalOl` in R.
 
 ## Methods
 
 - For deletions, at least 50% coverage and at least 10% reciprocal overlap.
-- For insertions, size of nearby insertions at least as much as 50% the size of insertion. Or comparing inserted sequence (sequence similarity instead of size).
+- For insertions, size of nearby insertions (+- 20 bp) at least as much as 50% the size of insertion. Or comparing inserted sequence (sequence similarity instead of size).
 
 ![](docs/ol-cartoon.svg)
+
+## Docker
+
+A docker image of R with this package installed is available [here](https://hub.docker.com/r/jmonlong/sveval/).
