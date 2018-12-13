@@ -5,14 +5,16 @@ Functions to compare a SV call sets against a truth set.
 ## Installation
 
 ```r
+install.packages('devtools') ## if devtools not already installed
 source('http://bioconductor.org/biocLite.R')
 biocLite('jmonlong/sveval')
 ```
 
-Or to install locally
+Or to install locally (e.g. in a HPC)
 
 ```r
 .libPaths('~/R/library/')
+install.packages('devtools') ## if devtools not already installed
 source('http://bioconductor.org/biocLite.R')
 biocLite('jmonlong/sveval')
 ```
