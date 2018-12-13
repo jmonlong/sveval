@@ -42,18 +42,18 @@ evalOl <- function(ol.l, min.cov=.8, outprefix=NULL){
       gr = ol.l$truth[which(ol.l$truth$type == svtype)]
       grr = gr[which(gr$cov / gr$size < min.cov)]
       grr$ALT = NULL
-      utils::write.table(as.data.frame(grr), file=paste0(outprefix, '-FN-', svtype, '.tsv'), sep='\t', row.names=TRUE, quote=FALSE)
+      utils::write.table(as.data.frame(grr), file=paste0(outprefix, svtype, '-FN.tsv'), sep='\t', row.names=TRUE, quote=FALSE)
       grr = gr[which(gr$cov / gr$size >= min.cov)]
       grr$ALT = NULL
-      utils::write.table(as.data.frame(grr), file=paste0(outprefix, '-TPbaseline-', svtype, '.tsv'), sep='\t', row.names=TRUE, quote=FALSE)
+      utils::write.table(as.data.frame(grr), file=paste0(outprefix, svtype, '-TP-baseline.tsv'), sep='\t', row.names=TRUE, quote=FALSE)
       ## Calls
       gr = ol.l$calls[which(ol.l$calls$type == svtype)]
       grr = gr[which(gr$cov / gr$size < min.cov)]
       grr$ALT = NULL
-      utils::write.table(as.data.frame(grr), file=paste0(outprefix, '-FP-', svtype, '.tsv'), sep='\t', row.names=TRUE, quote=FALSE)
+      utils::write.table(as.data.frame(grr), file=paste0(outprefix, svtype, '-FP.tsv'), sep='\t', row.names=TRUE, quote=FALSE)
       gr$ALT = NULL
       grr = gr[which(gr$cov / gr$size >= min.cov)]
-      utils::write.table(as.data.frame(grr), file=paste0(outprefix, '-TP-', svtype, '.tsv'), sep='\t', row.names=TRUE, quote=FALSE)
+      utils::write.table(as.data.frame(grr), file=paste0(outprefix, svtype, '-TP-call.tsv'), sep='\t', row.names=TRUE, quote=FALSE)
     })
   }
   return(eval.df)

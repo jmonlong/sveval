@@ -7,7 +7,8 @@
 svevalOl(calls.gr, truth.gr, max.ins.dist = 20, min.cov = 0.5,
   min.del.rol = 0.1, ins.seq.comp = FALSE, nb.cores = 1,
   min.size = 0, max.size = Inf, bed.regions = NULL,
-  sample.name = NULL, outfile = NULL, out.bed.prefix = NULL)
+  bed.regions.ol = 0.5, sample.name = NULL, outfile = NULL,
+  out.bed.prefix = NULL)
 }
 \arguments{
 \item{calls.gr}{call set. A GRanges or the path to a VCF file.}
@@ -30,6 +31,9 @@ svevalOl(calls.gr, truth.gr, max.ins.dist = 20, min.cov = 0.5,
 
 \item{bed.regions}{If non-NULL, a GRanges object or path to a BED file
 (no headers) with regions of interest.}
+
+\item{bed.regions.ol}{minimum proportion of sv.gr that must overlap
+regions.gr. Default is 0.5}
 
 \item{sample.name}{the name of the sample to use if VCF files given as
 input. If NULL (default), use first sample.}
