@@ -46,7 +46,8 @@ annotateOl <- function(call.gr, truth.gr, max.ins.gap=1, min.del.rol=0.1,
                            identity,
                            simplify=FALSE)
         res = parallel::mclapply(chunk.idx, function(ii){
-          pas = Biostrings::pairwiseAlignment(truth.seq[ii], call.seq[ii])
+          pas = Biostrings::pairwiseAlignment(truth.seq[ii], call.seq[ii],
+                                              type='local')
           ## Biostrings::nchar(pas)
           Biostrings::nmatch(pas)
         }, mc.cores=nb.cores)
