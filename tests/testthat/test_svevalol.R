@@ -9,11 +9,10 @@ test_that("ALT/REF inputs and output in file", {
   file.remove('temp.tsv')
 })
 
-test_that("Input with symbolic VCF representation", {
-  res = svevalOl('../calls.s0.vcf', '../truth.symb.vcf')
+test_that("Input with symbolic VCF representation and no messages", {
+  res = svevalOl('../calls.s0.vcf', '../truth.symb.vcf', quiet=TRUE)
   expect_gt(nrow(res), 0)
-  expect_true(all(res$TP>0))
-  expect_true(all(res$TP.baseline>0))
+  expect_true(any(as.matrix(res[,2:5])>0))
 })
 
 test_that("Filters", {
@@ -40,12 +39,26 @@ test_that("Sequence compatison for insertions", {
   calls.gr = readSVvcf('../calls.s0.vcf', keep.ins.seq=TRUE)
   ## Subset insertions to speed up the test
   ins.idx = sample(which(calls.gr$type=='INS'), 10)
-  del.idx = which(calls.gr$type=='INS')
+  del.idx = which(calls.gr$type=='DEL')
   calls.gr = calls.gr[c(ins.idx, del.idx)]
   ## Run evaluation
   res = svevalOl(calls.gr, '../truth.refalt.vcf', min.size=20, ins.seq.comp=TRUE)
   expect_gt(nrow(res), 0)
-  expect_true(all(res$TP>0))
+  expect_true(any(as.matrix(res[,2:5])>0))
   expect_true(all(res$TP.baseline>0))
+})
+
+
+test_that("Empty inputs", {
+  calls.gr = readSVvcf('../calls.s0.vcf')
+  truth.gr = readSVvcf('../truth.refalt.vcf')
+  ## Empty input
+  res = svevalOl(calls.gr[integer(0)], truth.gr, min.size=20)
+  expect_true(all(is.na(as.matrix(res[,2:5]))))
+  res = svevalOl(calls.gr, truth.gr[integer(0)], min.size=20)
+  expect_true(all(is.na(as.matrix(res[,2:5]))))
+  ## One type missing
+  res = svevalOl(calls.gr[which(calls.gr$type=='DEL')], truth.gr, min.size=20)
+  expect_true(any(as.matrix(res[,2:5])>0))
 })
 

@@ -7,13 +7,14 @@
 ##' @param min.del.rol minimum reciprocal overlap for deletions. Default is 0.1
 ##' @param ins.seq.comp compare sequence instead of insertion sizes. Default is FALSE.
 ##' @param nb.cores number of processors to use. Default is 1.
+##' @param quiet if TRUE quiet mode with no messages.
 ##' @return a list with both inputs annotated with the overlap coverage (column 'cov').
 ##' @author Jean Monlong
 ##' @importFrom magrittr %>%
 ##' @importFrom rlang .data
 ##' @keywords internal
 annotateOl <- function(call.gr, truth.gr, max.ins.gap=1, min.del.rol=0.1,
-                       ins.seq.comp=FALSE, nb.cores=1){
+                       ins.seq.comp=FALSE, nb.cores=1, quiet=FALSE){
   ## Insertions
   call.ins  = call.gr[which(call.gr$type=='INS')]
   truth.ins  = truth.gr[which(truth.gr$type=='INS')]
@@ -24,7 +25,7 @@ annotateOl <- function(call.gr, truth.gr, max.ins.gap=1, min.del.rol=0.1,
     call.ins$cov = 0
   }
   if(length(call.ins)>0 & length(truth.ins)>0){
-    message('Annotating insertions.')
+    if(!quiet) message('Annotating insertions.')
     ## Cluster insertions
     ol.df = GenomicRanges::findOverlaps(truth.ins, call.ins,
                                         maxgap=max.ins.gap)
@@ -35,7 +36,7 @@ annotateOl <- function(call.gr, truth.gr, max.ins.gap=1, min.del.rol=0.1,
          !('ALT' %in% colnames(GenomicRanges::mcols(call.ins)))){
         stop('Missing sequence information. Did you run use "keep.ins.seq" when reading the VCF?')
       }
-      message('   Pairwise alignment of inserted sequences.')
+      if(!quiet) message('   Pairwise alignment of inserted sequences.')
       truth.seq = lapply(truth.ins$ALT[ol.df$queryHits], '[', 1)
       truth.seq = do.call(c, truth.seq)
       call.seq = lapply(call.ins$ALT[ol.df$subjectHits], '[', 1)
@@ -57,7 +58,7 @@ annotateOl <- function(call.gr, truth.gr, max.ins.gap=1, min.del.rol=0.1,
         ## ol.df$cov = Biostrings::nchar(pas)
         ol.df$cov = Biostrings::nmatch(pas)
       }
-      message('   Coverage computation.')
+      if(!quiet) message('   Coverage computation.')
       ## Coverage on truth set
       ins.truth.cov = ol.df %>%
         dplyr::group_by(.data$queryHits) %>%
@@ -69,7 +70,7 @@ annotateOl <- function(call.gr, truth.gr, max.ins.gap=1, min.del.rol=0.1,
         dplyr::summarize(cov=sum(.data$cov))
       call.ins$cov[ins.call.cov$subjectHits] = ins.call.cov$cov
     } else {
-      message('   Size comparison.')
+      if(!quiet) message('   Size comparison.')
       ## Size comparison
       ol.df$truth.w = truth.ins$size[ol.df$queryHits]
       ol.df$call.w = call.ins$size[ol.df$subjectHits]
@@ -95,9 +96,9 @@ annotateOl <- function(call.gr, truth.gr, max.ins.gap=1, min.del.rol=0.1,
     truth.del$cov = 0
   }
   if(length(call.del)>0 & length(truth.del)>0){
-    message('Annotating deletions.')
+    if(!quiet) message('Annotating deletions.')
     ## Select overlap with minimum reciprocal overlap
-    message('   Reciprocal overlap...')
+    if(!quiet) message('   Reciprocal overlap...')
     rol.df = GenomicRanges::findOverlaps(truth.del, call.del) %>%
       as.data.frame %>%
       dplyr::mutate(q.w=GenomicRanges::width(truth.del)[.data$queryHits],
@@ -107,7 +108,7 @@ annotateOl <- function(call.gr, truth.gr, max.ins.gap=1, min.del.rol=0.1,
                     .data$ol.w >= min.del.rol * .data$s.w)
     rol.gr = GenomicRanges::pintersect(truth.del[rol.df$queryHits],
                                        call.del[rol.df$subjectHits])
-    message('   Coverage computation...')
+    if(!quiet) message('   Coverage computation...')
     ## Overlap coverage on the truth set
     gr.l = GenomicRanges::GRangesList(GenomicRanges::split(rol.gr, rol.df$queryHits))
     gr.l = GenomicRanges::reduce(gr.l)

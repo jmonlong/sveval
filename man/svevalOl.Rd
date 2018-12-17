@@ -8,7 +8,7 @@ svevalOl(calls.gr, truth.gr, max.ins.dist = 20, min.cov = 0.5,
   min.del.rol = 0.1, ins.seq.comp = FALSE, nb.cores = 1,
   min.size = 0, max.size = Inf, bed.regions = NULL,
   bed.regions.ol = 0.5, sample.name = NULL, outfile = NULL,
-  out.bed.prefix = NULL)
+  out.bed.prefix = NULL, quiet = FALSE)
 }
 \arguments{
 \item{calls.gr}{call set. A GRanges or the path to a VCF file.}
@@ -41,6 +41,8 @@ input. If NULL (default), use first sample.}
 \item{outfile}{the TSV file to output the results. If NULL (default), returns a data.frame.}
 
 \item{out.bed.prefix}{prefix for the output BED files. If NULL (default), no BED output.}
+
+\item{quiet}{if TRUE quiet mode with no messages.}
 }
 \value{
 a data.frame with TP, FP and FN for each SV type.

@@ -5,7 +5,7 @@
 \title{Annotate inputs with overlap coverage}
 \usage{
 annotateOl(call.gr, truth.gr, max.ins.gap = 1, min.del.rol = 0.1,
-  ins.seq.comp = FALSE, nb.cores = 1)
+  ins.seq.comp = FALSE, nb.cores = 1, quiet = FALSE)
 }
 \arguments{
 \item{call.gr}{call set}
@@ -19,6 +19,8 @@ annotateOl(call.gr, truth.gr, max.ins.gap = 1, min.del.rol = 0.1,
 \item{ins.seq.comp}{compare sequence instead of insertion sizes. Default is FALSE.}
 
 \item{nb.cores}{number of processors to use. Default is 1.}
+
+\item{quiet}{if TRUE quiet mode with no messages.}
 }
 \value{
 a list with both inputs annotated with the overlap coverage (column 'cov').
