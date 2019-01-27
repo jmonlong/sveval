@@ -35,7 +35,7 @@ evalOl <- function(ol.l, min.cov=.8, outprefix=NULL, quiet=FALSE){
       dplyr::group_by(.data$type) %>%
       dplyr::summarize_all(sum) %>% rbind(eval.df)
     ## Precision, recall and F1
-    eval.df$precision = eval.df$TP.baseline / (eval.df$TP.baseline + eval.df$FP)
+    eval.df$precision = eval.df$TP / (eval.df$TP + eval.df$FP)
     eval.df$precision = round(eval.df$precision, 4)
     eval.df$recall = eval.df$TP.baseline / (eval.df$TP.baseline + eval.df$FN)
     eval.df$recall = round(eval.df$recall, 4)
