@@ -31,7 +31,18 @@ readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL){
     ## Maybe we can do better.
     ref.s = Biostrings::nchar(gr$REF)
     gr$type = ifelse(alt.s>ref.s, 'INS', 'DEL')
-    gr$type = ifelse(alt.s==ref.s, 'SNV', gr$type)
+    gr$type = ifelse(alt.s==ref.s, 'MNV', gr$type)
+    gr$type = ifelse(alt.s==1 & ref.s==1, 'SNV', gr$type)
+    ## Variants other than clear DEL, INS or SNV. 
+    others = which(alt.s>1 & ref.s>1)
+    if(length(others)>0){
+      gr.inv = gr[others]
+      alt.seq = lapply(gr.inv$ALT, function(alt)alt[which.max(Biostrings::nchar(alt))])
+      alt.seq = do.call(c, alt.seq)
+      ref.seq = gr.inv$REF
+      isinv = checkInvSeq(ref.seq, alt.seq)
+      gr$type[others] = ifelse(isinv, 'INV', gr$type[others])      
+    }    
     gr$size = ifelse(gr$type=='INS', alt.s, GenomicRanges::width(gr))
   }
   ## read support if available
@@ -53,6 +64,6 @@ readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL){
   ## Remove "ref" variants and SNVs
   gr = gr[which(gr$GT!='0' & gr$GT!='0/0'  & gr$GT!='0|0' &
                 gr$GT!='./.' & gr$GT!='.')]
-  gr = gr[which(gr$type!='SNV')]
+  gr = gr[which(gr$type!='SNV' & gr$type!='MNV')]
   return(gr)
 }

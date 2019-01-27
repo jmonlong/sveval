@@ -10,7 +10,7 @@
 ##' @keywords internal
 evalOl <- function(ol.l, min.cov=.8, outprefix=NULL, quiet=FALSE){
   if(is.null(ol.l)){
-    eval.df = data.frame(type=c('Total', 'DEL', 'INS'), stringsAsFactors=FALSE)
+    eval.df = data.frame(type=c('Total', 'DEL', 'INS', 'INV'), stringsAsFactors=FALSE)
     eval.df$FN = eval.df$FP = eval.df$TP.baseline = eval.df$TP = NA
   } else {
     ## Compute TP and FN from the truth set
@@ -43,7 +43,7 @@ evalOl <- function(ol.l, min.cov=.8, outprefix=NULL, quiet=FALSE){
       (eval.df$precision + eval.df$recall)
     eval.df$F1 = round(eval.df$F1, 4)
     ## Reorder rows to version in toil-vg
-    eval.df$type = factor(eval.df$type, levels=c('Total', 'INS', 'DEL'))
+    eval.df$type = factor(eval.df$type, levels=c('Total', 'INS', 'DEL', 'INV'))
     eval.df = eval.df[order(eval.df$type),]
   }
   ## Output files
