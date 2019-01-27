@@ -44,6 +44,7 @@ See full list of parameters in the [manual](docs/sveval-manual.pdf) or by typing
 
 - For deletions, at least 50% coverage and at least 10% reciprocal overlap.
 - For insertions, size of nearby insertions (+- 20 bp) at least as much as 50% the size of insertion. Or comparing inserted sequence (sequence similarity instead of size).
+- For inversions, same as deletions. If using REF/ALT sequences (i.e. not symbolic ALT), inversions are variants where the reverse complement of ALT matches REF at 80%.
 
 ![](docs/ol-cartoon.svg)
 

@@ -24,7 +24,7 @@ test_that("Filters", {
   expect_gt(nrow(res), 0)
   expect_true(all(res$TP>0))
   expect_true(all(res$TP.baseline>0))
-  expect_true(all(as.matrix(res[,2:5])<=as.matrix(res.all[,2:5])))
+  expect_true(all(as.matrix(res[1:3,2:5])<=as.matrix(res.all[1:3,2:5])))
   file.remove('temp.bed')
   ## Small variants
   res = svevalOl('../calls.s0.vcf', '../truth.refalt.vcf', min.size=20)
@@ -35,7 +35,7 @@ test_that("Filters", {
 })
 
 
-test_that("Sequence compatison for insertions", {
+test_that("Sequence comparison for insertions", {
   calls.gr = readSVvcf('../calls.s0.vcf', keep.ins.seq=TRUE)
   ## Subset insertions to speed up the test
   ins.idx = sample(which(calls.gr$type=='INS'), 10)
@@ -44,8 +44,8 @@ test_that("Sequence compatison for insertions", {
   ## Run evaluation
   res = svevalOl(calls.gr, '../truth.refalt.vcf', min.size=20, ins.seq.comp=TRUE)
   expect_gt(nrow(res), 0)
-  expect_true(any(as.matrix(res[,2:5])>0))
-  expect_true(all(res$TP.baseline>0))
+  expect_true(any(as.matrix(res[1:3,2:5])>0))
+  expect_true(all(res$TP.baseline[1:3]>0))
 })
 
 

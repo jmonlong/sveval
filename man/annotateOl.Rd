@@ -14,7 +14,7 @@ annotateOl(call.gr, truth.gr, max.ins.gap = 1, min.del.rol = 0.1,
 
 \item{max.ins.gap}{maximum distance for insertions to be clustered.}
 
-\item{min.del.rol}{minimum reciprocal overlap for deletions. Default is 0.1}
+\item{min.del.rol}{minimum reciprocal overlap for deletions (and inversions). Default is 0.1}
 
 \item{ins.seq.comp}{compare sequence instead of insertion sizes. Default is FALSE.}
 
