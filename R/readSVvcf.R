@@ -57,7 +57,7 @@ readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL){
     gr$alt.cov = gr$ref.cov = NA
   }
   ## Remove unused columns
-  gr$REF = gr$paramRangeID = gr$QUAL = gr$FILTER = NULL
+  gr$REF = gr$paramRangeID = gr$FILTER = NULL
   if(!keep.ins.seq){
     gr$ALT = NULL
   }

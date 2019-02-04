@@ -1,158 +1,50 @@
-## Overlap variants and annotate them with the proportion of region covered
-## by variants in the other set. Adds a column 'cov'.
-##' @title Annotate inputs with overlap coverage
-##' @param call.gr call set
-##' @param truth.gr truth set
-##' @param max.ins.gap maximum distance for insertions to be clustered.
-##' @param min.del.rol minimum reciprocal overlap for deletions (and inversions). Default is 0.1
-##' @param ins.seq.comp compare sequence instead of insertion sizes. Default is FALSE.
-##' @param nb.cores number of processors to use. Default is 1.
-##' @param quiet if TRUE quiet mode with no messages.
-##' @return a list with both inputs annotated with the overlap coverage (column 'cov').
+##' @title Annotate SVs from overlap
+##' @param ol.l output of an overlap function (olInsertions or olRanges).
+##' @param min.qual the minimum QUAL considered for the calls.
+##' @return an updated list with a *cov* column added to the calls and truth sets.
 ##' @author Jean Monlong
 ##' @importFrom magrittr %>%
 ##' @importFrom rlang .data
 ##' @keywords internal
-annotateOl <- function(call.gr, truth.gr, max.ins.gap=1, min.del.rol=0.1,
-                       ins.seq.comp=FALSE, nb.cores=1, quiet=FALSE){
-  ## Insertions
-  call.ins  = call.gr[which(call.gr$type=='INS')]
-  truth.ins  = truth.gr[which(truth.gr$type=='INS')]
-  if(length(truth.ins)>0){
-    truth.ins$cov = 0
+annotateOl <- function(ol.l, min.qual=0){
+  hq.idx = which(ol.l$calls$QUAL >= min.qual)
+  if(length(ol.l$truth)>0){
+    ol.l$truth$cov = 0
   }
-  if(length(call.ins)>0){
-    call.ins$cov = 0
+  if(length(ol.l$calls)>0){
+    ol.l$calls$cov = 0
   }
-  if(length(call.ins)>0 & length(truth.ins)>0){
-    if(!quiet) message('Annotating insertions.')
-    ## Cluster insertions
-    ol.df = GenomicRanges::findOverlaps(truth.ins, call.ins,
-                                        maxgap=max.ins.gap)
-    ol.df = as.data.frame(ol.df)
-    if(ins.seq.comp){
-      ## Sequence comparison
-      if(!('ALT' %in% colnames(GenomicRanges::mcols(truth.ins))) |
-         !('ALT' %in% colnames(GenomicRanges::mcols(call.ins)))){
-        stop('Missing sequence information. Did you run use "keep.ins.seq" when reading the VCF?')
-      }
-      if(!quiet) message('   Pairwise alignment of inserted sequences.')
-      truth.seq = lapply(truth.ins$ALT[ol.df$queryHits], '[', 1)
-      truth.seq = do.call(c, truth.seq)
-      call.seq = lapply(call.ins$ALT[ol.df$subjectHits], '[', 1)
-      call.seq = do.call(c, call.seq)
-      if(nb.cores > 1){
-        chunk.idx = tapply(1:length(truth.seq),
-                           cut(1:length(truth.seq), nb.cores),
-                           identity,
-                           simplify=FALSE)
-        res = parallel::mclapply(chunk.idx, function(ii){
-          pas = Biostrings::pairwiseAlignment(truth.seq[ii], call.seq[ii],
-                                              type='local')
-          ## Biostrings::nchar(pas)
-          Biostrings::nmatch(pas)
-        }, mc.cores=nb.cores)
-        ol.df$cov = unlist(res)
-      } else {
-        pas = Biostrings::pairwiseAlignment(truth.seq, call.seq)
-        ## ol.df$cov = Biostrings::nchar(pas)
-        ol.df$cov = Biostrings::nmatch(pas)
-      }
-      if(!quiet) message('   Coverage computation.')
-      ## Coverage on truth set
-      ins.truth.cov = ol.df %>%
-        dplyr::group_by(.data$queryHits) %>%
-        dplyr::summarize(cov=sum(.data$cov))
-      truth.ins$cov[ins.truth.cov$queryHits] = ins.truth.cov$cov
+  if('ol' %in% names(ol.l)){
+    ## Coverage on truth set
+    if(length(ol.l$truth)>0 & length(ol.l$calls)>0){
+      ins.truth.cov = ol.l$ol %>%
+        dplyr::filter(.data$call.idx %in% hq.idx) %>% 
+        dplyr::group_by(.data$truth.idx) %>%
+        dplyr::summarize(cov=sum(.data$truth.cov))
+      ol.l$truth$cov[ins.truth.cov$truth.idx] = ins.truth.cov$cov
       ## Coverage on call set
-      ins.call.cov = ol.df %>%
-        dplyr::group_by(.data$subjectHits) %>%
-        dplyr::summarize(cov=sum(.data$cov))
-      call.ins$cov[ins.call.cov$subjectHits] = ins.call.cov$cov
-    } else {
-      if(!quiet) message('   Size comparison.')
-      ## Size comparison
-      ol.df$truth.w = truth.ins$size[ol.df$queryHits]
-      ol.df$call.w = call.ins$size[ol.df$subjectHits]
-      ## Coverage on truth set
-      ins.truth.cov = ol.df %>%
-        dplyr::group_by(.data$queryHits) %>%
-        dplyr::summarize(call.w=sum(.data$call.w))
-      truth.ins$cov[ins.truth.cov$queryHits] = ins.truth.cov$call.w
-      ## Coverage on call set
-      ins.call.cov = ol.df %>%
-        dplyr::group_by(.data$subjectHits) %>%
-        dplyr::summarize(truth.w=sum(.data$truth.w))
-      call.ins$cov[ins.call.cov$subjectHits] = ins.call.cov$truth.w
+      ol.l$calls$cov = 0
+      ins.call.cov = ol.l$ol %>%
+        dplyr::filter(.data$call.idx %in% hq.idx) %>% 
+        dplyr::group_by(.data$call.idx) %>%
+        dplyr::summarize(cov=sum(.data$call.cov))
+      ol.l$calls$cov[ins.call.cov$call.idx] = ins.call.cov$cov
+    }
+  } else if('rol.gr' %in% names(ol.l)){
+    rol.gr = ol.l$rol.gr[which(ol.l$rol.gr$call.idx %in% hq.idx)]
+    ## Overlap coverage on the truth set
+    if(length(ol.l$truth)>0 & length(ol.l$calls)>0){
+      gr.l = GenomicRanges::GRangesList(GenomicRanges::split(rol.gr, rol.gr$truth.idx))
+      gr.l = GenomicRanges::reduce(gr.l)
+      cov.l = lapply(GenomicRanges::width(gr.l), sum)
+      ol.l$truth$cov[as.numeric(names(cov.l))] = unlist(cov.l)
+      ## Overlap coverge on the call set
+      gr.l = GenomicRanges::GRangesList(GenomicRanges::split(rol.gr, rol.gr$call.idx))
+      gr.l = GenomicRanges::reduce(gr.l)
+      cov.l = lapply(GenomicRanges::width(gr.l), sum)
+      ol.l$calls$cov[as.numeric(names(cov.l))] = unlist(cov.l)
     }
   }
-  ## Deletions
-  call.del  = call.gr[which(call.gr$type=='DEL')]
-  truth.del  = truth.gr[which(truth.gr$type=='DEL')]
-  if(length(call.del)>0){
-    call.del$cov = 0
-  }
-  if(length(truth.del)>0){
-    truth.del$cov = 0
-  }
-  if(length(call.del)>0 & length(truth.del)>0){
-    if(!quiet) message('Annotating deletions.')
-    ## Select overlap with minimum reciprocal overlap
-    if(!quiet) message('   Reciprocal overlap...')
-    rol.df = GenomicRanges::findOverlaps(truth.del, call.del) %>%
-      as.data.frame %>%
-      dplyr::mutate(q.w=GenomicRanges::width(truth.del)[.data$queryHits],
-                    s.w=GenomicRanges::width(call.del)[.data$subjectHits],
-                    ol.w=GenomicRanges::width(GenomicRanges::pintersect(truth.del[.data$queryHits], call.del[.data$subjectHits]))) %>%
-      dplyr::filter(.data$ol.w >= min.del.rol * .data$q.w,
-                    .data$ol.w >= min.del.rol * .data$s.w)
-    rol.gr = GenomicRanges::pintersect(truth.del[rol.df$queryHits],
-                                       call.del[rol.df$subjectHits])
-    if(!quiet) message('   Coverage computation...')
-    ## Overlap coverage on the truth set
-    gr.l = GenomicRanges::GRangesList(GenomicRanges::split(rol.gr, rol.df$queryHits))
-    gr.l = GenomicRanges::reduce(gr.l)
-    cov.l = lapply(GenomicRanges::width(gr.l), sum)
-    truth.del$cov[as.numeric(names(cov.l))] = unlist(cov.l)
-    ## Overlap coverge on the call set
-    gr.l = GenomicRanges::GRangesList(GenomicRanges::split(rol.gr, rol.df$subjectHits))
-    gr.l = GenomicRanges::reduce(gr.l)
-    cov.l = lapply(GenomicRanges::width(gr.l), sum)
-    call.del$cov[as.numeric(names(cov.l))] = unlist(cov.l)
-  }
-  ## Inversions
-  call.inv  = call.gr[which(call.gr$type=='INV')]
-  truth.inv  = truth.gr[which(truth.gr$type=='INV')]
-  if(length(call.inv)>0){
-    call.inv$cov = 0
-  }
-  if(length(truth.inv)>0){
-    truth.inv$cov = 0
-  }
-  if(length(call.inv)>0 & length(truth.inv)>0){
-    if(!quiet) message('Annotating inversions.')
-    ## Select overlap with minimum reciprocal overlap
-    if(!quiet) message('   Reciprocal overlap...')
-    rol.df = GenomicRanges::findOverlaps(truth.inv, call.inv) %>%
-      as.data.frame %>%
-      dplyr::mutate(q.w=GenomicRanges::width(truth.inv)[.data$queryHits],
-                    s.w=GenomicRanges::width(call.inv)[.data$subjectHits],
-                    ol.w=GenomicRanges::width(GenomicRanges::pintersect(truth.inv[.data$queryHits], call.inv[.data$subjectHits]))) %>%
-      dplyr::filter(.data$ol.w >= min.del.rol * .data$q.w,
-                    .data$ol.w >= min.del.rol * .data$s.w)
-    rol.gr = GenomicRanges::pintersect(truth.inv[rol.df$queryHits],
-                                       call.inv[rol.df$subjectHits])
-    if(!quiet) message('   Coverage computation...')
-    ## Overlap coverage on the truth set
-    gr.l = GenomicRanges::GRangesList(GenomicRanges::split(rol.gr, rol.df$queryHits))
-    gr.l = GenomicRanges::reduce(gr.l)
-    cov.l = lapply(GenomicRanges::width(gr.l), sum)
-    truth.inv$cov[as.numeric(names(cov.l))] = unlist(cov.l)
-    ## Overlap coverge on the call set
-    gr.l = GenomicRanges::GRangesList(GenomicRanges::split(rol.gr, rol.df$subjectHits))
-    gr.l = GenomicRanges::reduce(gr.l)
-    cov.l = lapply(GenomicRanges::width(gr.l), sum)
-    call.inv$cov[as.numeric(names(cov.l))] = unlist(cov.l)
-  }
-  return(list(calls=c(call.ins, call.del, call.inv), truth=c(truth.ins, truth.del, truth.inv)))
+  ol.l$calls = ol.l$calls[hq.idx]
+  return(ol.l)
 }

@@ -17,4 +17,5 @@ Imports:
 	DelayedArray,
 	Biostrings,
 	parallel,
-	testthat
+	testthat,
+	ggplot2

@@ -33,38 +33,66 @@ svevalOl <- function(calls.gr, truth.gr, max.ins.dist=20, min.cov=.5,
     if(!quiet) message('Importing ', truth.gr)
     truth.gr = readSVvcf(truth.gr, keep.ins.seq=ins.seq.comp, sample.name=sample.name)
   }
-  ol.l = suppressWarnings(
-    annotateOl(calls.gr, truth.gr, max.ins.gap=max.ins.dist,
-               min.del.rol=min.del.rol, ins.seq.comp=ins.seq.comp,
-               nb.cores=nb.cores)
-  )
-  ## Check if we have variants to compare, otherwise return NAs
-  if(length(ol.l$calls)==0 | length(ol.l$truth)==0){
-    eval.df = evalOl(NULL)
-  } else {
-    if(min.size>0 | !is.infinite(max.size)){
-      if(!quiet) message('Filtering SVs by size.')
-      ol.l$calls = ol.l$calls[which(ol.l$calls$size>=min.size &
-                                    ol.l$calls$size<=max.size)]
-      ol.l$truth = ol.l$truth[which(ol.l$truth$size>=min.size &
-                                    ol.l$truth$size<=max.size)]
+  if(length(calls.gr)>0 & length(truth.gr)>0 & !is.null(bed.regions)){
+    if(!quiet) message('Keeping SVs overlapping regions of interest')
+    if(is.character(bed.regions) & length(bed.regions) == 1){
+      bed.regions = utils::read.table(bed.regions, sep='\t', as.is=TRUE)
+      colnames(bed.regions)[1:3] = c('chr','start','end')
+      bed.regions = GenomicRanges::makeGRangesFromDataFrame(bed.regions)
     }
-    if(!is.null(bed.regions)){
-      if(!quiet) message('Keeping SVs overlapping regions of interest')
-      if(is.character(bed.regions) & length(bed.regions) == 1){
-        bed.regions = utils::read.table(bed.regions, sep='\t', as.is=TRUE)
-        colnames(bed.regions)[1:3] = c('chr','start','end')
-        bed.regions = GenomicRanges::makeGRangesFromDataFrame(bed.regions)
-      }
-      ol.l$calls = filterSVs(ol.l$calls, bed.regions, ol.prop=bed.regions.ol)
-      ol.l$truth = filterSVs(ol.l$truth, bed.regions, ol.prop=bed.regions.ol)
-    }
-    eval.df = evalOl(ol.l, min.cov=min.cov, outprefix=out.bed.prefix)
   }
+
+  ## Overlap SVs
+  ol.ins = suppressWarnings(
+    olInsertions(calls.gr, truth.gr, max.ins.gap=max.ins.dist,
+                 ins.seq.comp=ins.seq.comp, nb.cores=nb.cores)
+  )
+  ol.del = suppressWarnings(
+    olRanges(calls.gr, truth.gr, min.rol=min.del.rol, type='DEL')
+  )
+  ol.inv = suppressWarnings(
+    olRanges(calls.gr, truth.gr, min.rol=min.del.rol, type='INV')
+  )
+
+  ## Compute coverage and evaluation metrics
+  qual.r = unique(c(0, stats::quantile(calls.gr$QUAL, probs=seq(0,1,.1))))
+  eval.curve.df = lapply(qual.r, function(mqual){
+    ins.a = annotateOl(ol.ins, min.qual=mqual)
+    del.a = annotateOl(ol.del, min.qual=mqual)
+    inv.a = annotateOl(ol.inv, min.qual=mqual)
+    ol.l = list(
+      calls=c(ins.a$calls, del.a$calls, inv.a$calls),
+      truth=c(ins.a$truth, del.a$truth, inv.a$truth)
+    )
+    if(length(ol.l$calls)==0 | length(ol.l$truth)==0){
+      eval.df = evalOl(NULL)
+    } else {
+      ol.l$calls = filterSVs(ol.l$calls, regions.gr=bed.regions, ol.prop=bed.regions.ol,
+                             min.size=min.size, max.size=max.size)
+      ol.l$truth = filterSVs(ol.l$truth, regions.gr=bed.regions, ol.prop=bed.regions.ol,
+                             min.size=min.size, max.size=max.size)
+      op = out.bed.prefix
+      if(mqual>0){
+        op=NULL
+      }
+      eval.df = evalOl(ol.l, min.cov=min.cov, outprefix=op)
+    }
+    eval.df$qual = mqual
+    eval.df
+  })
+  eval.curve.df = do.call(rbind, eval.curve.df)
+  eval.df = eval.curve.df[which(eval.curve.df$qual==0),]
+  eval.df$qual = NULL
+
+  ## Write results for PR curve
+  if(!is.null(out.bed.prefix)){
+    utils::write.table(eval.curve.df, file=paste0(out.bed.prefix, 'prcurve.tsv'), sep='\t', row.names=FALSE, quote=FALSE)
+  }
+  
   if(!is.null(outfile)){
     utils::write.table(eval.df, file=outfile, sep='\t', row.names=FALSE, quote=FALSE)
     return(outfile)
   } else {
-    return(eval.df)
+    return(list(eval=eval.df, curve=eval.curve.df))
   }
 }
