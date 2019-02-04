@@ -6,6 +6,10 @@
 ##' @return a GRanges object with relevant information.
 ##' @author Jean Monlong
 ##' @export
+##' @examples
+##' \dontrun{
+##' calls.gr = readSVvcf('calls.vcf')
+##' }
 readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL){
   vcf = VariantAnnotation::readVcf(vcf.file, row.names=FALSE)
   gr = DelayedArray::rowRanges(vcf)
@@ -57,7 +61,7 @@ readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL){
     gr$alt.cov = gr$ref.cov = NA
   }
   ## Remove unused columns
-  gr$REF = gr$paramRangeID = gr$QUAL = gr$FILTER = NULL
+  gr$REF = gr$paramRangeID = gr$FILTER = NULL
   if(!keep.ins.seq){
     gr$ALT = NULL
   }

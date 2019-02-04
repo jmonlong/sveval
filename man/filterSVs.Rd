@@ -2,23 +2,28 @@
 % Please edit documentation in R/filterSVs.R
 \name{filterSVs}
 \alias{filterSVs}
-\title{Filter SVs for regions of interest}
+\title{Filter SVs for size and regions of interest}
 \usage{
-filterSVs(sv.gr, regions.gr, ol.prop = 0.5)
+filterSVs(sv.gr, regions.gr = NULL, ol.prop = 0.5, min.size = 0,
+  max.size = Inf)
 }
 \arguments{
 \item{sv.gr}{the input SVs (e.g. read from \code{readSVvcf})}
 
-\item{regions.gr}{the regions of interest}
+\item{regions.gr}{the regions of interest. Ignored if NULL (default).}
 
 \item{ol.prop}{minimum proportion of sv.gr that must overlap regions.gr.
 Default is 0.5}
+
+\item{min.size}{the minimum SV size to be considered. Default 0.}
+
+\item{max.size}{the maximum SV size to be considered. Default is Inf.}
 }
 \value{
-a subset of sv.gr that overlaps regions.gr
+a subset of sv.gr that overlaps regions.gr or in the specified size range.
 }
 \description{
-Filter SVs for regions of interest
+Filter SVs for size and regions of interest
 }
 \author{
 Jean Monlong

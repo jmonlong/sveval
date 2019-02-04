@@ -23,10 +23,12 @@ biocLite('jmonlong/sveval')
 
 ```r
 library(sveval)
-svevalOl('calls.vcf', 'truth.vcf')
+eval.o = svevalOl('calls.vcf', 'truth.vcf')
+eval.o$eval # data.frame with results using all variants
+plot_prcurve(eval.o$curve)
 ```
 
-Outputs a data.frame with TP, FP, TN, precision, recall and F1 for all variants and for each SV type.
+Outputs a list with a data.frame with TP, FP, TN, precision, recall and F1 for all variants and for each SV type, and a another data.frame with the results using increasing quality thresholds to make a precision-recall curve.
 
 Some of the most important other parameters:
 
@@ -39,6 +41,20 @@ Some of the most important other parameters:
 - `ins.seq.comp=TRUE` compare sequence instead of insertion sizes. Default is *FALSE*.
 
 See full list of parameters in the [manual](docs/sveval-manual.pdf) or by typing `?svevalOl` in R.
+
+### Precision-recall curve comparing multiple methods
+
+```r
+eval.1 = svevalOl('calls1.vcf', 'truth.vcf')
+eval.2 = svevalOl('calls2.vcf', 'truth.vcf')
+plot_prcurve(list(eval.1$curve, eval.2$curve), labels=c('method1', 'method2'))
+```
+
+Or if the results were written in files:
+
+```r
+plot_prcurve(c('methods1-prcurve.tsv', 'methods2-prcurve.tsv'), labels=c('method1', 'method2'))
+```
 
 ## Methods
 

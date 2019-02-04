@@ -20,6 +20,11 @@ a GRanges object with relevant information.
 \description{
 Read SVs from a VCF file
 }
+\examples{
+\dontrun{
+calls.gr = readSVvcf('calls.vcf')
+}
+}
 \author{
 Jean Monlong
 }

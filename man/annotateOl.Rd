@@ -2,31 +2,20 @@
 % Please edit documentation in R/annotateOl.R
 \name{annotateOl}
 \alias{annotateOl}
-\title{Annotate inputs with overlap coverage}
+\title{Annotate SVs from overlap}
 \usage{
-annotateOl(call.gr, truth.gr, max.ins.gap = 1, min.del.rol = 0.1,
-  ins.seq.comp = FALSE, nb.cores = 1, quiet = FALSE)
+annotateOl(ol.l, min.qual = 0)
 }
 \arguments{
-\item{call.gr}{call set}
+\item{ol.l}{output of an overlap function (olInsertions or olRanges).}
 
-\item{truth.gr}{truth set}
-
-\item{max.ins.gap}{maximum distance for insertions to be clustered.}
-
-\item{min.del.rol}{minimum reciprocal overlap for deletions (and inversions). Default is 0.1}
-
-\item{ins.seq.comp}{compare sequence instead of insertion sizes. Default is FALSE.}
-
-\item{nb.cores}{number of processors to use. Default is 1.}
-
-\item{quiet}{if TRUE quiet mode with no messages.}
+\item{min.qual}{the minimum QUAL considered for the calls.}
 }
 \value{
-a list with both inputs annotated with the overlap coverage (column 'cov').
+an updated list with a *cov* column added to the calls and truth sets.
 }
 \description{
-Annotate inputs with overlap coverage
+Annotate SVs from overlap
 }
 \author{
 Jean Monlong
