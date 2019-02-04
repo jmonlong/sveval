@@ -9,6 +9,15 @@ test_that("ALT/REF inputs and output in file", {
   file.remove('temp.tsv')
 })
 
+test_that("Output BED files etc", {
+  res = svevalOl('../calls.s0.vcf', '../truth.refalt.vcf', out.bed.prefix='tempfortest')
+  res = res$eval
+  expect_gt(nrow(res), 0)
+  expect_true(all(res$TP>0))
+  expect_true(all(res$TP.baseline>0))
+  file.remove(list.files('.', 'tempfortest'))
+})
+
 test_that("Input with symbolic VCF representation", {
   res = svevalOl('../calls.s0.vcf', '../truth.symb.vcf')
   expect_gt(nrow(res$eval), 0)

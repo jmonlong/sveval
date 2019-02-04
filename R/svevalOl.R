@@ -96,6 +96,9 @@ svevalOl <- function(calls.gr, truth.gr, max.ins.dist=20, min.cov=.5,
   ## Write results for PR curve
   if(!is.null(out.bed.prefix)){
     utils::write.table(eval.curve.df, file=paste0(out.bed.prefix, 'prcurve.tsv'), sep='\t', row.names=FALSE, quote=FALSE)
+    grDevices::pdf(paste0(out.bed.prefix, 'prcurve.pdf'), 9, 7)
+    tmp = lapply(plot_prcurve(paste0(out.bed.prefix, 'prcurve.tsv')), print)
+    grDevices::dev.off()
   }
   
   if(!is.null(outfile)){
