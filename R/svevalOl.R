@@ -16,25 +16,34 @@
 ##' input. If NULL (default), use first sample.
 ##' @param outfile the TSV file to output the results. If NULL (default), returns a data.frame.
 ##' @param out.bed.prefix prefix for the output BED files. If NULL (default), no BED output.
-##' @param quiet if TRUE quiet mode with no messages.
-##' @return a data.frame with TP, FP and FN for each SV type.
+##' @param qual.quantiles the QUAL quantiles for the PR curve. Default is (0, .1, ..., .9, 1).
+##' @return a list with
+##' \item{eval}{a data.frame with TP, FP and FN for each SV type when including all variants}
+##' \item{curve}{a data.frame with TP, FP and FN for each SV type when using different quality thesholds}
 ##' @author Jean Monlong
 ##' @export
+##' @examples
+##' \dontrun{
+##' ## From VCF files
+##' eval = svevalOl('calls.vcf', 'truth.vcf')
+##'
+##' ## From GRanges
+##' calls.gr = readSVvcf('calls.vcf')
+##' truth.gr = readSVvcf('truth.vcf')
+##' eval = svevalOl(calls.gr, truth.gr)
+##' }
 svevalOl <- function(calls.gr, truth.gr, max.ins.dist=20, min.cov=.5,
                      min.del.rol=.1, ins.seq.comp=FALSE, nb.cores=1,
                      min.size=0, max.size=Inf, bed.regions=NULL,
                      bed.regions.ol=.5, sample.name=NULL, outfile=NULL,
-                     out.bed.prefix=NULL, quiet=FALSE){
+                     out.bed.prefix=NULL, qual.quantiles=seq(0,1,.1)){
   if(is.character(calls.gr) & length(calls.gr)==1){
-    if(!quiet) message('Importing ', calls.gr)
     calls.gr = readSVvcf(calls.gr, keep.ins.seq=ins.seq.comp, sample.name=sample.name)
   }
   if(is.character(truth.gr) & length(truth.gr)==1){
-    if(!quiet) message('Importing ', truth.gr)
     truth.gr = readSVvcf(truth.gr, keep.ins.seq=ins.seq.comp, sample.name=sample.name)
   }
   if(length(calls.gr)>0 & length(truth.gr)>0 & !is.null(bed.regions)){
-    if(!quiet) message('Keeping SVs overlapping regions of interest')
     if(is.character(bed.regions) & length(bed.regions) == 1){
       bed.regions = utils::read.table(bed.regions, sep='\t', as.is=TRUE)
       colnames(bed.regions)[1:3] = c('chr','start','end')
@@ -55,7 +64,7 @@ svevalOl <- function(calls.gr, truth.gr, max.ins.dist=20, min.cov=.5,
   )
 
   ## Compute coverage and evaluation metrics
-  qual.r = unique(c(0, stats::quantile(calls.gr$QUAL, probs=seq(0,1,.1))))
+  qual.r = unique(c(0, stats::quantile(calls.gr$QUAL, probs=qual.quantiles)))
   eval.curve.df = lapply(qual.r, function(mqual){
     ins.a = annotateOl(ol.ins, min.qual=mqual)
     del.a = annotateOl(ol.del, min.qual=mqual)

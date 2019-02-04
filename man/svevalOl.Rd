@@ -8,7 +8,7 @@ svevalOl(calls.gr, truth.gr, max.ins.dist = 20, min.cov = 0.5,
   min.del.rol = 0.1, ins.seq.comp = FALSE, nb.cores = 1,
   min.size = 0, max.size = Inf, bed.regions = NULL,
   bed.regions.ol = 0.5, sample.name = NULL, outfile = NULL,
-  out.bed.prefix = NULL, quiet = FALSE)
+  out.bed.prefix = NULL, qual.quantiles = seq(0, 1, 0.1))
 }
 \arguments{
 \item{calls.gr}{call set. A GRanges or the path to a VCF file.}
@@ -42,13 +42,26 @@ input. If NULL (default), use first sample.}
 
 \item{out.bed.prefix}{prefix for the output BED files. If NULL (default), no BED output.}
 
-\item{quiet}{if TRUE quiet mode with no messages.}
+\item{qual.quantiles}{the QUAL quantiles for the PR curve. Default is (0, .1, ..., .9, 1).}
 }
 \value{
-a data.frame with TP, FP and FN for each SV type.
+a list with
+\item{eval}{a data.frame with TP, FP and FN for each SV type when including all variants}
+\item{curve}{a data.frame with TP, FP and FN for each SV type when using different quality thesholds}
 }
 \description{
 SV evaluation based on overlap and variant size
+}
+\examples{
+\dontrun{
+## From VCF files
+eval = svevalOl('calls.vcf', 'truth.vcf')
+
+## From GRanges
+calls.gr = readSVvcf('calls.vcf')
+truth.gr = readSVvcf('truth.vcf')
+eval = svevalOl(calls.gr, truth.gr)
+}
 }
 \author{
 Jean Monlong

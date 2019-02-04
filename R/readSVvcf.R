@@ -6,6 +6,10 @@
 ##' @return a GRanges object with relevant information.
 ##' @author Jean Monlong
 ##' @export
+##' @examples
+##' \dontrun{
+##' calls.gr = readSVvcf('calls.vcf')
+##' }
 readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL){
   vcf = VariantAnnotation::readVcf(vcf.file, row.names=FALSE)
   gr = DelayedArray::rowRanges(vcf)

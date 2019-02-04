@@ -4,7 +4,7 @@
 \alias{evalOl}
 \title{Compute FP, FN, TP}
 \usage{
-evalOl(ol.l, min.cov = 0.8, outprefix = NULL, quiet = FALSE)
+evalOl(ol.l, min.cov = 0.8, outprefix = NULL)
 }
 \arguments{
 \item{ol.l}{list returned by annotation functions like \code{annotateOl}}
@@ -12,8 +12,6 @@ evalOl(ol.l, min.cov = 0.8, outprefix = NULL, quiet = FALSE)
 \item{min.cov}{the minimum coverage to be considered a match. Default is 0.5}
 
 \item{outprefix}{prefix for output files. If NULL (default) no output files.}
-
-\item{quiet}{if TRUE quiet mode with no messages.}
 }
 \value{
 a data.frame with FP, FN and TP for each SV type.

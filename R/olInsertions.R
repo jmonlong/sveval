@@ -4,7 +4,6 @@
 ##' @param max.ins.gap maximum distance for insertions to be clustered.
 ##' @param ins.seq.comp compare sequence instead of insertion sizes. Default is FALSE.
 ##' @param nb.cores number of processors to use. Default is 1.
-##' @param quiet if TRUE quiet mode with no messages.
 ##' @return a list with
 ##' \item{calls}{the input calls}
 ##' \item{truth}{the input truth}
@@ -14,12 +13,11 @@
 ##' @importFrom rlang .data
 ##' @keywords internal
 olInsertions <- function(calls.gr, truth.gr, max.ins.gap=1, 
-                       ins.seq.comp=FALSE, nb.cores=1, quiet=FALSE){
+                       ins.seq.comp=FALSE, nb.cores=1){
   calls.ins  = calls.gr[which(calls.gr$type=='INS')]
   truth.ins  = truth.gr[which(truth.gr$type=='INS')]
   ol.ins = NULL
   if(length(calls.ins)>0 & length(truth.ins)>0){
-    if(!quiet) message('Insertions.')
     ## Cluster insertions
     ol.ins = GenomicRanges::findOverlaps(truth.ins, calls.ins,
                                         maxgap=max.ins.gap)
@@ -30,7 +28,6 @@ olInsertions <- function(calls.gr, truth.gr, max.ins.gap=1,
          !('ALT' %in% colnames(GenomicRanges::mcols(calls.ins)))){
         stop('Missing sequence information. Did you run use "keep.ins.seq" when reading the VCF?')
       }
-      if(!quiet) message('   Pairwise alignment of inserted sequences.')
       truth.seq = lapply(truth.ins$ALT[ol.ins$queryHits], '[', 1)
       truth.seq = do.call(c, truth.seq)
       calls.seq = lapply(calls.ins$ALT[ol.ins$subjectHits], '[', 1)
@@ -53,7 +50,6 @@ olInsertions <- function(calls.gr, truth.gr, max.ins.gap=1,
         ol.ins$call.cov = ol.ins$truth.cov = Biostrings::nmatch(pas)
       }
     } else {
-      if(!quiet) message('   Size comparison.')
       ## Size comparison
       ol.ins$call.cov = truth.ins$size[ol.ins$queryHits]
       ol.ins$truth.cov = calls.ins$size[ol.ins$subjectHits]

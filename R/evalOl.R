@@ -2,13 +2,12 @@
 ##' @param ol.l list returned by annotation functions like \code{annotateOl}
 ##' @param min.cov the minimum coverage to be considered a match. Default is 0.5
 ##' @param outprefix prefix for output files. If NULL (default) no output files.
-##' @param quiet if TRUE quiet mode with no messages.
 ##' @return a data.frame with FP, FN and TP for each SV type.
 ##' @author Jean Monlong
 ##' @importFrom magrittr %>%
 ##' @importFrom rlang .data
 ##' @keywords internal
-evalOl <- function(ol.l, min.cov=.8, outprefix=NULL, quiet=FALSE){
+evalOl <- function(ol.l, min.cov=.8, outprefix=NULL){
   if(is.null(ol.l)){
     eval.df = data.frame(type=c('Total', 'DEL', 'INS', 'INV'), stringsAsFactors=FALSE)
     eval.df$FN = eval.df$FP = eval.df$TP.baseline = eval.df$TP = NA
@@ -48,7 +47,6 @@ evalOl <- function(ol.l, min.cov=.8, outprefix=NULL, quiet=FALSE){
   }
   ## Output files
   if(!is.null(outprefix)){
-    if(!quiet) message('Save bed files')
     tmp = lapply(unique(ol.l$truth$type), function(svtype){
       ## Truth
       gr = ol.l$truth[which(ol.l$truth$type == svtype)]

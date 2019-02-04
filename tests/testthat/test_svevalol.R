@@ -9,8 +9,8 @@ test_that("ALT/REF inputs and output in file", {
   file.remove('temp.tsv')
 })
 
-test_that("Input with symbolic VCF representation and no messages", {
-  res = svevalOl('../calls.s0.vcf', '../truth.symb.vcf', quiet=TRUE)
+test_that("Input with symbolic VCF representation", {
+  res = svevalOl('../calls.s0.vcf', '../truth.symb.vcf')
   expect_gt(nrow(res$eval), 0)
   expect_true(any(as.matrix(res$eval[,2:5])>0))
   pdf('temp.pdf')
