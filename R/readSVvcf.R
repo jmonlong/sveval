@@ -69,5 +69,9 @@ readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL){
   gr = gr[which(gr$GT!='0' & gr$GT!='0/0'  & gr$GT!='0|0' &
                 gr$GT!='./.' & gr$GT!='.')]
   gr = gr[which(gr$type!='SNV' & gr$type!='MNV')]
+  ## Convert missing qualities to 0
+  if(any(is.na(gr$QUAL))){
+    gr$QUAL[which(is.na(gr$QUAL))] = 0
+  }
   return(gr)
 }

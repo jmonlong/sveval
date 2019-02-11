@@ -64,9 +64,6 @@ svevalOl <- function(calls.gr, truth.gr, max.ins.dist=20, min.cov=.5,
   )
 
   ## Compute coverage and evaluation metrics
-  if(any(is.na(calls.gr$QUAL))){
-    calls.gr$QUAL[which(is.na(calls.gr$QUAL))] = 0
-  }
   qual.r = unique(c(0, stats::quantile(calls.gr$QUAL, probs=qual.quantiles)))
   eval.curve.df = lapply(qual.r, function(mqual){
     ins.a = annotateOl(ol.ins, min.qual=mqual)
