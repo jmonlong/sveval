@@ -4,7 +4,8 @@
 \alias{readSVvcf}
 \title{Read SVs from a VCF file}
 \usage{
-readSVvcf(vcf.file, keep.ins.seq = FALSE, sample.name = NULL)
+readSVvcf(vcf.file, keep.ins.seq = FALSE, sample.name = NULL,
+  qual.field = c("QUAL", "GQ"))
 }
 \arguments{
 \item{vcf.file}{the path to the VCF file}
@@ -13,12 +14,19 @@ readSVvcf(vcf.file, keep.ins.seq = FALSE, sample.name = NULL)
 
 \item{sample.name}{the name of the sample to use. If NULL (default), use
 first sample.}
+
+\item{qual.field}{fields to use as quality. Will be tried in order.}
 }
 \value{
 a GRanges object with relevant information.
 }
 \description{
-Read SVs from a VCF file
+Read a VCF file that contains SVs and create a GRanges with relevant information, e.g. SV size or genotype quality.
+}
+\details{
+By default, the quality information is taken from the QUAL field. If all
+values are NA or 0, the function will try other fields as speficied in
+the "qual.field" vector. Fields can be from the INFO or FORMAT fields.
 }
 \examples{
 \dontrun{

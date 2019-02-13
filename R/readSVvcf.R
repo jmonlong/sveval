@@ -1,8 +1,14 @@
+##' Read a VCF file that contains SVs and create a GRanges with relevant information, e.g. SV size or genotype quality.
+##'
+##' By default, the quality information is taken from the QUAL field. If all
+##' values are NA or 0, the function will try other fields as speficied in
+##' the "qual.field" vector. Fields can be from the INFO or FORMAT fields.
 ##' @title Read SVs from a VCF file
 ##' @param vcf.file the path to the VCF file
 ##' @param keep.ins.seq should it keep the inserted sequence? Default is FALSE.
 ##' @param sample.name the name of the sample to use. If NULL (default), use
 ##' first sample.
+##' @param qual.field fields to use as quality. Will be tried in order.
 ##' @return a GRanges object with relevant information.
 ##' @author Jean Monlong
 ##' @export
@@ -10,7 +16,7 @@
 ##' \dontrun{
 ##' calls.gr = readSVvcf('calls.vcf')
 ##' }
-readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL){
+readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL, qual.field=c('QUAL', 'GQ')){
   vcf = VariantAnnotation::readVcf(vcf.file, row.names=FALSE)
   gr = DelayedArray::rowRanges(vcf)
   ## If sample specified, retrieve appropriate GT
@@ -19,6 +25,27 @@ readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL){
     GT.idx = which(sample.name == colnames(VariantAnnotation::geno(vcf)$GT))
   } 
   gr$GT = unlist(VariantAnnotation::geno(vcf)$GT[, GT.idx])
+  
+  ## Convert missing qualities to 0
+  if(any(is.na(gr$QUAL))){
+    gr$QUAL[which(is.na(gr$QUAL))] = 0
+  }
+  ## Extract quality information
+  qual.found = FALSE
+  qfield.ii = 1
+  while(!qual.found & qfield.ii < length(qual.field) + 1){
+    if(qual.field[qfield.ii] == 'QUAL' & any(gr$QUAL>0)){
+      qual.found = TRUE
+    } else if(qual.field[qfield.ii] %in% names(VariantAnnotation::geno(vcf))){
+      gr$QUAL = unlist(VariantAnnotation::geno(vcf)[[qual.field[qfield.ii]]][, GT.idx])
+      qual.found = TRUE
+    } else if(qual.field[qfield.ii] %in% colnames(VariantAnnotation::info(vcf))){
+      gr$QUAL = unlist(VariantAnnotation::info(vcf)[[qual.field[qfield.ii]]])
+      qual.found = TRUE
+    }
+    qfield.ii = qfield.ii + 1
+  }
+
   ## Symbolic alleles or ALT/REF ?
   if(all(c('SVTYPE', 'SVLEN') %in% colnames(VariantAnnotation::info(vcf)))){
     ## Symbolic alleles
@@ -69,9 +96,5 @@ readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL){
   gr = gr[which(gr$GT!='0' & gr$GT!='0/0'  & gr$GT!='0|0' &
                 gr$GT!='./.' & gr$GT!='.')]
   gr = gr[which(gr$type!='SNV' & gr$type!='MNV')]
-  ## Convert missing qualities to 0
-  if(any(is.na(gr$QUAL))){
-    gr$QUAL[which(is.na(gr$QUAL))] = 0
-  }
   return(gr)
 }
