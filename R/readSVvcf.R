@@ -26,6 +26,18 @@ readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL, qual.field
   } 
   gr$GT = unlist(VariantAnnotation::geno(vcf)$GT[, GT.idx])
   
+  ## Remove obvious SNVs
+  singlealt = which(unlist(lapply(gr$ALT, length))==1)
+  alt.sa = unlist(Biostrings::nchar(gr$ALT[singlealt]))
+  ref.sa = Biostrings::nchar(gr$REF[singlealt])
+  snv.idx = singlealt[which(ref.sa==1 & alt.sa==1)]
+  snv.idx = snv.idx[which(as.character(unlist(gr$ALT[snv.idx])) != as.character(gr$REF[snv.idx]))]
+  if(length(snv.idx)>0){
+    nonsnv.idx = setdiff(1:length(gr), snv.idx)
+    gr = gr[nonsnv.idx]
+    vcf = vcf[nonsnv.idx]
+  }
+  
   ## Convert missing qualities to 0
   if(any(is.na(gr$QUAL))){
     gr$QUAL[which(is.na(gr$QUAL))] = 0
