@@ -7,9 +7,14 @@
 ##' @author Jean Monlong
 ##' @keywords internal
 checkInvSeq <- function(refseq, altseq){
-  altseq = Biostrings::reverseComplement(altseq)
-  pas = Biostrings::pairwiseAlignment(refseq, altseq)
-  size = (Biostrings::nchar(refseq) + Biostrings::nchar(altseq)) / 2
-  propinv = Biostrings::nmatch(pas) / size
-  return(propinv>.8)
+    nottoolarge = which(Biostrings::nchar(refseq) * Biostrings::nchar(altseq) < 2e9)
+    res = rep(FALSE, length(refseq))
+    refseq = refseq[nottoolarge]
+    altseq = altseq[nottoolarge]
+    altseq = Biostrings::reverseComplement(altseq)
+    pas = Biostrings::pairwiseAlignment(refseq, altseq)
+    size = (Biostrings::nchar(refseq) + Biostrings::nchar(altseq)) / 2
+    propinv = Biostrings::nmatch(pas) / size
+    res[nottoolarge] = propinv>.8
+    return(res)
 }

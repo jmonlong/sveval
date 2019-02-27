@@ -9,6 +9,7 @@
 ##' @param sample.name the name of the sample to use. If NULL (default), use
 ##' first sample.
 ##' @param qual.field fields to use as quality. Will be tried in order.
+##' @param check.inv should the sequence of MNV be compared to identify inversions. 
 ##' @return a GRanges object with relevant information.
 ##' @author Jean Monlong
 ##' @export
@@ -16,7 +17,7 @@
 ##' \dontrun{
 ##' calls.gr = readSVvcf('calls.vcf')
 ##' }
-readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL, qual.field=c('QUAL', 'GQ')){
+readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL, qual.field=c('QUAL', 'GQ'), check.inv=FALSE){
   vcf = VariantAnnotation::readVcf(vcf.file, row.names=FALSE)
   gr = DelayedArray::rowRanges(vcf)
   ## If sample specified, retrieve appropriate GT
@@ -27,7 +28,7 @@ readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL, qual.field
   gr$GT = unlist(VariantAnnotation::geno(vcf)$GT[, GT.idx])
   
   ## Remove obvious SNVs
-  singlealt = which(unlist(lapply(gr$ALT, length))==1)
+  singlealt = which(unlist(lapply(Biostrings::nchar(gr$ALT), length))==1)
   alt.sa = unlist(Biostrings::nchar(gr$ALT[singlealt]))
   ref.sa = Biostrings::nchar(gr$REF[singlealt])
   snv.idx = singlealt[which(ref.sa==1 & alt.sa==1)]
@@ -59,13 +60,16 @@ readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL, qual.field
   }
 
   ## Symbolic alleles or ALT/REF ?
-  if(all(c('SVTYPE', 'SVLEN') %in% colnames(VariantAnnotation::info(vcf)))){
-    ## Symbolic alleles
-    gr$type = unlist(VariantAnnotation::info(vcf)$SVTYPE)
-    gr$size = abs(unlist(VariantAnnotation::info(vcf)$SVLEN))
-    GenomicRanges::end(gr) = ifelse(gr$type == 'DEL',
-                                    GenomicRanges::end(gr) + gr$size,
-                                    GenomicRanges::end(gr))
+  if(all(c('SVTYPE', 'SVLEN', 'END') %in% colnames(VariantAnnotation::info(vcf)))){
+      ## Symbolic alleles
+      gr$type = unlist(VariantAnnotation::info(vcf)$SVTYPE)
+      gr$size = abs(unlist(VariantAnnotation::info(vcf)$SVLEN))
+      GenomicRanges::end(gr) = ifelse(gr$type=='INS',
+                                      GenomicRanges::end(gr),
+                                      unlist(VariantAnnotation::info(vcf)$END))
+      gr$size = ifelse(gr$type=='INS',
+                       gr$size,
+                       GenomicRanges::width(gr))
   } else {
     ## ALT/REF
     ## Define variant type from alt/ref size
@@ -78,7 +82,7 @@ readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL, qual.field
     gr$type = ifelse(alt.s==1 & ref.s==1, 'SNV', gr$type)
     ## Variants other than clear DEL, INS or SNV. 
     others = which(alt.s>1 & ref.s>1)
-    if(length(others)>0){
+    if(length(others)>0 & check.inv){
       gr.inv = gr[others]
       alt.seq = lapply(gr.inv$ALT, function(alt)alt[which.max(Biostrings::nchar(alt))])
       alt.seq = do.call(c, alt.seq)

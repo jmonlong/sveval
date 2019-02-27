@@ -17,6 +17,7 @@
 ##' @param outfile the TSV file to output the results. If NULL (default), returns a data.frame.
 ##' @param out.bed.prefix prefix for the output BED files. If NULL (default), no BED output.
 ##' @param qual.quantiles the QUAL quantiles for the PR curve. Default is (0, .1, ..., .9, 1).
+##' @param check.inv should the sequence of MNV be compared to identify inversions. 
 ##' @return a list with
 ##' \item{eval}{a data.frame with TP, FP and FN for each SV type when including all variants}
 ##' \item{curve}{a data.frame with TP, FP and FN for each SV type when using different quality thesholds}
@@ -36,12 +37,13 @@ svevalOl <- function(calls.gr, truth.gr, max.ins.dist=20, min.cov=.5,
                      min.del.rol=.1, ins.seq.comp=FALSE, nb.cores=1,
                      min.size=0, max.size=Inf, bed.regions=NULL,
                      bed.regions.ol=.5, sample.name=NULL, outfile=NULL,
-                     out.bed.prefix=NULL, qual.quantiles=seq(0,1,.1)){
+                     out.bed.prefix=NULL, qual.quantiles=seq(0,1,.1),
+                     check.inv=FALSE){
   if(is.character(calls.gr) & length(calls.gr)==1){
-    calls.gr = readSVvcf(calls.gr, keep.ins.seq=ins.seq.comp, sample.name=sample.name)
+    calls.gr = readSVvcf(calls.gr, keep.ins.seq=ins.seq.comp, sample.name=sample.name, check.inv=check.inv)
   }
   if(is.character(truth.gr) & length(truth.gr)==1){
-    truth.gr = readSVvcf(truth.gr, keep.ins.seq=ins.seq.comp, sample.name=sample.name)
+    truth.gr = readSVvcf(truth.gr, keep.ins.seq=ins.seq.comp, sample.name=sample.name, check.inv=check.inv)
   }
   if(length(calls.gr)>0 & length(truth.gr)>0 & !is.null(bed.regions)){
     if(is.character(bed.regions) & length(bed.regions) == 1){

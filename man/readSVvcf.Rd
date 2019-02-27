@@ -5,7 +5,7 @@
 \title{Read SVs from a VCF file}
 \usage{
 readSVvcf(vcf.file, keep.ins.seq = FALSE, sample.name = NULL,
-  qual.field = c("QUAL", "GQ"))
+  qual.field = c("QUAL", "GQ"), check.inv = FALSE)
 }
 \arguments{
 \item{vcf.file}{the path to the VCF file}
@@ -16,6 +16,8 @@ readSVvcf(vcf.file, keep.ins.seq = FALSE, sample.name = NULL,
 first sample.}
 
 \item{qual.field}{fields to use as quality. Will be tried in order.}
+
+\item{check.inv}{should the sequence of MNV be compared to identify inversions.}
 }
 \value{
 a GRanges object with relevant information.
