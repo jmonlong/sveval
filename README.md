@@ -39,6 +39,7 @@ Some of the most important other parameters:
 - `bed.regions=` If non-NULL, a GRanges object or path to a BED file (no headers) with regions of interest.
 - `outfile=` the TSV file to output the results. If NULL (default), returns a data.frame.
 - `ins.seq.comp=TRUE` compare sequence instead of insertion sizes. Default is *FALSE*.
+- `check.inv` should the sequence of MNV be compared to identify inversions. Default is *FALSE*.
 
 See full list of parameters in the [manual](docs/sveval-manual.pdf) or by typing `?svevalOl` in R.
 
