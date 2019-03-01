@@ -1,0 +1,8 @@
+##fileformat=VCFv4.1
+##INFO=<ID=AC,Number=A,Type=Integer,Description="Alternate allele count">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##contig=<ID=x>
+##SAMPLE=<ID=s0>
+##SAMPLE=<ID=s1>
+##SAMPLE=<ID=s2>
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	s0	s1	s2

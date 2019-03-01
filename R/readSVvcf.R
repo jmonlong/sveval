@@ -38,6 +38,16 @@ readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL, qual.field
     gr = gr[nonsnv.idx]
     vcf = vcf[nonsnv.idx]
   }
+
+  ## If no SVs
+  if(length(vcf) == 0){
+    gr$REF = gr$paramRangeID = gr$FILTER = NULL
+    if(!keep.ins.seq){
+      gr$ALT = NULL
+    }
+    return(gr)
+  }
+
   ## Remove "ref" variants
   nonrefs = which(gr$GT!='0' & gr$GT!='0/0'  & gr$GT!='0|0' & gr$GT!='./.' & gr$GT!='.')
   gr = gr[nonrefs]

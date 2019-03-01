@@ -6,7 +6,7 @@
 \usage{
 svevalOl(calls.gr, truth.gr, max.ins.dist = 20, min.cov = 0.5,
   min.del.rol = 0.1, ins.seq.comp = FALSE, nb.cores = 1,
-  min.size = 0, max.size = Inf, bed.regions = NULL,
+  min.size = 50, max.size = Inf, bed.regions = NULL,
   bed.regions.ol = 0.5, sample.name = NULL, outfile = NULL,
   out.bed.prefix = NULL, qual.quantiles = seq(0, 1, 0.1),
   check.inv = FALSE)
@@ -26,7 +26,7 @@ svevalOl(calls.gr, truth.gr, max.ins.dist = 20, min.cov = 0.5,
 
 \item{nb.cores}{number of processors to use. Default is 1.}
 
-\item{min.size}{the minimum SV size to be considered. Default 0.}
+\item{min.size}{the minimum SV size to be considered. Default 50.}
 
 \item{max.size}{the maximum SV size to be considered. Default is Inf.}
 
