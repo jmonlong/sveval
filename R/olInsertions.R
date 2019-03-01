@@ -28,10 +28,8 @@ olInsertions <- function(calls.gr, truth.gr, max.ins.gap=1,
          !('ALT' %in% colnames(GenomicRanges::mcols(calls.ins)))){
         stop('Missing sequence information. Did you run use "keep.ins.seq" when reading the VCF?')
       }
-      truth.seq = lapply(truth.ins$ALT[ol.ins$queryHits], '[', 1)
-      truth.seq = do.call(c, truth.seq)
-      calls.seq = lapply(calls.ins$ALT[ol.ins$subjectHits], '[', 1)
-      calls.seq = do.call(c, calls.seq)
+      truth.seq = truth.ins$ALT[ol.ins$queryHits]
+      calls.seq = calls.ins$ALT[ol.ins$subjectHits]
       if(nb.cores > 1){
         chunk.idx = tapply(1:length(truth.seq),
                            cut(1:length(truth.seq), nb.cores),

@@ -38,27 +38,11 @@ readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL, qual.field
     gr = gr[nonsnv.idx]
     vcf = vcf[nonsnv.idx]
   }
+  ## Remove "ref" variants
+  nonrefs = which(gr$GT!='0' & gr$GT!='0/0'  & gr$GT!='0|0' & gr$GT!='./.' & gr$GT!='.')
+  gr = gr[nonrefs]
+  vcf = vcf[nonrefs]
   
-  ## Convert missing qualities to 0
-  if(any(is.na(gr$QUAL))){
-    gr$QUAL[which(is.na(gr$QUAL))] = 0
-  }
-  ## Extract quality information
-  qual.found = FALSE
-  qfield.ii = 1
-  while(!qual.found & qfield.ii < length(qual.field) + 1){
-    if(qual.field[qfield.ii] == 'QUAL' & any(gr$QUAL>0)){
-      qual.found = TRUE
-    } else if(qual.field[qfield.ii] %in% names(VariantAnnotation::geno(vcf))){
-      gr$QUAL = unlist(VariantAnnotation::geno(vcf)[[qual.field[qfield.ii]]][, GT.idx])
-      qual.found = TRUE
-    } else if(qual.field[qfield.ii] %in% colnames(VariantAnnotation::info(vcf))){
-      gr$QUAL = unlist(VariantAnnotation::info(vcf)[[qual.field[qfield.ii]]])
-      qual.found = TRUE
-    }
-    qfield.ii = qfield.ii + 1
-  }
-
   ## Symbolic alleles or ALT/REF ?
   if(all(c('SVTYPE', 'SVLEN', 'END') %in% colnames(VariantAnnotation::info(vcf)))){
       ## Symbolic alleles
@@ -72,10 +56,34 @@ readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL, qual.field
                        GenomicRanges::width(gr))
   } else {
     ## ALT/REF
-    ## Define variant type from alt/ref size
-    alt.s = unlist(lapply(Biostrings::nchar(gr$ALT), max))
-    ## Using largest ALT allele !
-    ## Maybe we can do better.
+    ## Split non-ref alleles
+    gt.s = strsplit(gr$GT, '[/\\|]')
+    gt.s = lapply(gt.s, unique)
+    idx = rep(1:length(gt.s), unlist(lapply(gt.s, length)))
+    als = unlist(gt.s)
+    nonref = which(als!='0' & als!='.')
+    idx = idx[nonref]
+    als = as.numeric(als[nonref])
+    gr = gr[idx]
+    gr$al = als
+    vcf = vcf[idx]
+    ## Get allele sequence
+    gr$ALT = Biostrings::DNAStringSet(lapply(1:length(gr), function(ii) unlist(gr$ALT[[ii]][als[ii]])))
+    ## Right-trim REF/ALT
+    trim.size = estTrimSize(gr$REF, gr$ALT)
+    idx.trim = which(trim.size>0)
+    if(length(idx.trim)>0){
+      gr$REF[idx.trim] = Biostrings::DNAStringSet(lapply(idx.trim, function(ii) {
+        trim.end = Biostrings::nchar(gr$REF[[ii]]) - trim.size[ii]
+        gr$REF[[ii]][1:trim.end]
+      }))
+      gr$ALT[idx.trim] = Biostrings::DNAStringSet(lapply(idx.trim, function(ii) {
+        trim.end = Biostrings::nchar(gr$ALT[[ii]]) - trim.size[ii]
+        gr$ALT[[ii]][1:trim.end]
+      }))
+    }
+    ## Compare ALT/REF size to define SV type
+    alt.s = Biostrings::nchar(gr$ALT)
     ref.s = Biostrings::nchar(gr$REF)
     gr$type = ifelse(alt.s>ref.s, 'INS', 'DEL')
     gr$type = ifelse(alt.s==ref.s, 'MNV', gr$type)
@@ -84,14 +92,13 @@ readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL, qual.field
     others = which(alt.s>1 & ref.s>1)
     if(length(others)>0 & check.inv){
       gr.inv = gr[others]
-      alt.seq = lapply(gr.inv$ALT, function(alt)alt[which.max(Biostrings::nchar(alt))])
-      alt.seq = do.call(c, alt.seq)
       ref.seq = gr.inv$REF
-      isinv = checkInvSeq(ref.seq, alt.seq)
+      isinv = checkInvSeq(gr.inv$REF, gr.inv$ALT)
       gr$type[others] = ifelse(isinv, 'INV', gr$type[others])      
     }    
     gr$size = ifelse(gr$type=='INS', alt.s, GenomicRanges::width(gr))
   }
+
   ## read support if available
   if('AD' %in% rownames(VariantAnnotation::geno(VariantAnnotation::header(vcf)))){
     ad.l = VariantAnnotation::geno(vcf)$AD[, GT.idx]
@@ -103,14 +110,47 @@ readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL, qual.field
   } else {
     gr$alt.cov = gr$ref.cov = NA
   }
+
   ## Remove unused columns
   gr$REF = gr$paramRangeID = gr$FILTER = NULL
   if(!keep.ins.seq){
     gr$ALT = NULL
   }
-  ## Remove "ref" variants and SNVs
-  gr = gr[which(gr$GT!='0' & gr$GT!='0/0'  & gr$GT!='0|0' &
-                gr$GT!='./.' & gr$GT!='.')]
+
+  ## Convert missing qualities to 0
+  if(any(is.na(gr$QUAL))){
+    gr$QUAL[which(is.na(gr$QUAL))] = 0
+  }
+  ## Extract quality information
+  qual.found = FALSE
+  qfield.ii = 1
+  while(!qual.found & qfield.ii < length(qual.field) + 1){
+    if(qual.field[qfield.ii] == 'QUAL' & any(gr$QUAL>0)){
+      qual.found = TRUE
+    } else if(qual.field[qfield.ii] %in% names(VariantAnnotation::geno(vcf))){
+      qual.geno = VariantAnnotation::geno(vcf)[[qual.field[qfield.ii]]]
+      if(length(dim(qual.geno)) == 3){
+        ## Assuming that info for each allele starting with ref
+        if('al' %in% colnames(gr)){
+          ## If we know which allele to use
+          gr$QUAL = unlist(qual.geno[, GT.idx, gr$al + 1])
+        } else {
+          ## Otherwise assume only one alt
+          gr$QUAL = unlist(qual.geno[, GT.idx, 2])
+        }
+        qual.found = TRUE
+      } else if(length(dim(qual.geno)) == 2){
+        gr$QUAL = unlist(qual.geno[, GT.idx])
+        qual.found = TRUE
+      }
+    } else if(qual.field[qfield.ii] %in% colnames(VariantAnnotation::info(vcf))){
+      gr$QUAL = unlist(VariantAnnotation::info(vcf)[[qual.field[qfield.ii]]])
+      qual.found = TRUE
+    }
+    qfield.ii = qfield.ii + 1
+  }
+
+  ## Remove SNVs and MNVs
   gr = gr[which(gr$type!='SNV' & gr$type!='MNV')]
   return(gr)
 }
