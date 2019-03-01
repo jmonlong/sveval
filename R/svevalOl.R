@@ -6,7 +6,7 @@
 ##' @param min.del.rol minimum reciprocal overlap for deletions. Default is 0.1
 ##' @param ins.seq.comp compare sequence instead of insertion sizes. Default is FALSE.
 ##' @param nb.cores number of processors to use. Default is 1.
-##' @param min.size the minimum SV size to be considered. Default 0.
+##' @param min.size the minimum SV size to be considered. Default 50.
 ##' @param max.size the maximum SV size to be considered. Default is Inf.
 ##' @param bed.regions If non-NULL, a GRanges object or path to a BED file
 ##' (no headers) with regions of interest.
@@ -35,7 +35,7 @@
 ##' }
 svevalOl <- function(calls.gr, truth.gr, max.ins.dist=20, min.cov=.5,
                      min.del.rol=.1, ins.seq.comp=FALSE, nb.cores=1,
-                     min.size=0, max.size=Inf, bed.regions=NULL,
+                     min.size=50, max.size=Inf, bed.regions=NULL,
                      bed.regions.ol=.5, sample.name=NULL, outfile=NULL,
                      out.bed.prefix=NULL, qual.quantiles=seq(0,1,.1),
                      check.inv=FALSE){

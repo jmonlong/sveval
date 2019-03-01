@@ -89,7 +89,7 @@ readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL, qual.field
     gr$type = ifelse(alt.s==ref.s, 'MNV', gr$type)
     gr$type = ifelse(alt.s==1 & ref.s==1, 'SNV', gr$type)
     ## Variants other than clear DEL, INS or SNV. 
-    others = which(alt.s>1 & ref.s>1)
+    others = which(alt.s>10 & ref.s>10)
     if(length(others)>0 & check.inv){
       gr.inv = gr[others]
       ref.seq = gr.inv$REF
