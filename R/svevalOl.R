@@ -45,6 +45,9 @@ svevalOl <- function(calls.gr, truth.gr, max.ins.dist=20, min.cov=.5,
   if(is.character(truth.gr) & length(truth.gr)==1){
     truth.gr = readSVvcf(truth.gr, keep.ins.seq=ins.seq.comp, sample.name=sample.name, check.inv=check.inv)
   }
+  if(length(truth.gr) == 0){
+    stop("Truth set has no SVs.")
+  }
   if(length(calls.gr)>0 & length(truth.gr)>0 & !is.null(bed.regions)){
     if(is.character(bed.regions) & length(bed.regions) == 1){
       bed.regions = utils::read.table(bed.regions, sep='\t', as.is=TRUE)

@@ -69,16 +69,14 @@ test_that("Sequence comparison for insertions", {
 test_that("Empty inputs", {
   calls.gr = readSVvcf('../calls.s0.vcf')
   truth.gr = readSVvcf('../truth.refalt.vcf')
-  ## Empty input
-  res = svevalOl(calls.gr[integer(0)], truth.gr, min.size=20)
+  ## Empty calls
+  res = svevalOl('../empty.vcf', truth.gr, min.size=20)
   res = res$eval
   expect_true(all(is.na(as.matrix(res[,2:5]))))
-  res = svevalOl(calls.gr, truth.gr[integer(0)], min.size=20)
-  res = res$eval
-  expect_true(all(is.na(as.matrix(res[,2:5]))))
+  ## Empty truth set
+  expect_error(svevalOl(calls.gr, '../empty.vcf'), "no SVs")
   ## One type missing
   res = svevalOl(calls.gr[which(calls.gr$type=='DEL')], truth.gr, min.size=20)
   res = res$eval
   expect_true(any(as.matrix(res[,2:5])>0))
 })
-
