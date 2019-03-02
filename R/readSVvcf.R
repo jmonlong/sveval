@@ -121,12 +121,6 @@ readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL, qual.field
     gr$alt.cov = gr$ref.cov = NA
   }
 
-  ## Remove unused columns
-  gr$REF = gr$paramRangeID = gr$FILTER = NULL
-  if(!keep.ins.seq){
-    gr$ALT = NULL
-  }
-
   ## Convert missing qualities to 0
   if(any(is.na(gr$QUAL))){
     gr$QUAL[which(is.na(gr$QUAL))] = 0
@@ -158,6 +152,12 @@ readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL, qual.field
       qual.found = TRUE
     }
     qfield.ii = qfield.ii + 1
+  }
+
+  ## Remove unused columns
+  gr$REF = gr$paramRangeID = gr$FILTER = gr$al = NULL
+  if(!keep.ins.seq){
+    gr$ALT = NULL
   }
 
   ## Remove SNVs and MNVs

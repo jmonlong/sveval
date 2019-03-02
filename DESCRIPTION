@@ -11,6 +11,7 @@ RoxygenNote: 6.1.1
 Imports:
 	VariantAnnotation,
 	GenomicRanges,
+	IRanges,
 	magrittr,
 	dplyr,
 	rlang,
