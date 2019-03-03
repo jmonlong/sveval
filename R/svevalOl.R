@@ -18,6 +18,8 @@
 ##' @param out.bed.prefix prefix for the output BED files. If NULL (default), no BED output.
 ##' @param qual.quantiles the QUAL quantiles for the PR curve. Default is (0, .1, ..., .9, 1).
 ##' @param check.inv should the sequence of MNV be compared to identify inversions. 
+##' @param geno.eval should het/hom be evaluated separately (genotype evaluation). Default
+##' FALSE.
 ##' @return a list with
 ##' \item{eval}{a data.frame with TP, FP and FN for each SV type when including all variants}
 ##' \item{curve}{a data.frame with TP, FP and FN for each SV type when using different quality thesholds}
@@ -38,7 +40,7 @@ svevalOl <- function(calls.gr, truth.gr, max.ins.dist=20, min.cov=.5,
                      min.size=50, max.size=Inf, bed.regions=NULL,
                      bed.regions.ol=.5, sample.name=NULL, outfile=NULL,
                      out.bed.prefix=NULL, qual.quantiles=seq(0,1,.1),
-                     check.inv=FALSE){
+                     check.inv=FALSE, geno.eval=FALSE){
   if(is.character(calls.gr) & length(calls.gr)==1){
     calls.gr = readSVvcf(calls.gr, keep.ins.seq=ins.seq.comp, sample.name=sample.name, check.inv=check.inv)
   }
@@ -56,28 +58,46 @@ svevalOl <- function(calls.gr, truth.gr, max.ins.dist=20, min.cov=.5,
     }
   }
 
-  ## Overlap SVs
-  ol.ins = suppressWarnings(
-    olInsertions(calls.gr, truth.gr, max.ins.gap=max.ins.dist,
-                 ins.seq.comp=ins.seq.comp, nb.cores=nb.cores)
-  )
-  ol.del = suppressWarnings(
-    olRanges(calls.gr, truth.gr, min.rol=min.del.rol, type='DEL')
-  )
-  ol.inv = suppressWarnings(
-    olRanges(calls.gr, truth.gr, min.rol=min.del.rol, type='INV')
-  )
+  ## If not per genotype, set every variant to homozygous
+  if(length(calls.gr)>0 & length(truth.gr)>0 & !geno.eval){
+    truth.gr$GT = 'hom'
+    calls.gr$GT = 'hom'
+  }
+
+  ## Overlap per genotype
+  ol.gt = lapply(unique(c(truth.gr$GT, calls.gr$GT)), function(gt){
+    calls.gr = calls.gr[which(calls.gr$GT == gt)]
+    truth.gr = truth.gr[which(truth.gr$GT == gt)]
+    ## Overlap SVs
+    ol.ins = suppressWarnings(
+      olInsertions(calls.gr, truth.gr, max.ins.gap=max.ins.dist,
+                   ins.seq.comp=ins.seq.comp, nb.cores=nb.cores)
+    )
+    ol.del = suppressWarnings(
+      olRanges(calls.gr, truth.gr, min.rol=min.del.rol, type='DEL')
+    )
+    ol.inv = suppressWarnings(
+      olRanges(calls.gr, truth.gr, min.rol=min.del.rol, type='INV')
+    )
+    return(list(ol.ins=ol.ins, ol.del=ol.del, ol.inv=ol.inv))
+  })
 
   ## Compute coverage and evaluation metrics
   qual.r = unique(c(0, stats::quantile(calls.gr$QUAL, probs=qual.quantiles)))
   eval.curve.df = lapply(qual.r, function(mqual){
-    ins.a = annotateOl(ol.ins, min.qual=mqual)
-    del.a = annotateOl(ol.del, min.qual=mqual)
-    inv.a = annotateOl(ol.inv, min.qual=mqual)
+    ## Insertion annotation for each genotype
+    ins.a.gt = lapply(ol.gt, function(ll) annotateOl(ll$ol.ins, min.qual=mqual))
+    ## Deletion annotation for each genotype
+    del.a.gt = lapply(ol.gt, function(ll) annotateOl(ll$ol.del, min.qual=mqual))
+    ## Inversion annotation for each genotype
+    inv.a.gt = lapply(ol.gt, function(ll) annotateOl(ll$ol.inv, min.qual=mqual))
+
+    ol.l = c(ins.a.gt, del.a.gt, inv.a.gt)
     ol.l = list(
-      calls=c(ins.a$calls, del.a$calls, inv.a$calls),
-      truth=c(ins.a$truth, del.a$truth, inv.a$truth)
+      calls=do.call(c, lapply(ol.l, function(ll) ll$calls)),
+      truth=do.call(c, lapply(ol.l, function(ll) ll$truth))
     )
+
     if(length(ol.l$calls)==0 | length(ol.l$truth)==0){
       eval.df = evalOl(NULL)
     } else {

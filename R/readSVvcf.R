@@ -154,6 +154,11 @@ readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL, qual.field
     qfield.ii = qfield.ii + 1
   }
 
+  ## Group into het/hom
+  het = sapply(1:10, function(ii) paste0(ii, '/', ii))
+  het = c(het, sapply(1:10, function(ii) paste0(ii, '|', ii)))
+  gr$GT = ifelse(gr$GT %in% het, 'het', 'hom')
+
   ## Remove unused columns
   gr$REF = gr$paramRangeID = gr$FILTER = gr$al = NULL
   if(!keep.ins.seq){

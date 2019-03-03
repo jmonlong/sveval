@@ -9,7 +9,7 @@ svevalOl(calls.gr, truth.gr, max.ins.dist = 20, min.cov = 0.5,
   min.size = 50, max.size = Inf, bed.regions = NULL,
   bed.regions.ol = 0.5, sample.name = NULL, outfile = NULL,
   out.bed.prefix = NULL, qual.quantiles = seq(0, 1, 0.1),
-  check.inv = FALSE)
+  check.inv = FALSE, geno.eval = FALSE)
 }
 \arguments{
 \item{calls.gr}{call set. A GRanges or the path to a VCF file.}
@@ -46,6 +46,9 @@ input. If NULL (default), use first sample.}
 \item{qual.quantiles}{the QUAL quantiles for the PR curve. Default is (0, .1, ..., .9, 1).}
 
 \item{check.inv}{should the sequence of MNV be compared to identify inversions.}
+
+\item{geno.eval}{should het/hom be evaluated separately (genotype evaluation). Default
+FALSE.}
 }
 \value{
 a list with
