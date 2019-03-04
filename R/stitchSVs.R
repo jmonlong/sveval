@@ -8,6 +8,9 @@
 ##' @author Jean Monlong
 ##' @keywords internal
 stitchSVs <- function(svs, stitch.dist=20){
+  if(length(unique(svs$type))>1){
+    stop('stitchSVs should be run separately for each type.')
+  }
   ## Overlap against itselfGenomicRanges::
   ol = GenomicRanges::findOverlaps(svs, svs, maxgap=stitch.dist)
   ol = as.data.frame(ol)
@@ -18,6 +21,10 @@ stitchSVs <- function(svs, stitch.dist=20){
   ## Filter overlapping pairs, we want to stitch fragmented calls
   ## and we assume that fragmented pieces don't overlap
   ol = ol[which(ol$d>0),]
+  ## If nothing, return input variants
+  if(nrow(ol)==0){
+    return(svs)
+  }
   ## Select pairs to stitch, nearest to each other first
   ol = ol[order(ol$d),]
   dup = duplicated(as.vector(rbind(ol$queryHits, ol$subjectHits)))

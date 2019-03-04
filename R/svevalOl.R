@@ -20,6 +20,13 @@
 ##' @param check.inv should the sequence of MNV be compared to identify inversions. 
 ##' @param geno.eval should het/hom be evaluated separately (genotype evaluation). Default
 ##' FALSE.
+##' @param stitch.svs should clustered hets be merged before genotype evatuation. Default is
+##' FALSE.
+##' @param stitch.dist the maximum distance to stitch hets during genotype evaluation.
+##' @param merge.hets should similar hets be merged into homs before genotype evaluation.
+##' Default is FALSE>
+##' @param merge.rol the minimum reciprocal overlap to merge hets before genotype
+##' evaluation.
 ##' @return a list with
 ##' \item{eval}{a data.frame with TP, FP and FN for each SV type when including all variants}
 ##' \item{curve}{a data.frame with TP, FP and FN for each SV type when using different quality thesholds}
@@ -40,7 +47,8 @@ svevalOl <- function(calls.gr, truth.gr, max.ins.dist=20, min.cov=.5,
                      min.size=50, max.size=Inf, bed.regions=NULL,
                      bed.regions.ol=.5, sample.name=NULL, outfile=NULL,
                      out.bed.prefix=NULL, qual.quantiles=seq(0,1,.1),
-                     check.inv=FALSE, geno.eval=FALSE){
+                     check.inv=FALSE, geno.eval=FALSE, stitch.svs=FALSE,
+                     stitch.dist=20, merge.hets=FALSE, merge.rol=.9){
   if(is.character(calls.gr) & length(calls.gr)==1){
     calls.gr = readSVvcf(calls.gr, keep.ins.seq=ins.seq.comp, sample.name=sample.name, check.inv=check.inv)
   }
@@ -59,11 +67,50 @@ svevalOl <- function(calls.gr, truth.gr, max.ins.dist=20, min.cov=.5,
   }
 
   ## If not per genotype, set every variant to homozygous
-  if(length(calls.gr)>0 & length(truth.gr)>0 & !geno.eval){
-    truth.gr$GT = 'hom'
-    calls.gr$GT = 'hom'
+  if(length(calls.gr)>0 & length(truth.gr)>0){
+    if(geno.eval){
+      ## Stitch hets SVs
+      if(stitch.svs){
+        calls.gr = lapply(unique(calls.gr$type), function(type){
+          hets.idx = which(calls.gr$type == type & calls.gr$GT == 'het')
+          hets = stitchSVs(calls.gr[hets.idx], stitch.dist=stitch.dist)
+          hom.idx = which(calls.gr$type == type & calls.gr$GT == 'hom')
+          return(c(hets, calls.gr[hom.idx]))
+        })
+        calls.gr = do.call(c, calls.gr)
+        truth.gr = lapply(unique(truth.gr$type), function(type){
+          hets.idx = which(truth.gr$type == type & truth.gr$GT == 'het')
+          hets = stitchSVs(truth.gr[hets.idx], stitch.dist=stitch.dist)
+          hom.idx = which(truth.gr$type == type & truth.gr$GT == 'hom')
+          return(c(hets, truth.gr[hom.idx]))
+        })
+        truth.gr = do.call(c, truth.gr)
+      }
+      ## Merge hets
+      if(merge.hets){
+        calls.gr = lapply(unique(calls.gr$type), function(type){
+          hets.idx = which(calls.gr$type == type & calls.gr$GT == 'het')
+          hets = mergeHets(calls.gr[hets.idx], min.rol=merge.rol,
+                           max.ins.gap=max.ins.dist, ins.seq.comp=ins.seq.comp)
+          hom.idx = which(calls.gr$type == type & calls.gr$GT == 'hom')
+          return(c(hets, calls.gr[hom.idx]))
+        })
+        calls.gr = do.call(c, calls.gr)
+        truth.gr = lapply(unique(truth.gr$type), function(type){
+          hets.idx = which(truth.gr$type == type & truth.gr$GT == 'het')
+          hets = mergeHets(truth.gr[hets.idx], min.rol=merge.rol,
+                           max.ins.gap=max.ins.dist, ins.seq.comp=ins.seq.comp)
+          hom.idx = which(truth.gr$type == type & truth.gr$GT == 'hom')
+          return(c(hets, truth.gr[hom.idx]))
+        })      
+        truth.gr = do.call(c, truth.gr)
+      }
+    } else {
+      truth.gr$GT = 'hom'
+      calls.gr$GT = 'hom'
+    } 
   }
-
+  
   ## Overlap per genotype
   ol.gt = lapply(unique(c(truth.gr$GT, calls.gr$GT)), function(gt){
     calls.gr = calls.gr[which(calls.gr$GT == gt)]

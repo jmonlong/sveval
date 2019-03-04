@@ -9,7 +9,8 @@ svevalOl(calls.gr, truth.gr, max.ins.dist = 20, min.cov = 0.5,
   min.size = 50, max.size = Inf, bed.regions = NULL,
   bed.regions.ol = 0.5, sample.name = NULL, outfile = NULL,
   out.bed.prefix = NULL, qual.quantiles = seq(0, 1, 0.1),
-  check.inv = FALSE, geno.eval = FALSE)
+  check.inv = FALSE, geno.eval = FALSE, stitch.svs = FALSE,
+  stitch.dist = 20, merge.hets = FALSE, merge.rol = 0.9)
 }
 \arguments{
 \item{calls.gr}{call set. A GRanges or the path to a VCF file.}
@@ -49,6 +50,17 @@ input. If NULL (default), use first sample.}
 
 \item{geno.eval}{should het/hom be evaluated separately (genotype evaluation). Default
 FALSE.}
+
+\item{stitch.svs}{should clustered hets be merged before genotype evatuation. Default is
+FALSE.}
+
+\item{stitch.dist}{the maximum distance to stitch hets during genotype evaluation.}
+
+\item{merge.hets}{should similar hets be merged into homs before genotype evaluation.
+Default is FALSE>}
+
+\item{merge.rol}{the minimum reciprocal overlap to merge hets before genotype
+evaluation.}
 }
 \value{
 a list with

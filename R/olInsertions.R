@@ -41,7 +41,7 @@ olInsertions <- function(calls.gr, truth.gr, max.ins.gap=1,
           ## Biostrings::nchar(pas)
           Biostrings::nmatch(pas)
         }, mc.cores=nb.cores)
-        ol.ins$cov = unlist(res)
+        ol.ins$call.cov = ol.ins$truth.cov = unlist(res)
       } else {
         pas = Biostrings::pairwiseAlignment(truth.seq, calls.seq)
         ## ol.ins$cov = Biostrings::nchar(pas)
