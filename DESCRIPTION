@@ -1,6 +1,6 @@
 Package: sveval
 Title: SV evaluation
-Version: 1.1.1
+Version: 1.2.0
 Authors@R: person("Jean", "Monlong", email = "jmonlong@ucsc.edu", role = c("aut", "cre"))
 Description: Evaluate SV in a call set against a truth set using overlap-based approaches and sequence comparison for insertions.
 Depends: R (>= 3.4.4)
@@ -11,6 +11,7 @@ RoxygenNote: 6.1.1
 Imports:
 	VariantAnnotation,
 	GenomicRanges,
+	IRanges,
 	magrittr,
 	dplyr,
 	rlang,

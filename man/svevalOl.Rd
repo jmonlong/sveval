@@ -6,10 +6,12 @@
 \usage{
 svevalOl(calls.gr, truth.gr, max.ins.dist = 20, min.cov = 0.5,
   min.del.rol = 0.1, ins.seq.comp = FALSE, nb.cores = 1,
-  min.size = 0, max.size = Inf, bed.regions = NULL,
-  bed.regions.ol = 0.5, sample.name = NULL, outfile = NULL,
-  out.bed.prefix = NULL, qual.quantiles = seq(0, 1, 0.1),
-  check.inv = FALSE)
+  min.size = 50, max.size = Inf, bed.regions = NULL,
+  bed.regions.ol = 0.5, qual.field = c("QUAL", "GQ"),
+  sample.name = NULL, outfile = NULL, out.bed.prefix = NULL,
+  qual.quantiles = seq(0, 1, 0.1), check.inv = FALSE,
+  geno.eval = FALSE, stitch.hets = FALSE, stitch.dist = 20,
+  merge.hets = FALSE, merge.rol = 0.8)
 }
 \arguments{
 \item{calls.gr}{call set. A GRanges or the path to a VCF file.}
@@ -26,7 +28,7 @@ svevalOl(calls.gr, truth.gr, max.ins.dist = 20, min.cov = 0.5,
 
 \item{nb.cores}{number of processors to use. Default is 1.}
 
-\item{min.size}{the minimum SV size to be considered. Default 0.}
+\item{min.size}{the minimum SV size to be considered. Default 50.}
 
 \item{max.size}{the maximum SV size to be considered. Default is Inf.}
 
@@ -35,6 +37,8 @@ svevalOl(calls.gr, truth.gr, max.ins.dist = 20, min.cov = 0.5,
 
 \item{bed.regions.ol}{minimum proportion of sv.gr that must overlap
 regions.gr. Default is 0.5}
+
+\item{qual.field}{fields to use as quality. Will be tried in order.}
 
 \item{sample.name}{the name of the sample to use if VCF files given as
 input. If NULL (default), use first sample.}
@@ -46,6 +50,20 @@ input. If NULL (default), use first sample.}
 \item{qual.quantiles}{the QUAL quantiles for the PR curve. Default is (0, .1, ..., .9, 1).}
 
 \item{check.inv}{should the sequence of MNV be compared to identify inversions.}
+
+\item{geno.eval}{should het/hom be evaluated separately (genotype evaluation). Default
+FALSE.}
+
+\item{stitch.hets}{should clustered hets be stitched together before genotype evatuation.
+Default is FALSE.}
+
+\item{stitch.dist}{the maximum distance to stitch hets during genotype evaluation.}
+
+\item{merge.hets}{should similar hets be merged into homs before genotype evaluation.
+Default is FALSE.}
+
+\item{merge.rol}{the minimum reciprocal overlap to merge hets before genotype
+evaluation.}
 }
 \value{
 a list with
@@ -64,6 +82,9 @@ eval = svevalOl('calls.vcf', 'truth.vcf')
 calls.gr = readSVvcf('calls.vcf')
 truth.gr = readSVvcf('truth.vcf')
 eval = svevalOl(calls.gr, truth.gr)
+
+## Genotype evaluation
+eval = svevalOl(calls.gr, truth.gr, geno.eval=TRUE, merge.hets=TRUE, stitch.hets=TRUE)
 }
 }
 \author{

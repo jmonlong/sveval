@@ -6,18 +6,28 @@
 ##' @param min.del.rol minimum reciprocal overlap for deletions. Default is 0.1
 ##' @param ins.seq.comp compare sequence instead of insertion sizes. Default is FALSE.
 ##' @param nb.cores number of processors to use. Default is 1.
-##' @param min.size the minimum SV size to be considered. Default 0.
+##' @param min.size the minimum SV size to be considered. Default 50.
 ##' @param max.size the maximum SV size to be considered. Default is Inf.
 ##' @param bed.regions If non-NULL, a GRanges object or path to a BED file
 ##' (no headers) with regions of interest.
 ##' @param bed.regions.ol minimum proportion of sv.gr that must overlap
 ##' regions.gr. Default is 0.5
+##' @param qual.field fields to use as quality. Will be tried in order.
 ##' @param sample.name the name of the sample to use if VCF files given as
 ##' input. If NULL (default), use first sample.
 ##' @param outfile the TSV file to output the results. If NULL (default), returns a data.frame.
 ##' @param out.bed.prefix prefix for the output BED files. If NULL (default), no BED output.
 ##' @param qual.quantiles the QUAL quantiles for the PR curve. Default is (0, .1, ..., .9, 1).
 ##' @param check.inv should the sequence of MNV be compared to identify inversions. 
+##' @param geno.eval should het/hom be evaluated separately (genotype evaluation). Default
+##' FALSE.
+##' @param stitch.hets should clustered hets be stitched together before genotype evatuation.
+##' Default is FALSE.
+##' @param stitch.dist the maximum distance to stitch hets during genotype evaluation.
+##' @param merge.hets should similar hets be merged into homs before genotype evaluation.
+##' Default is FALSE.
+##' @param merge.rol the minimum reciprocal overlap to merge hets before genotype
+##' evaluation.
 ##' @return a list with
 ##' \item{eval}{a data.frame with TP, FP and FN for each SV type when including all variants}
 ##' \item{curve}{a data.frame with TP, FP and FN for each SV type when using different quality thesholds}
@@ -32,18 +42,23 @@
 ##' calls.gr = readSVvcf('calls.vcf')
 ##' truth.gr = readSVvcf('truth.vcf')
 ##' eval = svevalOl(calls.gr, truth.gr)
+##'
+##' ## Genotype evaluation
+##' eval = svevalOl(calls.gr, truth.gr, geno.eval=TRUE, merge.hets=TRUE, stitch.hets=TRUE)
 ##' }
 svevalOl <- function(calls.gr, truth.gr, max.ins.dist=20, min.cov=.5,
                      min.del.rol=.1, ins.seq.comp=FALSE, nb.cores=1,
-                     min.size=0, max.size=Inf, bed.regions=NULL,
-                     bed.regions.ol=.5, sample.name=NULL, outfile=NULL,
+                     min.size=50, max.size=Inf, bed.regions=NULL,
+                     bed.regions.ol=.5, qual.field=c('QUAL', 'GQ'),
+                     sample.name=NULL, outfile=NULL,
                      out.bed.prefix=NULL, qual.quantiles=seq(0,1,.1),
-                     check.inv=FALSE){
+                     check.inv=FALSE, geno.eval=FALSE, stitch.hets=FALSE,
+                     stitch.dist=20, merge.hets=FALSE, merge.rol=.8){
   if(is.character(calls.gr) & length(calls.gr)==1){
-    calls.gr = readSVvcf(calls.gr, keep.ins.seq=ins.seq.comp, sample.name=sample.name, check.inv=check.inv)
+    calls.gr = readSVvcf(calls.gr, keep.ins.seq=ins.seq.comp, qual.field=qual.field, sample.name=sample.name, check.inv=check.inv)
   }
   if(is.character(truth.gr) & length(truth.gr)==1){
-    truth.gr = readSVvcf(truth.gr, keep.ins.seq=ins.seq.comp, sample.name=sample.name, check.inv=check.inv)
+    truth.gr = readSVvcf(truth.gr, keep.ins.seq=ins.seq.comp, qual.field=qual.field, sample.name=sample.name, check.inv=check.inv)
   }
   if(length(truth.gr) == 0){
     stop("Truth set has no SVs.")
@@ -56,28 +71,99 @@ svevalOl <- function(calls.gr, truth.gr, max.ins.dist=20, min.cov=.5,
     }
   }
 
-  ## Overlap SVs
-  ol.ins = suppressWarnings(
-    olInsertions(calls.gr, truth.gr, max.ins.gap=max.ins.dist,
-                 ins.seq.comp=ins.seq.comp, nb.cores=nb.cores)
-  )
-  ol.del = suppressWarnings(
-    olRanges(calls.gr, truth.gr, min.rol=min.del.rol, type='DEL')
-  )
-  ol.inv = suppressWarnings(
-    olRanges(calls.gr, truth.gr, min.rol=min.del.rol, type='INV')
-  )
+  ## If not per genotype, set every variant to homozygous
+  if(length(calls.gr)>0 & length(truth.gr)>0){
+    if(geno.eval){
+      iterStitch <- function(svs.gr, stitch.dist){
+        svs.gr = lapply(unique(svs.gr$type), function(type){
+          svs.t = svs.gr[which(svs.gr$type==type)]
+          nhets = Inf
+          while(length((hets.idx = which(svs.t$GT == 'het'))) < nhets){
+            nhets = length(hets.idx)
+            hets = stitchSVs(svs.t[hets.idx], stitch.dist=stitch.dist)
+            svs.t = c(hets, svs.t[which(svs.t$GT == 'hom')])
+          }
+          return(svs.t)
+        })
+        do.call(c, svs.gr)
+      }
+      iterMerge <- function(svs.gr, min.rol, max.ins.gap, ins.seq.comp){
+        svs.gr = lapply(unique(svs.gr$type), function(type){
+          svs.t = svs.gr[which(svs.gr$type==type)]
+          nhets = Inf
+          while(length((hets.idx = which(svs.t$GT == 'het'))) < nhets){
+            nhets = length(hets.idx)
+            hets = mergeHets(svs.t[hets.idx], min.rol=min.rol,
+                             max.ins.gap=max.ins.gap, ins.seq.comp=ins.seq.comp)
+            svs.t = c(hets, svs.t[which(svs.t$GT == 'hom')])
+          }
+          return(svs.t)
+        })
+        do.call(c, svs.gr)
+      }
+      ## Stitch hets SVs
+      if(stitch.hets){
+        ## Merge hets once first
+        if(merge.hets){
+          calls.gr = iterMerge(calls.gr, min.rol=merge.rol,
+                               max.ins.gap=max.ins.dist,
+                               ins.seq.comp=ins.seq.comp)
+          truth.gr = iterMerge(truth.gr, min.rol=merge.rol,
+                               max.ins.gap=max.ins.dist,
+                               ins.seq.comp=ins.seq.comp)
+        }
+        calls.gr = iterStitch(calls.gr, stitch.dist=stitch.dist)
+        truth.gr = iterStitch(truth.gr, stitch.dist=stitch.dist)
+      }
+      ## Merge hets
+      if(merge.hets){
+        calls.gr = iterMerge(calls.gr, min.rol=merge.rol,
+                             max.ins.gap=max.ins.dist,
+                             ins.seq.comp=ins.seq.comp)
+        truth.gr = iterMerge(truth.gr, min.rol=merge.rol,
+                             max.ins.gap=max.ins.dist,
+                             ins.seq.comp=ins.seq.comp)
+      }
+    } else {
+      truth.gr$GT = 'hom'
+      calls.gr$GT = 'hom'
+    } 
+  }
+  
+  ## Overlap per genotype
+  ol.gt = lapply(unique(c(truth.gr$GT, calls.gr$GT)), function(gt){
+    calls.gr = calls.gr[which(calls.gr$GT == gt)]
+    truth.gr = truth.gr[which(truth.gr$GT == gt)]
+    ## Overlap SVs
+    ol.ins = suppressWarnings(
+      olInsertions(calls.gr, truth.gr, max.ins.gap=max.ins.dist,
+                   ins.seq.comp=ins.seq.comp, nb.cores=nb.cores)
+    )
+    ol.del = suppressWarnings(
+      olRanges(calls.gr, truth.gr, min.rol=min.del.rol, type='DEL')
+    )
+    ol.inv = suppressWarnings(
+      olRanges(calls.gr, truth.gr, min.rol=min.del.rol, type='INV')
+    )
+    return(list(ol.ins=ol.ins, ol.del=ol.del, ol.inv=ol.inv))
+  })
 
   ## Compute coverage and evaluation metrics
   qual.r = unique(c(0, stats::quantile(calls.gr$QUAL, probs=qual.quantiles)))
   eval.curve.df = lapply(qual.r, function(mqual){
-    ins.a = annotateOl(ol.ins, min.qual=mqual)
-    del.a = annotateOl(ol.del, min.qual=mqual)
-    inv.a = annotateOl(ol.inv, min.qual=mqual)
+    ## Insertion annotation for each genotype
+    ins.a.gt = lapply(ol.gt, function(ll) annotateOl(ll$ol.ins, min.qual=mqual))
+    ## Deletion annotation for each genotype
+    del.a.gt = lapply(ol.gt, function(ll) annotateOl(ll$ol.del, min.qual=mqual))
+    ## Inversion annotation for each genotype
+    inv.a.gt = lapply(ol.gt, function(ll) annotateOl(ll$ol.inv, min.qual=mqual))
+
+    ol.l = c(ins.a.gt, del.a.gt, inv.a.gt)
     ol.l = list(
-      calls=c(ins.a$calls, del.a$calls, inv.a$calls),
-      truth=c(ins.a$truth, del.a$truth, inv.a$truth)
+      calls=do.call(c, lapply(ol.l, function(ll) ll$calls)),
+      truth=do.call(c, lapply(ol.l, function(ll) ll$truth))
     )
+
     if(length(ol.l$calls)==0 | length(ol.l$truth)==0){
       eval.df = evalOl(NULL)
     } else {
