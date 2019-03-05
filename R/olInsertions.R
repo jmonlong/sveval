@@ -20,7 +20,7 @@ olInsertions <- function(calls.gr, truth.gr, max.ins.gap=1,
   if(length(calls.ins)>0 & length(truth.ins)>0){
     ## Cluster insertions
     ol.ins = GenomicRanges::findOverlaps(truth.ins, calls.ins,
-                                        maxgap=max.ins.gap)
+                                         maxgap=max.ins.gap)
     ol.ins = as.data.frame(ol.ins)
     if(ins.seq.comp){
       ## Sequence comparison

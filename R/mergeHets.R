@@ -18,6 +18,8 @@ mergeHets <- function(svs, min.rol=.9, max.ins.gap=1, ins.seq.comp=FALSE){
   if(svs$type[1] == 'INS'){
     ol = olInsertions(svs, svs, max.ins.gap=max.ins.gap, ins.seq.comp=ins.seq.comp)
     ol = ol$ol
+    ol$queryHits = ol$truth.idx
+    ol$subjectHits = ol$call.idx
     ol = ol[which(ol$queryHits < ol$subjectHits),]
     rol.call = svs$size[ol$call.idx] / ol$call.cov
     rol.truth = svs$size[ol$truth.idx] / ol$truth.cov
@@ -55,7 +57,7 @@ mergeHets <- function(svs, min.rol=.9, max.ins.gap=1, ins.seq.comp=FALSE){
   chrs = as.character(GenomicRanges::seqnames(svs))[ol$queryHits]
   svs.merged = GenomicRanges::GRanges(chrs, IRanges::IRanges(starts, ends))
   ## Merge columns
-  for(coln in colnames(GenomicRanges::mcols)){
+  for(coln in colnames(GenomicRanges::mcols(svs))){
     if(coln == 'GT'){
       svs.merged$GT = 'hom'
     } else if(coln == 'QUAL'){ # Should we use the average quality ???

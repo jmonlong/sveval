@@ -71,39 +71,42 @@ svevalOl <- function(calls.gr, truth.gr, max.ins.dist=20, min.cov=.5,
     if(geno.eval){
       ## Stitch hets SVs
       if(stitch.svs){
-        calls.gr = lapply(unique(calls.gr$type), function(type){
-          hets.idx = which(calls.gr$type == type & calls.gr$GT == 'het')
-          hets = stitchSVs(calls.gr[hets.idx], stitch.dist=stitch.dist)
-          hom.idx = which(calls.gr$type == type & calls.gr$GT == 'hom')
-          return(c(hets, calls.gr[hom.idx]))
-        })
-        calls.gr = do.call(c, calls.gr)
-        truth.gr = lapply(unique(truth.gr$type), function(type){
-          hets.idx = which(truth.gr$type == type & truth.gr$GT == 'het')
-          hets = stitchSVs(truth.gr[hets.idx], stitch.dist=stitch.dist)
-          hom.idx = which(truth.gr$type == type & truth.gr$GT == 'hom')
-          return(c(hets, truth.gr[hom.idx]))
-        })
-        truth.gr = do.call(c, truth.gr)
+        iterStitch <- function(svs.gr, stitch.dist){
+          svs.gr = lapply(unique(svs.gr$type), function(type){
+            svs.t = svs.gr[which(svs.gr$type==type)]
+            nhets = Inf
+            while(length((hets.idx = which(svs.t$GT == 'het'))) < nhets){
+              nhets = length(hets.idx)
+              hets = stitchSVs(svs.t[hets.idx], stitch.dist=stitch.dist)
+              svs.t = c(hets, svs.t[which(svs.t$GT == 'hom')])
+            }
+            return(svs.t)
+          })
+          do.call(c, svs.gr)
+        }
+        calls.gr = iterStitch(calls.gr, stitch.dist=stitch.dist)
+        truth.gr = iterStitch(truth.gr, stitch.dist=stitch.dist)
       }
       ## Merge hets
       if(merge.hets){
-        calls.gr = lapply(unique(calls.gr$type), function(type){
-          hets.idx = which(calls.gr$type == type & calls.gr$GT == 'het')
-          hets = mergeHets(calls.gr[hets.idx], min.rol=merge.rol,
-                           max.ins.gap=max.ins.dist, ins.seq.comp=ins.seq.comp)
-          hom.idx = which(calls.gr$type == type & calls.gr$GT == 'hom')
-          return(c(hets, calls.gr[hom.idx]))
-        })
-        calls.gr = do.call(c, calls.gr)
-        truth.gr = lapply(unique(truth.gr$type), function(type){
-          hets.idx = which(truth.gr$type == type & truth.gr$GT == 'het')
-          hets = mergeHets(truth.gr[hets.idx], min.rol=merge.rol,
-                           max.ins.gap=max.ins.dist, ins.seq.comp=ins.seq.comp)
-          hom.idx = which(truth.gr$type == type & truth.gr$GT == 'hom')
-          return(c(hets, truth.gr[hom.idx]))
-        })      
-        truth.gr = do.call(c, truth.gr)
+        iterMerge <- function(svs.gr, min.rol, max.ins.gap, ins.seq.comp){
+          svs.gr = lapply(unique(svs.gr$type), function(type){
+            svs.t = svs.gr[which(svs.gr$type==type)]
+            nhets = Inf
+            while(length((hets.idx = which(svs.t$GT == 'het'))) < nhets){
+              nhets = length(hets.idx)
+              hets = mergeHets(svs.t[hets.idx], min.rol=min.rol,
+                               max.ins.gap=max.ins.gap, ins.seq.comp=ins.seq.comp)
+              svs.t = c(hets, svs.t[which(svs.t$GT == 'hom')])
+            }
+            return(svs.t)
+          })
+          do.call(c, svs.gr)
+        }
+        calls.gr = iterMerge(calls.gr, min.rol=merge.rol,
+                             max.ins.gap=max.ins.dist, ins.seq.comp=ins.seq.comp)
+        truth.gr = iterMerge(truth.gr, min.rol=merge.rol,
+                             max.ins.gap=max.ins.dist, ins.seq.comp=ins.seq.comp)
       }
     } else {
       truth.gr$GT = 'hom'

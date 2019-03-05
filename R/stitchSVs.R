@@ -41,7 +41,7 @@ stitchSVs <- function(svs, stitch.dist=20){
   chrs = as.character(GenomicRanges::seqnames(svs))[ol$queryHits]
   svs.stitch = GenomicRanges::GRanges(chrs, IRanges::IRanges(starts, ends))
   ## Merge columns
-  for(coln in colnames(GenomicRanges::mcols)){
+  for(coln in colnames(GenomicRanges::mcols(svs))){
     if(coln == 'GT'){
       svs.stitch$GT = svs$GT[ol$queryHits]
     } else if(coln == 'QUAL'){ # Should we use the average quality ???
