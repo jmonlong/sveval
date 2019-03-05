@@ -48,7 +48,7 @@ svevalOl <- function(calls.gr, truth.gr, max.ins.dist=20, min.cov=.5,
                      bed.regions.ol=.5, sample.name=NULL, outfile=NULL,
                      out.bed.prefix=NULL, qual.quantiles=seq(0,1,.1),
                      check.inv=FALSE, geno.eval=FALSE, stitch.svs=FALSE,
-                     stitch.dist=20, merge.hets=FALSE, merge.rol=.9){
+                     stitch.dist=20, merge.hets=FALSE, merge.rol=.8){
   if(is.character(calls.gr) & length(calls.gr)==1){
     calls.gr = readSVvcf(calls.gr, keep.ins.seq=ins.seq.comp, sample.name=sample.name, check.inv=check.inv)
   }
@@ -69,44 +69,55 @@ svevalOl <- function(calls.gr, truth.gr, max.ins.dist=20, min.cov=.5,
   ## If not per genotype, set every variant to homozygous
   if(length(calls.gr)>0 & length(truth.gr)>0){
     if(geno.eval){
+      iterStitch <- function(svs.gr, stitch.dist){
+        svs.gr = lapply(unique(svs.gr$type), function(type){
+          svs.t = svs.gr[which(svs.gr$type==type)]
+          nhets = Inf
+          while(length((hets.idx = which(svs.t$GT == 'het'))) < nhets){
+            nhets = length(hets.idx)
+            hets = stitchSVs(svs.t[hets.idx], stitch.dist=stitch.dist)
+            svs.t = c(hets, svs.t[which(svs.t$GT == 'hom')])
+          }
+          return(svs.t)
+        })
+        do.call(c, svs.gr)
+      }
+      iterMerge <- function(svs.gr, min.rol, max.ins.gap, ins.seq.comp){
+        svs.gr = lapply(unique(svs.gr$type), function(type){
+          svs.t = svs.gr[which(svs.gr$type==type)]
+          nhets = Inf
+          while(length((hets.idx = which(svs.t$GT == 'het'))) < nhets){
+            nhets = length(hets.idx)
+            hets = mergeHets(svs.t[hets.idx], min.rol=min.rol,
+                             max.ins.gap=max.ins.gap, ins.seq.comp=ins.seq.comp)
+            svs.t = c(hets, svs.t[which(svs.t$GT == 'hom')])
+          }
+          return(svs.t)
+        })
+        do.call(c, svs.gr)
+      }
       ## Stitch hets SVs
       if(stitch.svs){
-        iterStitch <- function(svs.gr, stitch.dist){
-          svs.gr = lapply(unique(svs.gr$type), function(type){
-            svs.t = svs.gr[which(svs.gr$type==type)]
-            nhets = Inf
-            while(length((hets.idx = which(svs.t$GT == 'het'))) < nhets){
-              nhets = length(hets.idx)
-              hets = stitchSVs(svs.t[hets.idx], stitch.dist=stitch.dist)
-              svs.t = c(hets, svs.t[which(svs.t$GT == 'hom')])
-            }
-            return(svs.t)
-          })
-          do.call(c, svs.gr)
+        ## Merge hets once first
+        if(merge.hets){
+          calls.gr = iterMerge(calls.gr, min.rol=merge.rol,
+                               max.ins.gap=max.ins.dist,
+                               ins.seq.comp=ins.seq.comp)
+          truth.gr = iterMerge(truth.gr, min.rol=merge.rol,
+                               max.ins.gap=max.ins.dist,
+                               ins.seq.comp=ins.seq.comp)
         }
         calls.gr = iterStitch(calls.gr, stitch.dist=stitch.dist)
         truth.gr = iterStitch(truth.gr, stitch.dist=stitch.dist)
       }
       ## Merge hets
       if(merge.hets){
-        iterMerge <- function(svs.gr, min.rol, max.ins.gap, ins.seq.comp){
-          svs.gr = lapply(unique(svs.gr$type), function(type){
-            svs.t = svs.gr[which(svs.gr$type==type)]
-            nhets = Inf
-            while(length((hets.idx = which(svs.t$GT == 'het'))) < nhets){
-              nhets = length(hets.idx)
-              hets = mergeHets(svs.t[hets.idx], min.rol=min.rol,
-                               max.ins.gap=max.ins.gap, ins.seq.comp=ins.seq.comp)
-              svs.t = c(hets, svs.t[which(svs.t$GT == 'hom')])
-            }
-            return(svs.t)
-          })
-          do.call(c, svs.gr)
-        }
         calls.gr = iterMerge(calls.gr, min.rol=merge.rol,
-                             max.ins.gap=max.ins.dist, ins.seq.comp=ins.seq.comp)
+                             max.ins.gap=max.ins.dist,
+                             ins.seq.comp=ins.seq.comp)
         truth.gr = iterMerge(truth.gr, min.rol=merge.rol,
-                             max.ins.gap=max.ins.dist, ins.seq.comp=ins.seq.comp)
+                             max.ins.gap=max.ins.dist,
+                             ins.seq.comp=ins.seq.comp)
       }
     } else {
       truth.gr$GT = 'hom'

@@ -10,7 +10,7 @@ svevalOl(calls.gr, truth.gr, max.ins.dist = 20, min.cov = 0.5,
   bed.regions.ol = 0.5, sample.name = NULL, outfile = NULL,
   out.bed.prefix = NULL, qual.quantiles = seq(0, 1, 0.1),
   check.inv = FALSE, geno.eval = FALSE, stitch.svs = FALSE,
-  stitch.dist = 20, merge.hets = FALSE, merge.rol = 0.9)
+  stitch.dist = 20, merge.hets = FALSE, merge.rol = 0.8)
 }
 \arguments{
 \item{calls.gr}{call set. A GRanges or the path to a VCF file.}
