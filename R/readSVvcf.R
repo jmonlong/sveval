@@ -115,7 +115,7 @@ readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL, qual.field
     gr$ref.cov = unlist(lapply(ad.l, '[', 1))
     gr$alt.cov = unlist(lapply(ad.l, '[', 2))
   } else if(all(c('RO', 'AO') %in% rownames(VariantAnnotation::geno(VariantAnnotation::header(vcf))))){
-    gr$ref.cov = VariantAnnotation::geno(vcf)$RO
+    gr$ref.cov = as.numeric(VariantAnnotation::geno(vcf)$RO)
     gr$alt.cov = unlist(lapply(VariantAnnotation::geno(vcf)$AO, '[', 1))
   } else {
     gr$alt.cov = gr$ref.cov = NA
