@@ -12,6 +12,7 @@
 ##' (no headers) with regions of interest.
 ##' @param bed.regions.ol minimum proportion of sv.gr that must overlap
 ##' regions.gr. Default is 0.5
+##' @param qual.field fields to use as quality. Will be tried in order.
 ##' @param sample.name the name of the sample to use if VCF files given as
 ##' input. If NULL (default), use first sample.
 ##' @param outfile the TSV file to output the results. If NULL (default), returns a data.frame.
@@ -20,11 +21,11 @@
 ##' @param check.inv should the sequence of MNV be compared to identify inversions. 
 ##' @param geno.eval should het/hom be evaluated separately (genotype evaluation). Default
 ##' FALSE.
-##' @param stitch.svs should clustered hets be merged before genotype evatuation. Default is
-##' FALSE.
+##' @param stitch.hets should clustered hets be stitched together before genotype evatuation.
+##' Default is FALSE.
 ##' @param stitch.dist the maximum distance to stitch hets during genotype evaluation.
 ##' @param merge.hets should similar hets be merged into homs before genotype evaluation.
-##' Default is FALSE>
+##' Default is FALSE.
 ##' @param merge.rol the minimum reciprocal overlap to merge hets before genotype
 ##' evaluation.
 ##' @return a list with
@@ -41,19 +42,23 @@
 ##' calls.gr = readSVvcf('calls.vcf')
 ##' truth.gr = readSVvcf('truth.vcf')
 ##' eval = svevalOl(calls.gr, truth.gr)
+##'
+##' ## Genotype evaluation
+##' eval = svevalOl(calls.gr, truth.gr, geno.eval=TRUE, merge.hets=TRUE, stitch.hets=TRUE)
 ##' }
 svevalOl <- function(calls.gr, truth.gr, max.ins.dist=20, min.cov=.5,
                      min.del.rol=.1, ins.seq.comp=FALSE, nb.cores=1,
                      min.size=50, max.size=Inf, bed.regions=NULL,
-                     bed.regions.ol=.5, sample.name=NULL, outfile=NULL,
+                     bed.regions.ol=.5, qual.field=c('QUAL', 'GQ'),
+                     sample.name=NULL, outfile=NULL,
                      out.bed.prefix=NULL, qual.quantiles=seq(0,1,.1),
-                     check.inv=FALSE, geno.eval=FALSE, stitch.svs=FALSE,
+                     check.inv=FALSE, geno.eval=FALSE, stitch.hets=FALSE,
                      stitch.dist=20, merge.hets=FALSE, merge.rol=.8){
   if(is.character(calls.gr) & length(calls.gr)==1){
-    calls.gr = readSVvcf(calls.gr, keep.ins.seq=ins.seq.comp, sample.name=sample.name, check.inv=check.inv)
+    calls.gr = readSVvcf(calls.gr, keep.ins.seq=ins.seq.comp, qual.field=qual.field, sample.name=sample.name, check.inv=check.inv)
   }
   if(is.character(truth.gr) & length(truth.gr)==1){
-    truth.gr = readSVvcf(truth.gr, keep.ins.seq=ins.seq.comp, sample.name=sample.name, check.inv=check.inv)
+    truth.gr = readSVvcf(truth.gr, keep.ins.seq=ins.seq.comp, qual.field=qual.field, sample.name=sample.name, check.inv=check.inv)
   }
   if(length(truth.gr) == 0){
     stop("Truth set has no SVs.")
@@ -97,7 +102,7 @@ svevalOl <- function(calls.gr, truth.gr, max.ins.dist=20, min.cov=.5,
         do.call(c, svs.gr)
       }
       ## Stitch hets SVs
-      if(stitch.svs){
+      if(stitch.hets){
         ## Merge hets once first
         if(merge.hets){
           calls.gr = iterMerge(calls.gr, min.rol=merge.rol,
