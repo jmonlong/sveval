@@ -17,7 +17,7 @@
 ##' \dontrun{
 ##' calls.gr = readSVvcf('calls.vcf')
 ##' }
-readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL, qual.field=c('QUAL', 'GQ'), check.inv=FALSE){
+readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL, qual.field=c('GQ', 'QUAL'), check.inv=FALSE){
   vcf = VariantAnnotation::readVcf(vcf.file, row.names=FALSE)
   gr = DelayedArray::rowRanges(vcf)
   ## If sample specified, retrieve appropriate GT
@@ -128,7 +128,7 @@ readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL, qual.field
   ## Extract quality information
   qual.found = FALSE
   qfield.ii = 1
-  while(!qual.found & qfield.ii < length(qual.field) + 1){
+  while(!qual.found & qfield.ii <= length(qual.field)){
     if(qual.field[qfield.ii] == 'QUAL' & any(gr$QUAL>0)){
       qual.found = TRUE
     } else if(qual.field[qfield.ii] %in% names(VariantAnnotation::geno(vcf))){

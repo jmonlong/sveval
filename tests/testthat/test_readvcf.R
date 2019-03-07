@@ -16,3 +16,9 @@ test_that("VCF with no QUAL but GQ field", {
   expect_gt(sum(vcf$QUAL), 0)
 })
 
+test_that("VCF with existing QUAL and another FORMAT field", {
+  vcf = readSVvcf('../calls.s0.vcf')
+  vcf2 = readSVvcf('../calls.s0.vcf', qual.field='DP')
+  expect_true(any(vcf$QUAL != vcf2$QUAL))
+})
+

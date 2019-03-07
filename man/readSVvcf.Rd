@@ -5,7 +5,7 @@
 \title{Read SVs from a VCF file}
 \usage{
 readSVvcf(vcf.file, keep.ins.seq = FALSE, sample.name = NULL,
-  qual.field = c("QUAL", "GQ"), check.inv = FALSE)
+  qual.field = c("GQ", "QUAL"), check.inv = FALSE)
 }
 \arguments{
 \item{vcf.file}{the path to the VCF file}
