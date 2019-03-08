@@ -39,6 +39,11 @@ readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL, qual.field
     vcf = vcf[nonsnv.idx]
   }
 
+  ## Remove "ref" variants
+  nonrefs = which(gr$GT!='0' & gr$GT!='0/0'  & gr$GT!='0|0' & gr$GT!='./.' & gr$GT!='.')
+  gr = gr[nonrefs]
+  vcf = vcf[nonrefs]
+  
   ## If no SVs
   if(length(vcf) == 0){
     gr$REF = gr$paramRangeID = gr$FILTER = NULL
@@ -48,11 +53,6 @@ readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL, qual.field
     return(gr)
   }
 
-  ## Remove "ref" variants
-  nonrefs = which(gr$GT!='0' & gr$GT!='0/0'  & gr$GT!='0|0' & gr$GT!='./.' & gr$GT!='.')
-  gr = gr[nonrefs]
-  vcf = vcf[nonrefs]
-  
   ## Symbolic alleles or ALT/REF ?
   if(all(c('SVTYPE', 'SVLEN', 'END') %in% colnames(VariantAnnotation::info(vcf)))){
       ## Symbolic alleles
