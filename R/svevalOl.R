@@ -17,7 +17,8 @@
 ##' input. If NULL (default), use first sample.
 ##' @param outfile the TSV file to output the results. If NULL (default), returns a data.frame.
 ##' @param out.bed.prefix prefix for the output BED files. If NULL (default), no BED output.
-##' @param qual.quantiles the QUAL quantiles for the PR curve. Default is (0, .1, ..., .9, 1).
+##' @param qual.ths the QUAL thresholds for the PR curve. If NULL, will use quantiles. see \code{qual.quantiles}.
+##' @param qual.quantiles the QUAL quantiles for the PR curve, if qual.ths is NULL. Default is (0, .1, ..., .9, 1).
 ##' @param check.inv should the sequence of MNV be compared to identify inversions. 
 ##' @param geno.eval should het/hom be evaluated separately (genotype evaluation). Default
 ##' FALSE.
@@ -51,7 +52,9 @@ svevalOl <- function(calls.gr, truth.gr, max.ins.dist=20, min.cov=.5,
                      min.size=50, max.size=Inf, bed.regions=NULL,
                      bed.regions.ol=.5, qual.field=c('QUAL', 'GQ'),
                      sample.name=NULL, outfile=NULL,
-                     out.bed.prefix=NULL, qual.quantiles=seq(0,1,.1),
+                     out.bed.prefix=NULL,
+                     qual.ths=c(0, 2, 3, 4, 5, 7, 10, 12, 14, 21, 27, 35, 45, 50, 60, 75, 90, 99, 110, 133, 167, 180, 250, 350, 450, 550, 650),
+                     qual.quantiles=seq(0,1,.1),
                      check.inv=FALSE, geno.eval=FALSE, stitch.hets=FALSE,
                      stitch.dist=20, merge.hets=FALSE, merge.rol=.8){
   if(is.character(calls.gr) & length(calls.gr)==1){
@@ -149,7 +152,11 @@ svevalOl <- function(calls.gr, truth.gr, max.ins.dist=20, min.cov=.5,
   })
 
   ## Compute coverage and evaluation metrics
-  qual.r = unique(c(0, stats::quantile(calls.gr$QUAL, probs=qual.quantiles)))
+  if(!is.null(qual.ths)){
+    qual.r = unique(c(0, qual.ths))
+  } else {
+    qual.r = unique(c(0, stats::quantile(calls.gr$QUAL, probs=qual.quantiles)))
+  }
   eval.curve.df = lapply(qual.r, function(mqual){
     ## Insertion annotation for each genotype
     ins.a.gt = lapply(ol.gt, function(ll) annotateOl(ll$ol.ins, min.qual=mqual))
