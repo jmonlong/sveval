@@ -8,6 +8,9 @@
 ##' @author Jean Monlong
 ##' @keywords internal
 stitchSVs <- function(svs, stitch.dist=20){
+  if(length(svs)==0){
+    return(svs)
+  }
   if(length(unique(svs$type))>1){
     stop('stitchSVs should be run separately for each type.')
   }

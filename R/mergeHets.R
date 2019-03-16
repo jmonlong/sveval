@@ -12,6 +12,9 @@
 ##' @author Jean Monlong
 ##' @keywords internal
 mergeHets <- function(svs, min.rol=.9, max.ins.gap=1, ins.seq.comp=FALSE){
+  if(length(svs)==0){
+    return(svs)
+  }
   if(length(unique(svs$type))>1){
     stop('mergeHets should be run separately for each type.')
   }
