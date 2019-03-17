@@ -10,7 +10,7 @@
 evalOl <- function(ol.l, min.cov=.8, outprefix=NULL){
   if(is.null(ol.l)){
     eval.df = data.frame(type=c('Total', 'DEL', 'INS', 'INV'), stringsAsFactors=FALSE)
-    eval.df$FN = eval.df$FP = eval.df$TP.baseline = eval.df$TP = NA
+    eval.df$F1 = eval.df$recall = eval.df$precision = eval.df$FN = eval.df$FP = eval.df$TP.baseline = eval.df$TP = NA
   } else {
     ## Compute TP and FN from the truth set
     eval.df = GenomicRanges::mcols(ol.l$truth)[,c('type','cov','size')] %>%
