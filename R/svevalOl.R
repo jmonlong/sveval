@@ -32,6 +32,7 @@
 ##' @return a list with
 ##' \item{eval}{a data.frame with TP, FP and FN for each SV type when including all variants}
 ##' \item{curve}{a data.frame with TP, FP and FN for each SV type when using different quality thesholds}
+##' \item{svs}{a list of GRanges object with FP, TP and FN for each SV type (when using QUAL>=0 threshold).}
 ##' @author Jean Monlong
 ##' @export
 ##' @examples
@@ -157,7 +158,7 @@ svevalOl <- function(calls.gr, truth.gr, max.ins.dist=20, min.cov=.5,
   } else {
     qual.r = unique(c(0, stats::quantile(calls.gr$QUAL, probs=qual.quantiles)))
   }
-  eval.curve.df = lapply(qual.r, function(mqual){
+  eval.quals.o = lapply(qual.r, function(mqual){
     ## Insertion annotation for each genotype
     ins.a.gt = lapply(ol.gt, function(ll) annotateOl(ll$ol.ins, min.qual=mqual))
     ## Deletion annotation for each genotype
@@ -172,24 +173,32 @@ svevalOl <- function(calls.gr, truth.gr, max.ins.dist=20, min.cov=.5,
     )
 
     if(length(ol.l$calls)==0 | length(ol.l$truth)==0){
-      eval.df = evalOl(NULL)
+      eval.o = evalOl(NULL)
     } else {
       ol.l$calls = filterSVs(ol.l$calls, regions.gr=bed.regions, ol.prop=bed.regions.ol,
                              min.size=min.size, max.size=max.size)
       ol.l$truth = filterSVs(ol.l$truth, regions.gr=bed.regions, ol.prop=bed.regions.ol,
                              min.size=min.size, max.size=max.size)
-      op = out.bed.prefix
-      if(mqual>0){
-        op=NULL
-      }
-      eval.df = evalOl(ol.l, min.cov=min.cov, outprefix=op)
+      eval.o = evalOl(ol.l, min.cov=min.cov)
     }
-    eval.df$qual = mqual
-    eval.df
+    eval.o$eval$qual = mqual
+    eval.o
   })
-  eval.curve.df = do.call(rbind, eval.curve.df)
+  eval.curve.df = do.call(rbind, lapply(eval.quals.o, function(ll) ll$eval))
   eval.df = eval.curve.df[which(eval.curve.df$qual==0),]
   eval.df$qual = NULL
+  eval0 = eval.quals.o[[1]]
+
+  ## Write BED files with FP, TP, FN
+  if(!is.null(out.bed.prefix)){
+    tmp = lapply(names(eval0$regions), function(svtype){
+      regs = eval0$regions[[svtype]]
+      utils::write.table(as.data.frame(regs$fn), file=paste0(out.bed.prefix, svtype, '-FN.tsv'), sep='\t', row.names=TRUE, quote=FALSE)
+      utils::write.table(as.data.frame(regs$tp.baseline), file=paste0(out.bed.prefix, svtype, '-TP-baseline.tsv'), sep='\t', row.names=TRUE, quote=FALSE)
+      utils::write.table(as.data.frame(regs$fp), file=paste0(out.bed.prefix, svtype, '-FP.tsv'), sep='\t', row.names=TRUE, quote=FALSE)
+      utils::write.table(as.data.frame(regs$tp.calls), file=paste0(out.bed.prefix, svtype, '-TP-call.tsv'), sep='\t', row.names=TRUE, quote=FALSE)
+    })
+  }
 
   ## Write results for PR curve
   if(!is.null(out.bed.prefix)){
@@ -203,6 +212,6 @@ svevalOl <- function(calls.gr, truth.gr, max.ins.dist=20, min.cov=.5,
     utils::write.table(eval.df, file=outfile, sep='\t', row.names=FALSE, quote=FALSE)
     return(outfile)
   } else {
-    return(list(eval=eval.df, curve=eval.curve.df))
+    return(list(eval=eval.df, curve=eval.curve.df, svs=eval0$regions))
   }
 }

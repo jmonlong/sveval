@@ -1,16 +1,16 @@
 ##' @title Compute FP, FN, TP
 ##' @param ol.l list returned by annotation functions like \code{annotateOl}
 ##' @param min.cov the minimum coverage to be considered a match. Default is 0.5
-##' @param outprefix prefix for output files. If NULL (default) no output files.
 ##' @return a data.frame with FP, FN and TP for each SV type.
 ##' @author Jean Monlong
 ##' @importFrom magrittr %>%
 ##' @importFrom rlang .data
 ##' @keywords internal
-evalOl <- function(ol.l, min.cov=.8, outprefix=NULL){
+evalOl <- function(ol.l, min.cov=.8){
   if(is.null(ol.l)){
     eval.df = data.frame(type=c('Total', 'DEL', 'INS', 'INV'), stringsAsFactors=FALSE)
     eval.df$F1 = eval.df$recall = eval.df$precision = eval.df$FN = eval.df$FP = eval.df$TP.baseline = eval.df$TP = NA
+    regs = list()
   } else {
     ## Compute TP and FN from the truth set
     eval.df = GenomicRanges::mcols(ol.l$truth)[,c('type','cov','size')] %>%
@@ -44,27 +44,30 @@ evalOl <- function(ol.l, min.cov=.8, outprefix=NULL){
     ## Reorder rows to version in toil-vg
     eval.df$type = factor(eval.df$type, levels=c('Total', 'INS', 'DEL', 'INV'))
     eval.df = eval.df[order(eval.df$type),]
-  }
-  ## Output files
-  if(!is.null(outprefix)){
-    tmp = lapply(unique(ol.l$truth$type), function(svtype){
+    ## FP, TP and FN
+    types = unique(ol.l$truth$type)
+    regs = lapply(types, function(svtype){
+      regs = list()
       ## Truth
       gr = ol.l$truth[which(ol.l$truth$type == svtype)]
       grr = gr[which(gr$cov / gr$size < min.cov)]
       grr$ALT = NULL
-      utils::write.table(as.data.frame(grr), file=paste0(outprefix, svtype, '-FN.tsv'), sep='\t', row.names=TRUE, quote=FALSE)
+      regs$fn = grr
       grr = gr[which(gr$cov / gr$size >= min.cov)]
       grr$ALT = NULL
-      utils::write.table(as.data.frame(grr), file=paste0(outprefix, svtype, '-TP-baseline.tsv'), sep='\t', row.names=TRUE, quote=FALSE)
+      regs$tp.baseline = grr
       ## Calls
       gr = ol.l$calls[which(ol.l$calls$type == svtype)]
       grr = gr[which(gr$cov / gr$size < min.cov)]
       grr$ALT = NULL
-      utils::write.table(as.data.frame(grr), file=paste0(outprefix, svtype, '-FP.tsv'), sep='\t', row.names=TRUE, quote=FALSE)
+      regs$fp = grr
       gr$ALT = NULL
       grr = gr[which(gr$cov / gr$size >= min.cov)]
-      utils::write.table(as.data.frame(grr), file=paste0(outprefix, svtype, '-TP-call.tsv'), sep='\t', row.names=TRUE, quote=FALSE)
+      regs$tp.calls = grr
+      regs
     })
+    names(regs) = types
   }
-  return(eval.df)
+  return(list(eval=eval.df, regions=regs))
 }
+

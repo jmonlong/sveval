@@ -73,6 +73,7 @@ evaluation.}
 a list with
 \item{eval}{a data.frame with TP, FP and FN for each SV type when including all variants}
 \item{curve}{a data.frame with TP, FP and FN for each SV type when using different quality thesholds}
+\item{svs}{a list of GRanges object with FP, TP and FN for each SV type (when using QUAL>=0 threshold).}
 }
 \description{
 SV evaluation based on overlap and variant size
