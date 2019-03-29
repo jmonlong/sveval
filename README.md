@@ -1,5 +1,7 @@
 # sveval
 
+[![Build Status](https://travis-ci.com/jmonlong/sveval.svg?branch=master)](https://travis-ci.com/jmonlong/sveval)
+
 Functions to compare a SV call sets against a truth set.
 
 ## Installation
