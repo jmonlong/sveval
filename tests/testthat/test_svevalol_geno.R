@@ -18,7 +18,7 @@ test_that("Merge hets", {
 })
 
 test_that("Stitch and merge hets", {
-  res = svevalOl('../calls.s0.vcf', '../truth.refalt.vcf', geno.eval=TRUE, merge.hets=TRUE, stitch.hets=TRUE)
+  res = svevalOl('../calls.s0.vcf', '../truth.refalt.vcf', geno.eval=TRUE, merge.hets=TRUE, stitch.hets=TRUE, ins.seq.comp=TRUE)
   res = res$eval
   expect_gt(nrow(res), 0)
   expect_true(all(res$TP>0))
@@ -46,10 +46,6 @@ test_that("Input with symbolic VCF representation", {
   res = svevalOl('../calls.s0.vcf', '../truth.symb.vcf', geno.eval=TRUE)
   expect_gt(nrow(res$eval), 0)
   expect_true(any(as.matrix(res$eval[,2:5])>0))
-  pdf('temp.pdf')
-  print(plot_prcurve(res$curve))
-  dev.off()
-  expect_true(file.remove('temp.pdf'))
 })
 
 test_that("Filters", {

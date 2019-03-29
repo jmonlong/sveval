@@ -7,19 +7,32 @@ Functions to compare a SV call sets against a truth set.
 
 ## Installation
 
+Install using Bioconductor installer:
+
 ```r
-install.packages('devtools') ## if devtools not already installed
+BiocManager::install('jmonlong/sveval')
+```
+
+Or the "old way":
+
+```r
 source('http://bioconductor.org/biocLite.R')
 biocLite('jmonlong/sveval')
 ```
 
-Or to install locally (e.g. in a HPC)
+You might need to install *devtools* and *BiocManager* first:
+
+```r
+install.packages(c('devtools', 'BiocManager'))
+```
+
+---
+
+To install locally (e.g. in a HPC without root permission), one solution is to specify the path of a library folder in your home.
 
 ```r
 .libPaths('~/R/library/')
-install.packages('devtools') ## if devtools not already installed
-source('http://bioconductor.org/biocLite.R')
-biocLite('jmonlong/sveval')
+## Install as above
 ```
 
 ## Usage
@@ -29,6 +42,7 @@ library(sveval)
 eval.o = svevalOl('calls.vcf', 'truth.vcf')
 eval.o$eval # data.frame with results using all variants
 plot_prcurve(eval.o$curve)
+eval.o$INS$fp # a GRanges object with false-positives insertions
 ```
 
 Outputs a list with a data.frame with TP, FP, TN, precision, recall and F1 for all variants and for each SV type, and a another data.frame with the results using increasing quality thresholds to make a precision-recall curve.

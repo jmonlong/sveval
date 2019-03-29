@@ -5,9 +5,17 @@ test_that("ALT/REF VCF", {
   expect_gt(length(vcf), 0)
 })
 
-test_that("VCF with symbolic SVs", {
+test_that("ALT/REF VCF checking for inversions", {
+  vcf = readSVvcf('../truth.refalt.vcf', check.inv=TRUE)
+  expect_gt(length(vcf), 0)
+})
+
+test_that("VCF with symbolic SVs and different samples", {
   vcf = readSVvcf('../truth.symb.vcf')
   expect_gt(length(vcf), 0)
+  vcf2 = readSVvcf('../truth.symb.vcf', sample.name='s1')
+  expect_gt(length(vcf2), 0)
+  expect_true(length(vcf) != length(vcf2))
 })
 
 test_that("VCF with no QUAL but GQ field", {

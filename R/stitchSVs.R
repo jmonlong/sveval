@@ -51,7 +51,7 @@ stitchSVs <- function(svs, stitch.dist=20){
        svs.stitch$QUAL = (svs$QUAL[ol$queryHits] + svs$QUAL[ol$subjectHits])/2
     } else if(coln == 'ALT'){
       svs.stitch$ALT = Biostrings::DNAStringSet(lapply(1:nrow(ol), function(ii){
-        c(svs$ALT[ol$queryHits[ii]], svs$ALT[ol$subjectHits[ii]])
+        c(svs$ALT[[ol$queryHits[ii]]], svs$ALT[[ol$subjectHits[ii]]])
       }))
     } else if(coln == 'type'){
       svs.stitch$type = svs$type[ol$queryHits]

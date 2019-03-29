@@ -10,6 +10,7 @@
 ##' first sample.
 ##' @param qual.field fields to use as quality. Will be tried in order.
 ##' @param check.inv should the sequence of MNV be compared to identify inversions. 
+##' @param keep.ids keep variant ids? Default is FALSE.
 ##' @return a GRanges object with relevant information.
 ##' @author Jean Monlong
 ##' @export
@@ -17,8 +18,8 @@
 ##' \dontrun{
 ##' calls.gr = readSVvcf('calls.vcf')
 ##' }
-readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL, qual.field=c('GQ', 'QUAL'), check.inv=FALSE){
-  vcf = VariantAnnotation::readVcf(vcf.file, row.names=FALSE)
+readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL, qual.field=c('GQ', 'QUAL'), check.inv=FALSE, keep.ids=FALSE){
+  vcf = VariantAnnotation::readVcf(vcf.file, row.names=keep.ids)
   gr = DelayedArray::rowRanges(vcf)
   ## If sample specified, retrieve appropriate GT
   GT.idx = 1

@@ -18,12 +18,18 @@ test_that("Output BED files etc", {
   file.remove(list.files('.', 'tempfortest'))
 })
 
-test_that("Input with symbolic VCF representation", {
+test_that("Input with symbolic VCF representation and pr graphs", {
   res = svevalOl('../calls.s0.vcf', '../truth.symb.vcf')
   expect_gt(nrow(res$eval), 0)
   expect_true(any(as.matrix(res$eval[,2:5])>0))
   pdf('temp.pdf')
-  print(plot_prcurve(res$curve))
+  ggp.l = plot_prcurve(res$curve)
+  tmp = lapply(ggp.l, print)
+  dev.off()
+  expect_true(file.remove('temp.pdf'))
+  pdf('temp.pdf')
+  ggp.l = plot_prcurve(list(a=res$curve, b=res$curve))
+  tmp = lapply(ggp.l, print)
   dev.off()
   expect_true(file.remove('temp.pdf'))
 })
@@ -59,6 +65,20 @@ test_that("Sequence comparison for insertions", {
   calls.gr = calls.gr[c(ins.idx, del.idx)]
   ## Run evaluation
   res = svevalOl(calls.gr, '../truth.refalt.vcf', min.size=20, ins.seq.comp=TRUE)
+  res = res$eval
+  expect_gt(nrow(res), 0)
+  expect_true(any(as.matrix(res[1:3,2:5])>0))
+  expect_true(all(res$TP.baseline[1:3]>0))
+})
+
+test_that("Sequence comparison for insertions (multicore)", {
+  calls.gr = readSVvcf('../calls.s0.vcf', keep.ins.seq=TRUE)
+  ## Subset insertions to speed up the test
+  ins.idx = sample(which(calls.gr$type=='INS'), 10)
+  del.idx = which(calls.gr$type=='DEL')
+  calls.gr = calls.gr[c(ins.idx, del.idx)]
+  ## Run evaluation
+  res = svevalOl(calls.gr, '../truth.refalt.vcf', min.size=20, ins.seq.comp=TRUE, nb.cores=2)
   res = res$eval
   expect_gt(nrow(res), 0)
   expect_true(any(as.matrix(res[1:3,2:5])>0))
