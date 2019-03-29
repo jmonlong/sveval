@@ -1,6 +1,7 @@
 # sveval
 
 [![Build Status](https://travis-ci.com/jmonlong/sveval.svg?branch=master)](https://travis-ci.com/jmonlong/sveval)
+[![codecov](https://codecov.io/gh/jmonlong/sveval/branch/master/graph/badge.svg)](https://codecov.io/gh/jmonlong/sveval)
 
 Functions to compare a SV call sets against a truth set.
 
