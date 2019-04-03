@@ -11,6 +11,7 @@
 ##' @param qual.field fields to use as quality. Will be tried in order.
 ##' @param check.inv should the sequence of MNV be compared to identify inversions. 
 ##' @param keep.ids keep variant ids? Default is FALSE.
+##' @param nocalls if TRUE returns no-calls only (genotype ./.). Default FALSE.
 ##' @return a GRanges object with relevant information.
 ##' @author Jean Monlong
 ##' @export
@@ -18,7 +19,9 @@
 ##' \dontrun{
 ##' calls.gr = readSVvcf('calls.vcf')
 ##' }
-readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL, qual.field=c('GQ', 'QUAL'), check.inv=FALSE, keep.ids=FALSE){
+readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL,
+                      qual.field=c('GQ', 'QUAL'), check.inv=FALSE,
+                      keep.ids=FALSE, nocalls=FALSE){
   vcf = VariantAnnotation::readVcf(vcf.file, row.names=keep.ids)
   gr = DelayedArray::rowRanges(vcf)
   ## If sample specified, retrieve appropriate GT
@@ -40,10 +43,16 @@ readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL, qual.field
     vcf = vcf[nonsnv.idx]
   }
 
-  ## Remove "ref" variants
-  nonrefs = which(gr$GT!='0' & gr$GT!='0/0'  & gr$GT!='0|0' & gr$GT!='./.' & gr$GT!='.')
-  gr = gr[nonrefs]
-  vcf = vcf[nonrefs]
+  ## Remove "ref" variants or keep only no-calls variants
+  if(nocalls){
+    noc = which(gr$GT=='./.' | gr$GT=='.')
+    gr = gr[noc]
+    vcf = vcf[noc]
+  } else {
+    nonrefs = which(gr$GT!='0' & gr$GT!='0/0'  & gr$GT!='0|0' & gr$GT!='./.' & gr$GT!='.')
+    gr = gr[nonrefs]
+    vcf = vcf[nonrefs]
+  }
   
   ## If no SVs
   if(length(vcf) == 0){
@@ -89,17 +98,25 @@ readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL, qual.field
                      GenomicRanges::width(gr))
   } else {
     ## ALT/REF
-    ## Split non-ref alleles
-    gt.s = strsplit(gr$GT, '[/\\|]')
-    gt.s = lapply(gt.s, unique)
-    idx = rep(1:length(gt.s), unlist(lapply(gt.s, length)))
-    als = unlist(gt.s)
-    nonref = which(als!='0' & als!='.')
-    idx = idx[nonref]
-    als = as.numeric(als[nonref])
-    gr = gr[idx]
-    gr$al = als
-    vcf = vcf[idx]
+    if(nocalls){
+      ## For no-calls we just split the multi-allelic variants
+      idx = rep(1:length(gr), unlist(lapply(gr$ALT, length)))
+      als = unlist(lapply(gr$ALT, function(x) 1:length(x)))
+      gr = gr[idx]
+      vcf = vcf[idx]
+    } else {
+      ## Split and keep non-ref alleles
+      gt.s = strsplit(gr$GT, '[/\\|]')
+      gt.s = lapply(gt.s, unique)
+      idx = rep(1:length(gt.s), unlist(lapply(gt.s, length)))
+      als = unlist(gt.s)
+      keep = which(als!='0' & als!='.')
+      idx = idx[keep]
+      als = as.numeric(als[keep])
+      gr = gr[idx]
+      gr$al = als # save allele for quality extraction below
+      vcf = vcf[idx]
+    }
     ## Get allele sequence
     gr$ALT = Biostrings::DNAStringSet(lapply(1:length(gr), function(ii) unlist(gr$ALT[[ii]][als[ii]])))
     ## Right-trim REF/ALT
@@ -129,7 +146,7 @@ readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL, qual.field
       isinv = checkInvSeq(gr.inv$REF, gr.inv$ALT)
       gr$type[others] = ifelse(isinv, 'INV', gr$type[others])      
     }    
-    gr$size = ifelse(gr$type=='INS', alt.s, GenomicRanges::width(gr))
+    gr$size = ifelse(gr$type=='INS', alt.s - 1, GenomicRanges::width(gr))
   }
 
   ## read support if available
@@ -177,11 +194,13 @@ readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL, qual.field
     qfield.ii = qfield.ii + 1
   }
 
-  ## Group into het/hom
-  homs = sapply(1:10, function(ii) paste0(ii, '/', ii))
-  homs = c(homs, sapply(1:10, function(ii) paste0(ii, '|', ii)))
-  gr$GT = ifelse(gr$GT %in% homs, 'hom', 'het')
-
+  if(!nocalls){
+    ## Group into het/hom
+    homs = sapply(1:10, function(ii) paste0(ii, '/', ii))
+    homs = c(homs, sapply(1:10, function(ii) paste0(ii, '|', ii)))
+    gr$GT = ifelse(gr$GT %in% homs, 'hom', 'het')
+  }
+  
   ## Remove unused columns
   gr$REF = gr$paramRangeID = gr$FILTER = gr$al = NULL
   if(!keep.ins.seq){

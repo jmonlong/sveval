@@ -5,7 +5,8 @@
 \title{Read SVs from a VCF file}
 \usage{
 readSVvcf(vcf.file, keep.ins.seq = FALSE, sample.name = NULL,
-  qual.field = c("GQ", "QUAL"), check.inv = FALSE, keep.ids = FALSE)
+  qual.field = c("GQ", "QUAL"), check.inv = FALSE, keep.ids = FALSE,
+  nocalls = FALSE)
 }
 \arguments{
 \item{vcf.file}{the path to the VCF file}
@@ -20,6 +21,8 @@ first sample.}
 \item{check.inv}{should the sequence of MNV be compared to identify inversions.}
 
 \item{keep.ids}{keep variant ids? Default is FALSE.}
+
+\item{nocalls}{if TRUE returns no-calls only (genotype ./.). Default FALSE.}
 }
 \value{
 a GRanges object with relevant information.
