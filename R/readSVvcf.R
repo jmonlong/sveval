@@ -161,15 +161,11 @@ readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL,
     gr$alt.cov = gr$ref.cov = NA
   }
 
-  ## Convert missing qualities to 0
-  if(any(is.na(gr$QUAL))){
-    gr$QUAL[which(is.na(gr$QUAL))] = 0
-  }
   ## Extract quality information
   qual.found = FALSE
   qfield.ii = 1
   while(!qual.found & qfield.ii <= length(qual.field)){
-    if(qual.field[qfield.ii] == 'QUAL' & any(gr$QUAL>0)){
+    if(qual.field[qfield.ii] == 'QUAL' & any(!is.na(gr$QUAL))){
       qual.found = TRUE
     } else if(qual.field[qfield.ii] %in% names(VariantAnnotation::geno(vcf))){
       qual.geno = VariantAnnotation::geno(vcf)[[qual.field[qfield.ii]]]
@@ -192,6 +188,10 @@ readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL,
       qual.found = TRUE
     }
     qfield.ii = qfield.ii + 1
+  }
+  ## Convert missing qualities to 0
+  if(any(is.na(gr$QUAL))){
+    gr$QUAL[which(is.na(gr$QUAL))] = 0
   }
 
   if(!nocalls){
