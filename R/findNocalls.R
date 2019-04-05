@@ -28,6 +28,9 @@ findNocalls <- function(calls.gr, truth.gr, max.ins.dist=20, min.cov=.5,
                          check.inv=check.inv, nocalls=TRUE)
   }
   calls.gr = calls.gr[which(calls.gr$GT == './.' | calls.gr$GT == '.')]
+  if(length(calls.gr) == 0){
+    return(data.frame())
+  }
   ## Truth set
   if(is.character(truth.gr) & length(truth.gr)==1){
     truth.gr = readSVvcf(truth.gr, keep.ins.seq=ins.seq.comp,
@@ -37,7 +40,7 @@ findNocalls <- function(calls.gr, truth.gr, max.ins.dist=20, min.cov=.5,
   if(length(truth.gr) == 0){
     stop("Truth set has no SVs.")
   }
-
+  
   ## Overlap no-calls with truth set
   ol.ins = suppressWarnings(
     olInsertions(calls.gr, truth.gr, max.ins.gap=max.ins.dist,
