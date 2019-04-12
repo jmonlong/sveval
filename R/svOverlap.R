@@ -40,12 +40,12 @@ svOverlap <- function(query, subject, max.ins.dist=20, min.cov=.5,
   inv.a = annotateOl(ol.inv)
 
   ## Merge annotated calls/truth sets
-  ol.l = c(ins.a, del.a, inv.a)
+  ol.l = list(ins.a, del.a, inv.a)
   calls=do.call(c, lapply(ol.l, function(ll) ll$calls))
   truth=do.call(c, lapply(ol.l, function(ll) ll$truth))
 
   calls$cov.prop = calls$cov / calls$size
-  truth$cov.prop = truth$cov / calls$size
+  truth$cov.prop = truth$cov / truth$size
 
   return(list(query=truth, subject=calls))
 }
