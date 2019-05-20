@@ -67,7 +67,7 @@ findNocalls <- function(calls.gr, truth.gr, max.ins.dist=20, min.cov=.5,
   eval.o = evalOl(ol.l, min.cov=min.cov)
   nocalls.df = lapply(names(eval.o$regions), function(svtype){
     regs = eval.o$regions[[svtype]]
-    tps = regs$tp.baseline
+    tps = regs$TP.baseline
     tps = GenomicRanges::resize(tps, fix='center',
                                 width=GenomicRanges::width(tps) + 2*max.ins.dist)
     tps$varid = names(tps)

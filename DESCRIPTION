@@ -19,4 +19,5 @@ Imports:
 	Biostrings,
 	parallel,
 	testthat,
+	tidyr,
 	ggplot2

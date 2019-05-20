@@ -52,18 +52,18 @@ evalOl <- function(ol.l, min.cov=.8){
       gr = ol.l$truth[which(ol.l$truth$type == svtype)]
       grr = gr[which(gr$cov / gr$size < min.cov)]
       grr$ALT = NULL
-      regs$fn = grr
+      regs$FN = grr
       grr = gr[which(gr$cov / gr$size >= min.cov)]
       grr$ALT = NULL
-      regs$tp.baseline = grr
+      regs$TP.baseline = grr
       ## Calls
       gr = ol.l$calls[which(ol.l$calls$type == svtype)]
       grr = gr[which(gr$cov / gr$size < min.cov)]
       grr$ALT = NULL
-      regs$fp = grr
+      regs$FP = grr
       gr$ALT = NULL
       grr = gr[which(gr$cov / gr$size >= min.cov)]
-      regs$tp.calls = grr
+      regs$TP = grr
       regs
     })
     names(regs) = types

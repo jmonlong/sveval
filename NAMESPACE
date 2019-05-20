@@ -2,6 +2,7 @@
 
 export(filterSVs)
 export(findNocalls)
+export(plot_persize)
 export(plot_prcurve)
 export(readSVvcf)
 export(svOverlap)
