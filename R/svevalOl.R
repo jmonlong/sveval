@@ -187,8 +187,6 @@ svevalOl <- function(calls.gr, truth.gr, max.ins.dist=20, min.cov=.5,
   eval.curve.df = do.call(rbind, lapply(eval.quals.o, function(ll) ll$eval))
   eval.df = eval.curve.df[which(eval.curve.df$qual==0),]
   eval.df$qual = NULL
-  ## results without any wuality filtering
-  eval0 = eval.quals.o[[1]]
   ## results with best F1 score
   f1s = sapply(eval.quals.o, function(ll) ll$eval$F1[which(ll$eval$type=='Total')])
   bestf1 = utils::head(order(f1s, decreasing=TRUE), 1)
@@ -196,8 +194,8 @@ svevalOl <- function(calls.gr, truth.gr, max.ins.dist=20, min.cov=.5,
 
   ## Write BED files with FP, TP, FN
   if(!is.null(out.bed.prefix)){
-    tmp = lapply(names(eval0$regions), function(svtype){
-      regs = eval0$regions[[svtype]]
+    tmp = lapply(names(eval.bestf1$regions), function(svtype){
+      regs = eval.bestf1$regions[[svtype]]
       utils::write.table(as.data.frame(regs$FN), file=paste0(out.bed.prefix, svtype, '-FN.tsv'), sep='\t', row.names=TRUE, quote=FALSE)
       utils::write.table(as.data.frame(regs$TP.baseline), file=paste0(out.bed.prefix, svtype, '-TP-baseline.tsv'), sep='\t', row.names=TRUE, quote=FALSE)
       utils::write.table(as.data.frame(regs$FP), file=paste0(out.bed.prefix, svtype, '-FP.tsv'), sep='\t', row.names=TRUE, quote=FALSE)
@@ -216,5 +214,5 @@ svevalOl <- function(calls.gr, truth.gr, max.ins.dist=20, min.cov=.5,
   if(!is.null(outfile)){
     utils::write.table(eval.df, file=outfile, sep='\t', row.names=FALSE, quote=FALSE)
   }
-  return(list(eval=eval.df, curve=eval.curve.df, svs=eval0$regions, svs.bestf1=eval.bestf1$regions))
+  return(list(eval=eval.df, curve=eval.curve.df, svs=eval.bestf1$regions))
 }

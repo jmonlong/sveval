@@ -10,8 +10,8 @@
 ##' @importFrom rlang .data
 ##' @export
 plot_persize <- function(eval, size.breaks=c(50,100,500,1e3,1e4,Inf), plot=TRUE){
-  svs = eval$svs.bestf1
-  size.levels = levels(cut(size.breaks, breaks=size.breaks))
+  svs = eval$svs
+  size.levels = levels(cut(size.breaks, breaks=size.breaks, include.lowest=TRUE))
   
   ## For each SV type
   eval.df = lapply(names(svs), function(svtype){
@@ -22,12 +22,13 @@ plot_persize <- function(eval, size.breaks=c(50,100,500,1e3,1e4,Inf), plot=TRUE)
       svs = svs[[metric]]
       if(length(svs) == 0) return(data.frame(type=svtype, metric=metric, size=size.levels,
                                              n=0, stringsAsFactors=FALSE))
-      svs$size.class = cut(svs$size, breaks=size.breaks)
+      svs$size.class = cut(svs$size, breaks=size.breaks, include.lowest=TRUE)
       
       ## For each size class
       df = lapply(size.levels, function(sl){
         data.frame(type=svtype, metric=metric, size=sl,
-                   n=sum(as.character(svs$size.class) == sl), stringsAsFactors=FALSE)
+                   n=sum(as.character(svs$size.class) == sl, na.rm=TRUE),
+                   stringsAsFactors=FALSE)
       })
       do.call(rbind, df)
 

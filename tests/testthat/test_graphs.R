@@ -1,16 +1,14 @@
 context('Graphs')
 
-res = svevalOl('../calls.s0.vcf', '../truth.symb.vcf')
+res = svevalOl('../calls.s0.vcf', '../truth.refalt.vcf')
 
 test_that("PR graphs", {
   pdf('temp.pdf')
   ggp.l = plot_prcurve(res$curve)
-  expect_warning({tmp = lapply(ggp.l, print)}, 'Removed')
   dev.off()
   expect_true(file.remove('temp.pdf'))
   pdf('temp.pdf')
   ggp.l = plot_prcurve(list(a=res$curve, b=res$curve))
-  expect_warning({tmp = lapply(ggp.l, print)}, 'Removed')
   dev.off()
   expect_true(file.remove('temp.pdf'))
 })
