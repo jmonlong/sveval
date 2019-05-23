@@ -34,13 +34,7 @@ evalOl <- function(ol.l, min.cov=.8){
       dplyr::group_by(.data$type) %>%
       dplyr::summarize_all(sum) %>% rbind(eval.df)
     ## Precision, recall and F1
-    eval.df$precision = eval.df$TP / (eval.df$TP + eval.df$FP)
-    eval.df$precision = round(eval.df$precision, 4)
-    eval.df$recall = eval.df$TP.baseline / (eval.df$TP.baseline + eval.df$FN)
-    eval.df$recall = round(eval.df$recall, 4)
-    eval.df$F1 = 2 * eval.df$precision * eval.df$recall /
-      (eval.df$precision + eval.df$recall)
-    eval.df$F1 = round(eval.df$F1, 4)
+    eval.df = prf(eval.df)
     ## Reorder rows to version in toil-vg
     eval.df$type = factor(eval.df$type, levels=c('Total', 'INS', 'DEL', 'INV'))
     eval.df = eval.df[order(eval.df$type),]

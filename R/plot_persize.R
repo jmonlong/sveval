@@ -42,13 +42,7 @@ plot_persize <- function(eval, size.breaks=c(50,100,500,1e3,1e4,Inf), plot=TRUE)
   eval.df = tidyr::spread(eval.df, 'metric', 'n', fill=0)
   
   ## Precision, recall and F1
-  eval.df$precision = eval.df$TP / (eval.df$TP + eval.df$FP)
-  eval.df$precision = round(eval.df$precision, 4)
-  eval.df$recall = eval.df$TP.baseline / (eval.df$TP.baseline + eval.df$FN)
-  eval.df$recall = round(eval.df$recall, 4)
-  eval.df$F1 = 2 * eval.df$precision * eval.df$recall /
-    (eval.df$precision + eval.df$recall)
-  eval.df$F1 = round(eval.df$F1, 4)
+  eval.df = prf(eval.df)
 
   if(plot){
     ggp.l = list()
