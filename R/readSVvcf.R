@@ -12,6 +12,8 @@
 ##' @param check.inv should the sequence of MNV be compared to identify inversions. 
 ##' @param keep.ids keep variant ids? Default is FALSE.
 ##' @param nocalls if TRUE returns no-calls only (genotype ./.). Default FALSE.
+##' @param right.trim if TRUE (default) the REF/ALT sequences are right-trimmed
+##' after splitting up multi-ALT variants.
 ##' @return a GRanges object with relevant information.
 ##' @author Jean Monlong
 ##' @export
@@ -21,7 +23,7 @@
 ##' }
 readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL,
                       qual.field=c('GQ', 'QUAL'), check.inv=FALSE,
-                      keep.ids=FALSE, nocalls=FALSE){
+                      keep.ids=FALSE, nocalls=FALSE, right.trim=TRUE){
   vcf = VariantAnnotation::readVcf(vcf.file, row.names=keep.ids)
   gr = DelayedArray::rowRanges(vcf)
   ## If sample specified, retrieve appropriate GT
@@ -118,19 +120,28 @@ readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL,
       vcf = vcf[idx]
     }
     ## Get allele sequence
-    gr$ALT = Biostrings::DNAStringSet(lapply(1:length(gr), function(ii) unlist(gr$ALT[[ii]][als[ii]])))
+    alts.seq = rep(NA, length(gr))
+    one.alt.idx = which(unlist(lapply(Biostrings::nchar(gr$ALT), length))==1)
+    alts.seq[one.alt.idx] = unlist(gr$ALT[one.alt.idx])
+    more.alt.idx = which(unlist(lapply(Biostrings::nchar(gr$ALT), length))>1)
+    alts.seq[more.alt.idx] = unlist(lapply(more.alt.idx, function(ii) as.character(unlist(gr$ALT[[ii]][als[ii]]))))
+    gr$ALT = Biostrings::DNAStringSet(alts.seq)
     ## Right-trim REF/ALT
-    trim.size = estTrimSize(gr$REF, gr$ALT)
-    idx.trim = which(trim.size>0)
-    if(length(idx.trim)>0){
-      gr$REF[idx.trim] = Biostrings::DNAStringSet(lapply(idx.trim, function(ii) {
-        trim.end = Biostrings::nchar(gr$REF[[ii]]) - trim.size[ii]
-        gr$REF[[ii]][1:trim.end]
-      }))
-      gr$ALT[idx.trim] = Biostrings::DNAStringSet(lapply(idx.trim, function(ii) {
-        trim.end = Biostrings::nchar(gr$ALT[[ii]]) - trim.size[ii]
-        gr$ALT[[ii]][1:trim.end]
-      }))
+    if(right.trim){
+      trim.size = estTrimSize(gr$REF, gr$ALT)
+      idx.trim = which(trim.size>0)
+      if(length(idx.trim)>0){
+        gr$REF[idx.trim] = Biostrings::DNAStringSet(lapply(idx.trim, function(ii)
+        {
+          trim.end = Biostrings::nchar(gr$REF[[ii]]) - trim.size[ii]
+          gr$REF[[ii]][1:trim.end]
+        }))
+        gr$ALT[idx.trim] = Biostrings::DNAStringSet(lapply(idx.trim, function(ii)
+        {
+          trim.end = Biostrings::nchar(gr$ALT[[ii]]) - trim.size[ii]
+          gr$ALT[[ii]][1:trim.end]
+        }))
+      }
     }
     ## Compare ALT/REF size to define SV type
     alt.s = Biostrings::nchar(gr$ALT)

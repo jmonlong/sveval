@@ -6,7 +6,7 @@
 \usage{
 readSVvcf(vcf.file, keep.ins.seq = FALSE, sample.name = NULL,
   qual.field = c("GQ", "QUAL"), check.inv = FALSE, keep.ids = FALSE,
-  nocalls = FALSE)
+  nocalls = FALSE, right.trim = TRUE)
 }
 \arguments{
 \item{vcf.file}{the path to the VCF file}
@@ -23,6 +23,9 @@ first sample.}
 \item{keep.ids}{keep variant ids? Default is FALSE.}
 
 \item{nocalls}{if TRUE returns no-calls only (genotype ./.). Default FALSE.}
+
+\item{right.trim}{if TRUE (default) the REF/ALT sequences are right-trimmed
+after splitting up multi-ALT variants.}
 }
 \value{
 a GRanges object with relevant information.
