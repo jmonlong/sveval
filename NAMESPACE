@@ -2,6 +2,7 @@
 
 export(filterSVs)
 export(findNocalls)
+export(ivg_sv)
 export(plot_prcurve)
 export(readSVvcf)
 export(svOverlap)
