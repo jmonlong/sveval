@@ -34,13 +34,7 @@ evalOl <- function(ol.l, min.cov=.8){
       dplyr::group_by(.data$type) %>%
       dplyr::summarize_all(sum) %>% rbind(eval.df)
     ## Precision, recall and F1
-    eval.df$precision = eval.df$TP / (eval.df$TP + eval.df$FP)
-    eval.df$precision = round(eval.df$precision, 4)
-    eval.df$recall = eval.df$TP.baseline / (eval.df$TP.baseline + eval.df$FN)
-    eval.df$recall = round(eval.df$recall, 4)
-    eval.df$F1 = 2 * eval.df$precision * eval.df$recall /
-      (eval.df$precision + eval.df$recall)
-    eval.df$F1 = round(eval.df$F1, 4)
+    eval.df = prf(eval.df)
     ## Reorder rows to version in toil-vg
     eval.df$type = factor(eval.df$type, levels=c('Total', 'INS', 'DEL', 'INV'))
     eval.df = eval.df[order(eval.df$type),]
@@ -52,18 +46,18 @@ evalOl <- function(ol.l, min.cov=.8){
       gr = ol.l$truth[which(ol.l$truth$type == svtype)]
       grr = gr[which(gr$cov / gr$size < min.cov)]
       grr$ALT = NULL
-      regs$fn = grr
+      regs$FN = grr
       grr = gr[which(gr$cov / gr$size >= min.cov)]
       grr$ALT = NULL
-      regs$tp.baseline = grr
+      regs$TP.baseline = grr
       ## Calls
       gr = ol.l$calls[which(ol.l$calls$type == svtype)]
       grr = gr[which(gr$cov / gr$size < min.cov)]
       grr$ALT = NULL
-      regs$fp = grr
+      regs$FP = grr
       gr$ALT = NULL
       grr = gr[which(gr$cov / gr$size >= min.cov)]
-      regs$tp.calls = grr
+      regs$TP = grr
       regs
     })
     names(regs) = types

@@ -19,6 +19,7 @@ Imports:
 	Biostrings,
 	parallel,
 	testthat,
+	tidyr,
 	ggplot2,
 	shiny,
 	DiagrammeR,

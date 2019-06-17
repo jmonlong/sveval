@@ -18,20 +18,10 @@ test_that("Output BED files etc", {
   file.remove(list.files('.', 'tempfortest'))
 })
 
-test_that("Input with symbolic VCF representation and pr graphs", {
+test_that("Input with symbolic VCF representation", {
   res = svevalOl('../calls.s0.vcf', '../truth.symb.vcf')
   expect_gt(nrow(res$eval), 0)
   expect_true(any(as.matrix(res$eval[,2:5])>0))
-  pdf('temp.pdf')
-  ggp.l = plot_prcurve(res$curve)
-  tmp = lapply(ggp.l, print)
-  dev.off()
-  expect_true(file.remove('temp.pdf'))
-  pdf('temp.pdf')
-  ggp.l = plot_prcurve(list(a=res$curve, b=res$curve))
-  tmp = lapply(ggp.l, print)
-  dev.off()
-  expect_true(file.remove('temp.pdf'))
 })
 
 test_that("Filters", {
