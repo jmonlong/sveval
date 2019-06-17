@@ -20,4 +20,7 @@ Imports:
 	parallel,
 	testthat,
 	tidyr,
-	ggplot2
+	ggplot2,
+	shiny,
+	DiagrammeR,
+	DT
