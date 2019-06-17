@@ -111,4 +111,4 @@ A docker image of R with this package installed is available [here](https://hub.
 
 Using the `ivg_sv` function and a *xg* graph ([vg](https://github.com/vgteam/vg) must be installed):
 
-![](http://public.gi.ucsc.edu/~jmonlong/ivgsv.gif)
+![](docs/ivgsv.gif)
