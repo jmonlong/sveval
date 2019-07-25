@@ -172,15 +172,13 @@ svevalOl <- function(calls.gr, truth.gr, max.ins.dist=20, min.cov=.5,
       truth=do.call(c, lapply(ol.l, function(ll) ll$truth))
     )
 
-    if(length(ol.l$calls)==0 | length(ol.l$truth)==0){
-      eval.o = evalOl(NULL)
-    } else {
-      ol.l$calls = filterSVs(ol.l$calls, regions.gr=bed.regions, ol.prop=bed.regions.ol,
-                             min.size=min.size, max.size=max.size)
-      ol.l$truth = filterSVs(ol.l$truth, regions.gr=bed.regions, ol.prop=bed.regions.ol,
-                             min.size=min.size, max.size=max.size)
-      eval.o = evalOl(ol.l, min.cov=min.cov)
-    }
+    ol.l$calls = filterSVs(ol.l$calls, regions.gr=bed.regions,
+                           ol.prop=bed.regions.ol,
+                           min.size=min.size, max.size=max.size)
+    ol.l$truth = filterSVs(ol.l$truth, regions.gr=bed.regions,
+                           ol.prop=bed.regions.ol,
+                           min.size=min.size, max.size=max.size)
+    eval.o = evalOl(ol.l, min.cov=min.cov)
     eval.o$eval$qual = mqual
     eval.o
   })

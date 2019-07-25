@@ -10,7 +10,7 @@ plot_persize(eval, size.breaks = c(50, 100, 500, 1000, 10000, Inf),
 \arguments{
 \item{eval}{the output of \code{svevalOl}.}
 
-\item{size.breaks}{a vector how to break the sizes into classes.}
+\item{size.breaks}{a vector for breaking the sizes into classes.}
 
 \item{plot}{should the function return the plot list. Default is TRUE. If FALSE,
 returns a data.frame.}

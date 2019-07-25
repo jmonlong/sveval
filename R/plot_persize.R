@@ -1,6 +1,6 @@
 ##' @title Recall, precision, F1 per SV size
 ##' @param eval the output of \code{svevalOl}.
-##' @param size.breaks a vector how to break the sizes into classes.
+##' @param size.breaks a vector for breaking the sizes into classes.
 ##' @param plot should the function return the plot list. Default is TRUE. If FALSE,
 ##' returns a data.frame.
 ##' @return a list of ggplot objects if plot=TRUE (default); a data.frame otherwise.

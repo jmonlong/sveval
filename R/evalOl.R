@@ -7,7 +7,7 @@
 ##' @importFrom rlang .data
 ##' @keywords internal
 evalOl <- function(ol.l, min.cov=.8){
-  if(is.null(ol.l)){
+  if(length(ol.l$calls)==0 | length(ol.l$truth)==0){
     eval.df = data.frame(type=c('Total', 'DEL', 'INS', 'INV'), stringsAsFactors=FALSE)
     eval.df$F1 = eval.df$recall = eval.df$precision = eval.df$FN = eval.df$FP = eval.df$TP.baseline = eval.df$TP = NA
     regs = list()

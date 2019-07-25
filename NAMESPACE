@@ -3,6 +3,7 @@
 export(filterSVs)
 export(findNocalls)
 export(ivg_sv)
+export(plot_perregion)
 export(plot_persize)
 export(plot_prcurve)
 export(prf)

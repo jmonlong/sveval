@@ -61,6 +61,14 @@ test_that("Filters", {
   expect_true(all(res$TP.baseline>0))
   expect_true(all(as.matrix(res[1:3,2:5])<=as.matrix(res.all[1:3,2:5])))
   file.remove('temp.bed')
+  ## BED file overlapping nothing
+  bed = data.frame(chr='xy', start=c(1e5, 7e5), end=c(5e5, 1e6))
+  write.table(bed, file='temp.bed', row.names=FALSE, col.names=FALSE, sep='\t', quote=FALSE)
+  res = svevalOl('../calls.s0.vcf', '../truth.refalt.vcf', bed.regions='temp.bed', min.size=0, geno.eval=TRUE)
+  res = res$eval
+  expect_gt(nrow(res), 0)
+  expect_true(all(is.na(res$TP)))
+  file.remove('temp.bed')
   ## Small variants
   res = svevalOl('../calls.s0.vcf', '../truth.refalt.vcf', min.size=20, geno.eval=TRUE)
   res = res$eval

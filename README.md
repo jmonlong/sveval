@@ -75,6 +75,24 @@ Or if the results were written in files:
 plot_prcurve(c('methods1-prcurve.tsv', 'methods2-prcurve.tsv'), labels=c('method1', 'method2'))
 ```
 
+### Evaluation per size or per region
+
+The evaluation can already be narrowed down to a size range and a set of regions (`min.size=`/`max.size=`/`bed.regions=` in `svevalOl`).
+It's also interesting to split the result into (many) different SV classes without having to rerun `svevalOl`.
+Two functions are provided to take the output of `svevalOl` and compute the evaluation metrics per size class or per region: `plot_persize` and `plot_perregion`.
+Of note, there is no exploration of the calls' quality like for PR curves. 
+The new metrics are computed from the set of TP/FP/FN as defined by the "best" run (maximum F1 score).
+
+```r
+eval.o = svevalOl('calls.vcf', 'truth.vcf')
+plot_persize(eval.o)
+regs = GRanges(...)
+plot_perregion(eval.o, regs)
+```
+
+Both functions return a list of ggplot2 graphs.
+If using `plot=FALSE` they will return a data.frame.
+
 ### Genotype evaluation
 
 By default sveval doesn't take the genotype into account, more a calling evaluation than a genotype evaluation.
