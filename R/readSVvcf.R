@@ -26,12 +26,17 @@ readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL,
                       keep.ids=FALSE, nocalls=FALSE, right.trim=TRUE){
   vcf = VariantAnnotation::readVcf(vcf.file, row.names=keep.ids)
   gr = DelayedArray::rowRanges(vcf)
-  ## If sample specified, retrieve appropriate GT
-  GT.idx = 1
-  if(!is.null(sample.name)){
-    GT.idx = which(sample.name == colnames(VariantAnnotation::geno(vcf)$GT))
-  } 
-  gr$GT = unlist(VariantAnnotation::geno(vcf)$GT[, GT.idx])
+  ## If no samples, read everything
+  if(length(VariantAnnotation::geno(vcf)) == 0){
+    gr$GT = '1'
+  } else {
+    ## If sample specified, retrieve appropriate GT
+    GT.idx = 1
+    if(!is.null(sample.name)){
+      GT.idx = which(sample.name == colnames(VariantAnnotation::geno(vcf)$GT))
+    } 
+    gr$GT = unlist(VariantAnnotation::geno(vcf)$GT[, GT.idx])
+  }
   
   ## Remove obvious SNVs
   singlealt = which(unlist(lapply(Biostrings::nchar(gr$ALT), length))==1)
