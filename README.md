@@ -113,6 +113,16 @@ Hence, the **recommended command for genotype evaluation**:
 eval.o = svevalOl('calls.vcf', 'truth.vcf', geno.eval=TRUE, stitch.hets=TRUE, merge.hets=TRUE)
 ```
 
+### Frequency annotation
+
+Assuming that we have a SV catalog with a field with frequency estimates, we can overlap called SVs and annotate them with the maximum frequency of overlapping SVs in the catalog.
+
+For example:
+
+```r
+freqAnnotate('calls.vcf', 'gnomad.vcf', out.vcf='calls.withFreq.vcf')
+```
+
 ## Methods
 
 - For deletions, at least 50% coverage and at least 10% reciprocal overlap.

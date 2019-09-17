@@ -30,3 +30,12 @@ test_that("VCF with existing QUAL and another FORMAT field", {
   expect_true(any(vcf$QUAL != vcf2$QUAL))
 })
 
+test_that("ALT/REF VCF with VCF output", {
+  vcf = readSVvcf('../truth.refalt.vcf', vcf.object=TRUE)
+  expect_gt(length(vcf), 0)
+})
+
+test_that("VCF with symbolic SVs with VCF output", {
+  vcf = readSVvcf('../truth.symb.vcf', vcf.object=TRUE)
+  expect_gt(length(vcf), 0)
+})

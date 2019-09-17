@@ -14,6 +14,7 @@
 ##' @param nocalls if TRUE returns no-calls only (genotype ./.). Default FALSE.
 ##' @param right.trim if TRUE (default) the REF/ALT sequences are right-trimmed
 ##' after splitting up multi-ALT variants.
+##' @param vcf.object should the output be a VCF object instead. Default is FALSE.
 ##' @return a GRanges object with relevant information.
 ##' @author Jean Monlong
 ##' @export
@@ -23,9 +24,11 @@
 ##' }
 readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL,
                       qual.field=c('GQ', 'QUAL'), check.inv=FALSE,
-                      keep.ids=FALSE, nocalls=FALSE, right.trim=TRUE){
+                      keep.ids=FALSE, nocalls=FALSE, right.trim=TRUE,
+                      vcf.object=FALSE){
   vcf = VariantAnnotation::readVcf(vcf.file, row.names=keep.ids)
   gr = DelayedArray::rowRanges(vcf)
+  
   ## If no samples, read everything
   if(length(VariantAnnotation::geno(vcf)) == 0){
     gr$GT = '1'
@@ -56,20 +59,25 @@ readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL,
     gr = gr[noc]
     vcf = vcf[noc]
   } else {
-    nonrefs = which(gr$GT!='0' & gr$GT!='0/0'  & gr$GT!='0|0' & gr$GT!='./.' & gr$GT!='.')
+    nonrefs = which(gr$GT!='0' & gr$GT!='0/0' & gr$GT!='0|0' & gr$GT!='./.' & gr$GT!='.')
     gr = gr[nonrefs]
     vcf = vcf[nonrefs]
   }
   
   ## If no SVs
   if(length(vcf) == 0){
-    gr$REF = gr$paramRangeID = gr$FILTER = NULL
-    if(!keep.ins.seq){
-      gr$ALT = NULL
+    if(!vcf.object){
+      gr$REF = gr$paramRangeID = gr$FILTER = NULL
+      if(!keep.ins.seq){
+        gr$ALT = NULL
+      }
+      return(gr)
+    } else {
+      return(vcf)
     }
-    return(gr)
   }
 
+  ## Extract sv type and size
   ## Symbolic alleles or ALT/REF ?
   if('SVTYPE' %in% colnames(VariantAnnotation::info(vcf)) &
      any(c('END', 'SVLEN') %in% colnames(VariantAnnotation::info(vcf)))){
@@ -224,6 +232,53 @@ readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL,
   }
 
   ## Remove SNVs and MNVs
+  vcf = vcf[which(gr$type!='SNV' & gr$type!='MNV')]
   gr = gr[which(gr$type!='SNV' & gr$type!='MNV')]
-  return(gr)
+
+  ## Update VCF object if desired
+  if(vcf.object){
+    new.info.h = S4Vectors::DataFrame(Number='1', Type='String',
+                                      Description='Genotype of the sample')
+    new.info.n = 'GT'
+    ## SV type
+    if(!('SVTYPE' %in% names(VariantAnnotation::info(vcf)))){
+      new.info.n = c(new.info.n, 'SVTYPE')
+      new.info.h = rbind(new.info.h,
+                         S4Vectors::DataFrame(Number='1', Type='String',
+                                              Description='SV type'))
+    }
+    ## SV size
+    if(!('SIZE' %in% names(VariantAnnotation::info(vcf)))){
+      new.info.n = c(new.info.n, 'SIZE')
+      new.info.h = rbind(new.info.h,
+                         S4Vectors::DataFrame(Number='1', Type='Integer',
+                                              Description='SV size'))
+    }
+    ## quality
+    if(!('QUAL' %in% names(VariantAnnotation::info(vcf)))){
+      new.info.n = c(new.info.n, 'QUAL')
+      new.info.h = rbind(new.info.h,
+                         S4Vectors::DataFrame(Number='1', Type='Integer',
+                                              Description='Call quality'))
+    }
+    ## end
+    if(!('END' %in% names(VariantAnnotation::info(vcf)))){
+      new.info.n = c(new.info.n, 'END')
+      new.info.h = rbind(new.info.h,
+                         S4Vectors::DataFrame(Number='1', Type='Integer',
+                                              Description='End coordinate'))
+    }
+    row.names(new.info.h) = new.info.n
+    VariantAnnotation::info(VariantAnnotation::header(vcf)) =
+      rbind(VariantAnnotation::info(VariantAnnotation::header(vcf)),
+            new.info.h)
+    VariantAnnotation::info(vcf)$SVTYPE = gr$type
+    VariantAnnotation::info(vcf)$GT = gr$GT
+    VariantAnnotation::info(vcf)$SIZE = gr$size
+    VariantAnnotation::info(vcf)$QUAL = gr$QUAL
+    VariantAnnotation::info(vcf)$END = GenomicRanges::end(gr)
+    return(vcf)
+  } else {
+    return(gr)
+  }
 }

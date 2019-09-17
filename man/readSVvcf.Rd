@@ -6,7 +6,7 @@
 \usage{
 readSVvcf(vcf.file, keep.ins.seq = FALSE, sample.name = NULL,
   qual.field = c("GQ", "QUAL"), check.inv = FALSE, keep.ids = FALSE,
-  nocalls = FALSE, right.trim = TRUE)
+  nocalls = FALSE, right.trim = TRUE, vcf.object = FALSE)
 }
 \arguments{
 \item{vcf.file}{the path to the VCF file}
@@ -26,6 +26,8 @@ first sample.}
 
 \item{right.trim}{if TRUE (default) the REF/ALT sequences are right-trimmed
 after splitting up multi-ALT variants.}
+
+\item{vcf.object}{should the output be a VCF object instead. Default is FALSE.}
 }
 \value{
 a GRanges object with relevant information.

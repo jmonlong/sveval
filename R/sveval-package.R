@@ -3,8 +3,8 @@
 #' \tabular{ll}{
 #' Package: \tab sveval\cr
 #' Type: \tab Package\cr
-#' Version: \tab 1.2.1\cr
-#' Date: \tab 2019-02-28\cr
+#' Version: \tab 1.2.2\cr
+#' Date: \tab 2019-09-16\cr
 #' License: \tab MIT\cr
 #' }
 #' @docType package

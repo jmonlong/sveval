@@ -2,6 +2,7 @@
 
 export(filterSVs)
 export(findNocalls)
+export(freqAnnotate)
 export(ivg_sv)
 export(plot_perregion)
 export(plot_persize)
