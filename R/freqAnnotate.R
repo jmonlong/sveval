@@ -7,6 +7,7 @@
 ##' @param ins.seq.comp compare sequence instead of insertion sizes. Default is FALSE.
 ##' @param out.vcf If non-NULL, write output to this VCF file. 
 ##' @param freq.field the field with the frequency estimate in the 'cat' input. Default is 'AF'.
+##' @param out.freq.field the new field's name. Default is 'AFMAX'
 ##' @return a GRanges object.
 ##' @author Jean Monlong
 ##' @importFrom magrittr %>%
@@ -23,7 +24,8 @@
 ##' calls.freq.vcf = freqAnnotate(calls.vcf, cat.vcf)
 ##' }
 freqAnnotate <- function(svs, cat, min.cov=.5, min.del.rol=.1, max.ins.dist=20,
-                         ins.seq.comp=FALSE, out.vcf=NULL, freq.field='AF'){
+                         ins.seq.comp=FALSE, out.vcf=NULL, freq.field='AF',
+                         out.freq.field='AFMAX'){
 
   if(is.character(svs) && length(svs) == 1){
     svs = readSVvcf(svs, vcf.object=TRUE)
@@ -73,6 +75,11 @@ freqAnnotate <- function(svs, cat, min.cov=.5, min.del.rol=.1, max.ins.dist=20,
     olRanges(svs.gr, cat.gr, min.rol=min.del.rol, type='INV')
   )
 
+  ## Overlap duplications
+  ol.dup = suppressWarnings(
+    olRanges(svs.gr, cat.gr, min.rol=min.del.rol, type='DUP')
+  )
+
   ## Annotate SVs
   if(!is.null(ol.ins$ol)){
     freq.ins = ol.ins$ol %>%
@@ -100,15 +107,24 @@ freqAnnotate <- function(svs, cat, min.cov=.5, min.del.rol=.1, max.ins.dist=20,
       dplyr::summarize(freq=max(.data$freq))
     freqs[freq.inv$id] = freq.inv$freq
   }
+  if(!is.null(ol.dup$rol.gr)){
+    freq.dup = ol.dup$rol.gr %>%
+      as.data.frame %>% 
+      dplyr::mutate(freq=ol.dup$truth$freq[.data$truth.idx],
+                    id=ol.dup$calls$id[.data$call.idx]) %>% 
+      dplyr::group_by(.data$id) %>%
+      dplyr::summarize(freq=max(.data$freq))
+    freqs[freq.dup$id] = freq.dup$freq
+  }
 
   ## Add frequency field
   new.info.h = S4Vectors::DataFrame(Number='1', Type='float',
                                     Description=desc[freq.field,'Description'])
-  row.names(new.info.h) = freq.field
+  row.names(new.info.h) = out.freq.field
   VariantAnnotation::info(VariantAnnotation::header(svs)) =
     rbind(VariantAnnotation::info(VariantAnnotation::header(svs)),
           new.info.h)
-  VariantAnnotation::info(svs)[[freq.field]] = freqs
+  VariantAnnotation::info(svs)[[out.freq.field]] = freqs
   
   if(!is.null(out.vcf)){
     VariantAnnotation::writeVcf(svs, file=out.vcf)
