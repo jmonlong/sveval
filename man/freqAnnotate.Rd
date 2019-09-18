@@ -6,7 +6,7 @@
 \usage{
 freqAnnotate(svs, cat, min.cov = 0.5, min.del.rol = 0.1,
   max.ins.dist = 20, ins.seq.comp = FALSE, out.vcf = NULL,
-  freq.field = "AF")
+  freq.field = "AF", out.freq.field = "AFMAX")
 }
 \arguments{
 \item{svs}{a VCF object with SVs to annotate.}
@@ -24,6 +24,8 @@ freqAnnotate(svs, cat, min.cov = 0.5, min.del.rol = 0.1,
 \item{out.vcf}{If non-NULL, write output to this VCF file.}
 
 \item{freq.field}{the field with the frequency estimate in the 'cat' input. Default is 'AF'.}
+
+\item{out.freq.field}{the new field's name. Default is 'AFMAX'}
 }
 \value{
 a GRanges object.

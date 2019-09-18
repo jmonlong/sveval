@@ -1,7 +1,7 @@
 context('Frequency annotation')
 
 test_that("Reading VCFs", {
-  res = freqAnnotate('../calls.s0.vcf', '../truth.symb.vcf', freq.field='FREQ')
+  res = freqAnnotate('../calls.s0.vcf', '../truth.symb.vcf', freq.field='FREQ', out.freq.field='FREQ')
   expect_true(mean(VariantAnnotation::info(res)$FREQ)>0)
 })
 
