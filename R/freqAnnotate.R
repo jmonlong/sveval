@@ -118,7 +118,7 @@ freqAnnotate <- function(svs, cat, min.cov=.5, min.del.rol=.1, max.ins.dist=20,
   }
 
   ## Add frequency field
-  new.info.h = S4Vectors::DataFrame(Number='1', Type='float',
+  new.info.h = S4Vectors::DataFrame(Number='1', Type='Float',
                                     Description=desc[freq.field,'Description'])
   row.names(new.info.h) = out.freq.field
   VariantAnnotation::info(VariantAnnotation::header(svs)) =

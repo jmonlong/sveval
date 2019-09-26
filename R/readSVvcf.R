@@ -105,7 +105,7 @@ readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL,
         }
       }
       ends.format = unlist(VariantAnnotation::info(vcf)$END)
-      GenomicRanges::end(gr) = ifelse(gr$type=='INS' | is.na(ends.format),
+      GenomicRanges::end(gr) = ifelse(gr$type=='INS' | is.na(ends.format) | ends.format<GenomicRanges::start(gr),
                                       GenomicRanges::end(gr),
                                       ends.format)
     }
