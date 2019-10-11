@@ -4,14 +4,17 @@
 \alias{readSVvcf}
 \title{Read SVs from a VCF file}
 \usage{
-readSVvcf(vcf.file, keep.ins.seq = FALSE, sample.name = NULL,
-  qual.field = c("GQ", "QUAL"), check.inv = FALSE, keep.ids = FALSE,
-  nocalls = FALSE, right.trim = TRUE, vcf.object = FALSE)
+readSVvcf(vcf.file, keep.ins.seq = FALSE, keep.ref.seq = FALSE,
+  sample.name = NULL, qual.field = c("GQ", "QUAL"),
+  check.inv = FALSE, keep.ids = FALSE, nocalls = FALSE,
+  right.trim = TRUE, vcf.object = FALSE)
 }
 \arguments{
 \item{vcf.file}{the path to the VCF file}
 
 \item{keep.ins.seq}{should it keep the inserted sequence? Default is FALSE.}
+
+\item{keep.ref.seq}{should it keep the reference allele sequence? Default is FALSE.}
 
 \item{sample.name}{the name of the sample to use. If NULL (default), use
 first sample.}
