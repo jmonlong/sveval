@@ -27,6 +27,7 @@ readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL,
                       keep.ids=FALSE, nocalls=FALSE, right.trim=TRUE,
                       vcf.object=FALSE){
   vcf = VariantAnnotation::readVcf(vcf.file, row.names=keep.ids)
+  GenomeInfoDb::seqlengths(vcf) = rep(NA, length(GenomeInfoDb::seqlengths(vcf)))
   gr = DelayedArray::rowRanges(vcf)
   
   ## If no samples, read everything

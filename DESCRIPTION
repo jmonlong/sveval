@@ -17,6 +17,7 @@ Imports:
 	rlang,
 	DelayedArray,
 	Biostrings,
+        GenomeInfoDb,
 	parallel,
 	testthat,
 	tidyr,
