@@ -1,0 +1,44 @@
+---
+output:
+  html_document:
+    default
+  md_document:
+    variant: markdown_github
+---
+
+```{r include=FALSE}
+knitr::opts_chunk$set(echo=FALSE, message=FALSE, warning=FALSE, fig.width=10, tidy=TRUE)
+```
+
+```{r load}
+library(ggplot2)
+library(dplyr)
+library(RColorBrewer)
+```
+
+# Unit tests for deletions
+
+```{r readtests.del}
+bed = read.table('../tests/delgenotype.bed', as.is=TRUE, sep='\t')
+colnames(bed) = c('chr', 'start', 'end', 'sample', 'gt', 'error')
+
+plotRegion <- function(df){
+  gt.pal = brewer.pal(3, 'Set1')[1:2]
+  names(gt.pal) = c('het','hom')
+  df$id = 1:nrow(df)
+  df$gt = factor(df$gt, levels=c('het','hom'))
+  ggplot(df, aes(xmin=start, xmax=end, ymin=id-.4, ymax=id+.4, fill=gt)) +
+    geom_rect() + theme_bw() + xlab('position') + ylab('variant') +
+    scale_fill_manual(values=gt.pal) + 
+    facet_grid(sample~., scale='free', space='free')
+}
+```
+
+```{r, results="asis"}
+tmp = sapply(unique(bed$chr), function(cchr){
+  cat('\n\n### ', cchr, '\n\n')
+  bed %>% filter(chr==cchr) %>% plotRegion %>% print
+  errs.e = bed %>% filter(chr==cchr) %>% .$error %>% sum
+  cat('\n\nExpected number of errors ', errs.e, '\n\n')
+})
+```
