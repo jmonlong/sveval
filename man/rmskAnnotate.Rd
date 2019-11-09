@@ -4,7 +4,8 @@
 \alias{rmskAnnotate}
 \title{Annotate REF/ALT sequence with RepeatMasker}
 \usage{
-rmskAnnotate(svs.gr, nb.cores = 1, species = "human")
+rmskAnnotate(svs.gr, nb.cores = 1, species = "human",
+  docker.image = NULL)
 }
 \arguments{
 \item{svs.gr}{SVs. A GRanges or the path to a VCF file.}
@@ -12,6 +13,8 @@ rmskAnnotate(svs.gr, nb.cores = 1, species = "human")
 \item{nb.cores}{the number of cores that RepeatMasker should use. Default:1.}
 
 \item{species}{the species to use in RepeatMasker. Default: human.}
+
+\item{docker.image}{docker image with RepeatMasker. Default is NULL.}
 }
 \value{
 an updated GRanges with new columns 'rmsk.name', 'rmsk.classfam' and 'rmsk.cov'.
