@@ -83,34 +83,32 @@ readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL,
   if('SVTYPE' %in% colnames(VariantAnnotation::info(vcf)) &
      any(c('END', 'SVLEN') %in% colnames(VariantAnnotation::info(vcf)))){
     ## Symbolic alleles
+    gr$size = NA
     gr$type = unlist(VariantAnnotation::info(vcf)$SVTYPE)
     if('SVLEN' %in% colnames(VariantAnnotation::info(vcf))){
       gr$size = abs(unlist(VariantAnnotation::info(vcf)$SVLEN))
-      ## In case there is no END info later, init with SVLEN
-      GenomicRanges::end(gr) = ifelse(gr$type=='INS',
-                                      GenomicRanges::end(gr),
-                                      GenomicRanges::start(gr) + gr$size)
+    }
+    if('INSLEN' %in% colnames(VariantAnnotation::info(vcf))){
+      ins.len = abs(unlist(VariantAnnotation::info(vcf)$INSLEN))
+      gr$size = ifelse(gr$type=='INS' & !is.na(ins.len),
+                       ins.len,
+                       gr$size)
+    } 
+    if(any('INS'==gr$type & is.na(gr$size))){
+      warning('Insertions in the VCF but no information about insertion size.')
     }
     if('END' %in% colnames(VariantAnnotation::info(vcf))){
-      ## Set size if not already present
-      if(all('size' != colnames(GenomicRanges::mcols(gr)))){
-        gr$size = unlist(VariantAnnotation::info(vcf)$END)-GenomicRanges::start(gr)
-        if('INSLEN' %in% colnames(VariantAnnotation::info(vcf))){
-          gr$size = ifelse(gr$type=='INS',
-                           abs(unlist(VariantAnnotation::info(vcf)$INSLEN)),
-                           gr$size)
-        } else {
-          if(any('INS'==gr$type)){
-            warning('Insertions in the VCF but no information about insertion size.')
-          }
-        }
-      }
       ends.format = unlist(VariantAnnotation::info(vcf)$END)
-      GenomicRanges::end(gr) = ifelse(gr$type=='INS' | is.na(ends.format) | ends.format<GenomicRanges::start(gr),
-                                      GenomicRanges::end(gr),
-                                      ends.format)
+      if(any(is.na(gr$size))){
+        ## If some size info is missing, derive from the END coordinate
+        gr$size = ifelse(is.na(gr$size), ends.format-GenomicRanges::start(gr), gr$size)
+      }
     }
-    gr$size = ifelse(gr$type=='INS',
+    ## In case there is no END info later, init with SVLEN
+    GenomicRanges::end(gr) = ifelse(gr$type=='INS' | is.na(gr$size) | gr$size<1,
+                                    GenomicRanges::end(gr),
+                                    GenomicRanges::start(gr) + gr$size)
+    gr$size = ifelse(gr$type=='INS' & !is.na(gr$size),
                      gr$size,
                      GenomicRanges::width(gr))
   } else {
