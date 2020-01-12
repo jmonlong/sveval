@@ -78,17 +78,21 @@ readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL,
     }
   }
 
+  ## Any INFO fields that should be used
+  END.info = sum(!is.na(VariantAnnotation::info(vcf)$END))>0
+  SVLEN.info = sum(!is.na(VariantAnnotation::info(vcf)$SVLEN))>0
+  SVTYPE.info = sum(!is.na(VariantAnnotation::info(vcf)$SVTYPE))>0
+  INSLEN.info = sum(!is.na(VariantAnnotation::info(vcf)$INSLEN))>0
   ## Extract sv type and size
   ## Symbolic alleles or ALT/REF ?
-  if('SVTYPE' %in% colnames(VariantAnnotation::info(vcf)) &
-     any(c('END', 'SVLEN') %in% colnames(VariantAnnotation::info(vcf)))){
+  if(SVTYPE.info & (END.info | SVLEN.info)){
     ## Symbolic alleles
     gr$size = NA
     gr$type = unlist(VariantAnnotation::info(vcf)$SVTYPE)
-    if('SVLEN' %in% colnames(VariantAnnotation::info(vcf))){
+    if(SVLEN.info){
       gr$size = abs(unlist(VariantAnnotation::info(vcf)$SVLEN))
     }
-    if('INSLEN' %in% colnames(VariantAnnotation::info(vcf))){
+    if(INSLEN.info){
       ins.len = abs(unlist(VariantAnnotation::info(vcf)$INSLEN))
       gr$size = ifelse(gr$type=='INS' & !is.na(ins.len),
                        ins.len,
@@ -97,7 +101,7 @@ readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL,
     if(any('INS'==gr$type & is.na(gr$size))){
       warning('Insertions in the VCF but no information about insertion size.')
     }
-    if('END' %in% colnames(VariantAnnotation::info(vcf))){
+    if(END.info){
       ends.format = unlist(VariantAnnotation::info(vcf)$END)
       if(any(is.na(gr$size))){
         ## If some size info is missing, derive from the END coordinate
