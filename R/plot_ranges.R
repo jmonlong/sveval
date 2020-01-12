@@ -13,6 +13,7 @@ plot_ranges <- function(gr.l, region.gr=NULL, pt.size=2){
   if(is.null(names(gr.l))){
     names(gr.l) = 1:length(gr.l)
   }
+  gr.l = gr.l[which(unlist(lapply(gr.l, length))>0)]
   df = lapply(1:length(gr.l), function(ii){
     dff = GenomicRanges::as.data.frame(gr.l[[ii]])
     dff$set=names(gr.l)[ii]
