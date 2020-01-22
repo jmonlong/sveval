@@ -173,8 +173,10 @@ readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL,
       ref.seq = gr.inv$REF
       isinv = checkInvSeq(gr.inv$REF, gr.inv$ALT)
       gr$type[others] = ifelse(isinv, 'INV', gr$type[others])      
-    }    
-    gr$size = ifelse(gr$type=='INS', alt.s - 1, GenomicRanges::width(gr))
+    }
+    ## For insertions and deletions, use the difference of the REF/ALT sequences
+    ## For others (e.g. INV, DUP), just use the range size, i.e. the REF sequence length. 
+    gr$size = ifelse(gr$type %in% c('DEL', 'INS'), abs(alt.s - ref.s), GenomicRanges::width(gr))
   }
 
   ## read support if available
