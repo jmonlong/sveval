@@ -6,12 +6,18 @@
 ##' @param gr.l a list of GRanges. If named, the names are used to name the graph's panel.
 ##' @param region.gr the region of interest. If NULL (default), all variants are displayed.
 ##' @param pt.size the point (and line) sizes. Default is 2.
+##' @param maxgap the maximum gap allowed when filtering variants in regions. Default is 20.
 ##' @return a ggplot2 object
 ##' @author Jean Monlong
 ##' @export
-plot_ranges <- function(gr.l, region.gr=NULL, pt.size=2){
+plot_ranges <- function(gr.l, region.gr=NULL, pt.size=2, maxgap=20){
   if(is.null(names(gr.l))){
     names(gr.l) = 1:length(gr.l)
+  }
+  if(!is.null(region.gr)){
+    gr.l = lapply(gr.l, function(gr){
+      IRanges::subsetByOverlaps(gr, region.gr, maxgap=maxgap)
+    })
   }
   gr.l = gr.l[which(unlist(lapply(gr.l, length))>0)]
   df = lapply(1:length(gr.l), function(ii){
