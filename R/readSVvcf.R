@@ -78,40 +78,35 @@ readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL,
     }
   }
 
-  ## Extract sv type and size
-  ## Symbolic alleles or ALT/REF ?
-  if('SVTYPE' %in% colnames(VariantAnnotation::info(vcf)) &
-     any(c('END', 'SVLEN') %in% colnames(VariantAnnotation::info(vcf)))){
-    ## Symbolic alleles
-    gr$size = NA
+  ## Any INFO fields that should be used
+  END.info = sum(!is.na(VariantAnnotation::info(vcf)$END))>0
+  SVLEN.info = sum(!is.na(VariantAnnotation::info(vcf)$SVLEN))>0
+  SVTYPE.info = sum(!is.na(VariantAnnotation::info(vcf)$SVTYPE))>0
+  INSLEN.info = sum(!is.na(VariantAnnotation::info(vcf)$INSLEN))>0
+  ## Extract SV type and size
+  ## First, try using SV-related info
+  gr$size = gr$type = NA
+  if(SVTYPE.info & (END.info | SVLEN.info)){
     gr$type = unlist(VariantAnnotation::info(vcf)$SVTYPE)
-    if('SVLEN' %in% colnames(VariantAnnotation::info(vcf))){
+    if(SVLEN.info){
       gr$size = abs(unlist(VariantAnnotation::info(vcf)$SVLEN))
     }
-    if('INSLEN' %in% colnames(VariantAnnotation::info(vcf))){
+    if(INSLEN.info){
       ins.len = abs(unlist(VariantAnnotation::info(vcf)$INSLEN))
       gr$size = ifelse(gr$type=='INS' & !is.na(ins.len),
                        ins.len,
                        gr$size)
     } 
-    if(any('INS'==gr$type & is.na(gr$size))){
-      warning('Insertions in the VCF but no information about insertion size.')
-    }
-    if('END' %in% colnames(VariantAnnotation::info(vcf))){
+    if(END.info){
       ends.format = unlist(VariantAnnotation::info(vcf)$END)
       if(any(is.na(gr$size))){
         ## If some size info is missing, derive from the END coordinate
-        gr$size = ifelse(is.na(gr$size), ends.format-GenomicRanges::start(gr), gr$size)
+        gr$size = ifelse(is.na(gr$size) & gr$type != 'INS', ends.format-GenomicRanges::start(gr), gr$size)
       }
     }
-    ## In case there is no END info later, init with SVLEN
-    GenomicRanges::end(gr) = ifelse(gr$type=='INS' | is.na(gr$size) | gr$size<1,
-                                    GenomicRanges::end(gr),
-                                    GenomicRanges::start(gr) + gr$size)
-    gr$size = ifelse(gr$type=='INS' & !is.na(gr$size),
-                     gr$size,
-                     GenomicRanges::width(gr))
-  } else {
+  }
+  ## Otherwise, use the REF/ALT sequences
+  if(any(is.na(gr$size) | is.na(gr$type))) {
     ## ALT/REF
     if(nocalls){
       ## For no-calls we just split the multi-allelic variants
@@ -159,19 +154,27 @@ readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL,
     ## Compare ALT/REF size to define SV type
     alt.s = Biostrings::nchar(gr$ALT)
     ref.s = Biostrings::nchar(gr$REF)
-    gr$type = ifelse(alt.s>ref.s, 'INS', 'DEL')
-    gr$type = ifelse(alt.s==ref.s, 'MNV', gr$type)
-    gr$type = ifelse(alt.s==1 & ref.s==1, 'SNV', gr$type)
+    ra.type = ifelse(alt.s>ref.s, 'INS', 'DEL')
+    ra.type = ifelse(alt.s==ref.s, 'MNV', ra.type)
+    ra.type = ifelse(alt.s==1 & ref.s==1, 'SNV', ra.type)
     ## Variants other than clear DEL, INS or SNV. 
     others = which(alt.s>10 & ref.s>10)
     if(length(others)>0 & check.inv){
       gr.inv = gr[others]
       ref.seq = gr.inv$REF
       isinv = checkInvSeq(gr.inv$REF, gr.inv$ALT)
-      gr$type[others] = ifelse(isinv, 'INV', gr$type[others])      
-    }    
-    gr$size = ifelse(gr$type=='INS', alt.s - 1, GenomicRanges::width(gr))
+      ra.type[others] = ifelse(isinv, 'INV', ra.type[others])      
+    }
+    ## For insertions and deletions, use the difference of the REF/ALT sequences
+    ## For others (e.g. INV, DUP), just use the range size, i.e. the REF sequence length.
+    gr$type = ifelse(is.na(gr$type), ra.type, gr$type)
+    gr$size = ifelse(is.na(gr$size) & gr$type %in% c('DEL', 'INS'), abs(alt.s - ref.s), gr$size)
+    gr$size = ifelse(is.na(gr$size), GenomicRanges::width(gr), gr$size)
   }
+  ## In case there is no END info later, init with SVLEN
+  GenomicRanges::end(gr) = ifelse(is.na(gr$type) | gr$type=='INS' | is.na(gr$size) | gr$size<1,
+                                  GenomicRanges::end(gr),
+                                  GenomicRanges::start(gr) + gr$size)
 
   ## read support if available
   if('AD' %in% rownames(VariantAnnotation::geno(VariantAnnotation::header(vcf)))){
