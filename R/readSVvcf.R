@@ -79,10 +79,10 @@ readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL,
   }
 
   ## Any INFO fields that should be used
-  END.info = sum(!is.na(VariantAnnotation::info(vcf)$END))>0
-  SVLEN.info = sum(!is.na(VariantAnnotation::info(vcf)$SVLEN))>0
-  SVTYPE.info = sum(!is.na(VariantAnnotation::info(vcf)$SVTYPE))>0
-  INSLEN.info = sum(!is.na(VariantAnnotation::info(vcf)$INSLEN))>0
+  END.info = sum(!is.na(unlist(VariantAnnotation::info(vcf)$END)))>0
+  SVLEN.info = sum(!is.na(unlist(VariantAnnotation::info(vcf)$SVLEN)))>0
+  SVTYPE.info = sum(!is.na(unlist(VariantAnnotation::info(vcf)$SVTYPE)))>0
+  INSLEN.info = sum(!is.na(unlist(VariantAnnotation::info(vcf)$INSLEN)))>0
   ## Extract SV type and size
   ## First, try using SV-related info
   gr$size = gr$type = NA
