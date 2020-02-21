@@ -35,7 +35,8 @@
 ##' @return a list with
 ##' \item{eval}{a data.frame with TP, FP and FN for each SV type when including all variants}
 ##' \item{curve}{a data.frame with TP, FP and FN for each SV type when using different quality thesholds}
-##' \item{svs}{a list of GRanges object with FP, TP and FN for each SV type (when using QUAL>=0 threshold).}
+##' \item{svs}{a list of GRanges object with FP, TP and FN for each SV type (using QUAL threshold with best F1).}
+##' \item{mqual.bestf1}{the QUAL threshold that produces best F1 (and corresponding to 'svs' GRanges).}
 ##' @author Jean Monlong
 ##' @export
 ##' @examples
@@ -192,7 +193,8 @@ svevalOl <- function(calls.gr, truth.gr, max.ins.dist=20, min.cov=.5,
   f1s = sapply(eval.quals.o, function(ll) ll$eval$F1[which(ll$eval$type=='Total')])
   bestf1 = utils::head(order(f1s, decreasing=TRUE), 1)
   eval.bestf1 = eval.quals.o[[bestf1]]
-
+  mqual.bestf1 = qual.r[bestf1]
+    
   ## Write BED files with FP, TP, FN
   if(!is.null(out.bed.prefix)){
     tmp = lapply(names(eval.bestf1$regions), function(svtype){
@@ -215,5 +217,5 @@ svevalOl <- function(calls.gr, truth.gr, max.ins.dist=20, min.cov=.5,
   if(!is.null(outfile)){
     utils::write.table(eval.df, file=outfile, sep='\t', row.names=FALSE, quote=FALSE)
   }
-  return(list(eval=eval.df, curve=eval.curve.df, svs=eval.bestf1$regions))
+  return(list(eval=eval.df, curve=eval.curve.df, svs=eval.bestf1$regions, mqual.bestf1=mqual.bestf1))
 }

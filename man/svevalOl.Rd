@@ -78,7 +78,8 @@ matching of variants in the calls and truth sets.}
 a list with
 \item{eval}{a data.frame with TP, FP and FN for each SV type when including all variants}
 \item{curve}{a data.frame with TP, FP and FN for each SV type when using different quality thesholds}
-\item{svs}{a list of GRanges object with FP, TP and FN for each SV type (when using QUAL>=0 threshold).}
+\item{svs}{a list of GRanges object with FP, TP and FN for each SV type (using QUAL threshold with best F1).}
+\item{mqual.bestf1}{the QUAL threshold that produces best F1 (and corresponding to 'svs' GRanges).}
 }
 \description{
 SV evaluation based on overlap and variant size
