@@ -171,10 +171,12 @@ readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL,
     gr$size = ifelse(is.na(gr$size) & gr$type %in% c('DEL', 'INS'), abs(alt.s - ref.s), gr$size)
     gr$size = ifelse(is.na(gr$size), GenomicRanges::width(gr), gr$size)
   }
-  ## In case there is no END info later, init with SVLEN
-  GenomicRanges::end(gr) = ifelse(is.na(gr$type) | gr$type=='INS' | is.na(gr$size) | gr$size<1,
-                                  GenomicRanges::end(gr),
-                                  GenomicRanges::start(gr) + gr$size)
+  ## Update the 'end' coordinate for ranges using the size.
+  ## E.g. deals with MNV-looking deletions where it's better to use the size delta also for coordinates.
+  update.end = !is.na(gr$type) & gr$type!='INS' & !is.na(gr$size) & gr$size>=1
+  GenomicRanges::end(gr) = ifelse(update.end,
+                                  GenomicRanges::start(gr) + gr$size,
+                                  GenomicRanges::end(gr))
 
   ## read support if available
   if('AD' %in% rownames(VariantAnnotation::geno(VariantAnnotation::header(vcf)))){
