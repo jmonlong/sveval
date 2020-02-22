@@ -90,22 +90,23 @@ readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, keep.ref.seq=FALSE, sample.n
   if(SVTYPE.info & (END.info | SVLEN.info)){
     gr$type = unlist(VariantAnnotation::info(vcf)$SVTYPE)
     if(SVLEN.info){
-      gr$size = abs(unlist(VariantAnnotation::info(vcf)$SVLEN))
+      gr$size = abs(unlist(lapply(VariantAnnotation::info(vcf)$SVLEN, '[', 1)))
     }
     if(INSLEN.info){
-      ins.len = abs(unlist(VariantAnnotation::info(vcf)$INSLEN))
+      ins.len = abs(unlist(lapply(VariantAnnotation::info(vcf)$INSLEN, '[', 1)))
       gr$size = ifelse(gr$type=='INS' & !is.na(ins.len),
                        ins.len,
                        gr$size)
     } 
     if(END.info){
-      ends.format = unlist(VariantAnnotation::info(vcf)$END)
+      ends.format = unlist(lapply(VariantAnnotation::info(vcf)$END, '[', 1))
       if(any(is.na(gr$size))){
         ## If some size info is missing, derive from the END coordinate
         gr$size = ifelse(is.na(gr$size) & gr$type != 'INS', ends.format-GenomicRanges::start(gr), gr$size)
       }
     }
   }
+
   ## Otherwise, use the REF/ALT sequences
   if(any(is.na(gr$size) | is.na(gr$type))) {
     ## ALT/REF
