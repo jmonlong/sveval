@@ -37,6 +37,7 @@ plot_perregion <- function(eval, regions.gr, min.region.ol=.5, plot=TRUE){
   eval.df = prf(eval.df)
 
   if(plot){
+    eval.df = eval.df[which(!is.na(eval.df$F1)), ]
     ggp.l = list()
     recall = precision = F1 = type = NULL
     ggp.l$f1 = ggplot(eval.df, aes(x=type, y=F1)) +

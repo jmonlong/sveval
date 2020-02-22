@@ -61,6 +61,7 @@ plot_prcurve <- function(eval, labels=NULL){
   
   ## Simple graph (one method/label)
   if(is.data.frame(eval)){
+    eval = eval[which(!is.na(eval$recall) & !is.na(eval$precision)),]
     ggp.l$pr = eval %>% dplyr::arrange(.data$qual) %>% 
       ggplot(aes(x=recall, y=precision, colour=type)) + geom_path() +
       geom_point(aes(size=qual)) + theme_bw()
@@ -79,6 +80,7 @@ plot_prcurve <- function(eval, labels=NULL){
   
     ## Merging multiple results
     eval = do.call(rbind, eval)
+    eval = eval[which(!is.na(eval$recall) & !is.na(eval$precision)),]
     ggp.l = lapply(unique(eval$type), function(svtype){
       eval %>%
         dplyr::filter(.data$type==svtype) %>% 

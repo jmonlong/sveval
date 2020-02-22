@@ -1,45 +1,21 @@
 context('Overlap-based comparison for genotype evaluation')
 
 test_that("ALT/REF inputs and output in file", {
-  res = svevalOl('../calls.s0.vcf', '../truth.refalt.vcf', outfile='temp.tsv', geno.eval=TRUE)
+  res = svevalOl('../calls.s0.vcf', '../truth.refalt.vcf', outfile='temp.tsv', out.bed.prefix='tempfortest', geno.eval=TRUE)
   res = read.table('temp.tsv', header=TRUE, as.is=TRUE, sep='\t')
   expect_gt(nrow(res), 0)
   expect_true(all(res$TP>0))
   expect_true(all(res$TP.baseline>0))
   file.remove('temp.tsv')
-})
-
-test_that("Merge hets", {
-  res = svevalOl('../calls.s0.vcf', '../truth.refalt.vcf', geno.eval=TRUE, merge.hets=TRUE)
-  res = res$eval
-  expect_gt(nrow(res), 0)
-  expect_true(all(res$TP>0))
-  expect_true(all(res$TP.baseline>0))
+  file.remove(list.files('.', 'tempfortest'))
 })
 
 test_that("Stitch and merge hets", {
-  res = svevalOl('../calls.s0.vcf', '../truth.refalt.vcf', geno.eval=TRUE, merge.hets=TRUE, stitch.hets=TRUE, ins.seq.comp=TRUE)
+  res = svevalOl('../calls.s0.vcf', '../truth.refalt.vcf', geno.eval=TRUE, merge.hets=TRUE, stitch.hets=TRUE)
   res = res$eval
   expect_gt(nrow(res), 0)
   expect_true(all(res$TP>0))
   expect_true(all(res$TP.baseline>0))
-})
-
-test_that("Stitch", {
-  res = svevalOl('../calls.s0.vcf', '../truth.refalt.vcf', geno.eval=TRUE, stitch.hets=TRUE)
-  res = res$eval
-  expect_gt(nrow(res), 0)
-  expect_true(all(res$TP>0))
-  expect_true(all(res$TP.baseline>0))
-})
-
-test_that("Output BED files etc", {
-  res = svevalOl('../calls.s0.vcf', '../truth.refalt.vcf', out.bed.prefix='tempfortest', geno.eval=TRUE)
-  res = res$eval
-  expect_gt(nrow(res), 0)
-  expect_true(all(res$TP>0))
-  expect_true(all(res$TP.baseline>0))
-  file.remove(list.files('.', 'tempfortest'))
 })
 
 test_that("Input with symbolic VCF representation", {
@@ -52,7 +28,7 @@ test_that("Filters", {
   res.all = svevalOl('../calls.s0.vcf', '../truth.refalt.vcf',  min.size=0, geno.eval=TRUE)
   res.all = res.all$eval
   ## BED file
-  bed = data.frame(chr='x', start=c(1e5, 7e5), end=c(5e5, 1e6))
+  bed = data.frame(chr='x', start=c(3000, 1480000), end=c(9000, 1490000))
   write.table(bed, file='temp.bed', row.names=FALSE, col.names=FALSE, sep='\t', quote=FALSE)
   res = svevalOl('../calls.s0.vcf', '../truth.refalt.vcf', bed.regions='temp.bed', min.size=0, geno.eval=TRUE)
   res = res$eval

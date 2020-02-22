@@ -43,6 +43,12 @@ annotateOl <- function(ol.l, min.qual=0, method=c('coverage', 'bipartite')){
         gg = igraph::make_graph(edge.chars, directed=FALSE)
         ## specify group for bipartite clustering
         igraph::vertex_attr(gg)$type = grepl('call_', igraph::V(gg))
+        ## weight as reciprocal overlap
+        calls.size = ol.l$calls$size[ol.l$ol$call.idx]
+        truth.size = ol.l$truth$size[ol.l$ol$truth.idx]
+        igraph::edge_attr(gg)$weight = ifelse(calls.size>truth.size,
+                                              truth.size/calls.size,
+                                              calls.size/truth.size)
         ## bipartite clustering
         bpm = igraph::max_bipartite_match(gg)$matching
         bpm = bpm[which(!is.na(bpm))]
@@ -81,6 +87,13 @@ annotateOl <- function(ol.l, min.qual=0, method=c('coverage', 'bipartite')){
         gg = igraph::make_graph(edge.chars, directed=FALSE)
         ## specify group for bipartite clustering
         igraph::vertex_attr(gg)$type = grepl('call_', igraph::V(gg))
+        ## weight as reciprocal overlap
+        calls.size = ol.l$calls$size[rol.gr$call.idx]
+        truth.size = ol.l$truth$size[rol.gr$truth.idx]
+        ol.size = GenomicRanges::width(rol.gr)
+        igraph::edge_attr(gg)$weight = ifelse(calls.size>truth.size,
+                                              ol.size/calls.size,
+                                              ol.size/truth.size)
         ## bipartite clustering
         bpm = igraph::max_bipartite_match(gg)$matching
         bpm = bpm[which(!is.na(bpm))]

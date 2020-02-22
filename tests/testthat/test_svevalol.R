@@ -1,21 +1,12 @@
 context('Overlap-based comparison')
 
 test_that("ALT/REF inputs and output in file", {
-  res = svevalOl('../calls.s0.vcf', '../truth.refalt.vcf', outfile='temp.tsv')
+  res = svevalOl('../calls.s0.vcf', '../truth.refalt.vcf', outfile='temp.tsv', out.bed.prefix='tempfortest')
   res = read.table('temp.tsv', header=TRUE, as.is=TRUE, sep='\t')
   expect_gt(nrow(res), 0)
   expect_true(all(res$TP>0))
   expect_true(all(res$TP.baseline>0))
   file.remove('temp.tsv')
-})
-
-test_that("Output BED files etc", {
-  res = svevalOl('../calls.s0.vcf', '../truth.refalt.vcf', out.bed.prefix='tempfortest')
-  res = res$eval
-  expect_gt(nrow(res), 0)
-  expect_true(all(res$TP>0))
-  expect_true(all(res$TP.baseline>0))
-  file.remove(list.files('.', 'tempfortest'))
 })
 
 test_that("Input with symbolic VCF representation", {
@@ -28,7 +19,7 @@ test_that("Filters", {
   res.all = svevalOl('../calls.s0.vcf', '../truth.refalt.vcf',  min.size=0)
   res.all = res.all$eval
   ## BED file
-  bed = data.frame(chr='x', start=c(1e5, 7e5), end=c(5e5, 1e6))
+  bed = data.frame(chr='x', start=c(3000, 1480000), end=c(9000, 1490000))
   write.table(bed, file='temp.bed', row.names=FALSE, col.names=FALSE, sep='\t', quote=FALSE)
   res = svevalOl('../calls.s0.vcf', '../truth.refalt.vcf', bed.regions='temp.bed', min.size=0)
   res = res$eval
@@ -45,7 +36,6 @@ test_that("Filters", {
   expect_true(all(res$TP.baseline>0))
   expect_true(all(as.matrix(res[,2:5])<=as.matrix(res.all[,2:5])))
 })
-
 
 test_that("Sequence comparison for insertions", {
   calls.gr = readSVvcf('../calls.s0.vcf', keep.ins.seq=TRUE)
