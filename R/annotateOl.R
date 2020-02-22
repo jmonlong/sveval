@@ -42,7 +42,7 @@ annotateOl <- function(ol.l, min.qual=0, method=c('coverage', 'bipartite')){
         ## make graph
         gg = igraph::make_graph(edge.chars, directed=FALSE)
         ## specify group for bipartite clustering
-        igraph::vertex_attr(gg)$type = grepl('call_', igraph::V(gg))
+        igraph::vertex_attr(gg)$type = grepl('call_', igraph::vertex_attr(gg)$name)
         ## weight as reciprocal overlap
         calls.size = ol.l$calls$size[ol.l$ol$call.idx]
         truth.size = ol.l$truth$size[ol.l$ol$truth.idx]
@@ -86,7 +86,7 @@ annotateOl <- function(ol.l, min.qual=0, method=c('coverage', 'bipartite')){
         ## make graph
         gg = igraph::make_graph(edge.chars, directed=FALSE)
         ## specify group for bipartite clustering
-        igraph::vertex_attr(gg)$type = grepl('call_', igraph::V(gg))
+        igraph::vertex_attr(gg)$type = grepl('call_', igraph::vertex_attr(gg)$name)
         ## weight as reciprocal overlap
         calls.size = ol.l$calls$size[rol.gr$call.idx]
         truth.size = ol.l$truth$size[rol.gr$truth.idx]
