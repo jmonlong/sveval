@@ -6,6 +6,7 @@
 ##' @title Read SVs from a VCF file
 ##' @param vcf.file the path to the VCF file
 ##' @param keep.ins.seq should it keep the inserted sequence? Default is FALSE.
+##' @param keep.ref.seq should it keep the reference allele sequence? Default is FALSE.
 ##' @param sample.name the name of the sample to use. If NULL (default), use
 ##' first sample.
 ##' @param qual.field fields to use as quality. Will be tried in order.
@@ -22,7 +23,7 @@
 ##' \dontrun{
 ##' calls.gr = readSVvcf('calls.vcf')
 ##' }
-readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL,
+readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, keep.ref.seq=FALSE, sample.name=NULL,
                       qual.field=c('GQ', 'QUAL'), check.inv=FALSE,
                       keep.ids=FALSE, nocalls=FALSE, right.trim=TRUE,
                       vcf.object=FALSE){
@@ -229,9 +230,12 @@ readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, sample.name=NULL,
   }
   
   ## Remove unused columns
-  gr$REF = gr$paramRangeID = gr$FILTER = gr$al = NULL
+  gr$paramRangeID = gr$FILTER = gr$al = NULL
   if(!keep.ins.seq){
     gr$ALT = NULL
+  }
+  if(!keep.ref.seq){
+    gr$REF = NULL
   }
 
   ## Remove SNVs and MNVs
