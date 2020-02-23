@@ -1,0 +1,14 @@
+chr1	100	200	s1	hom	0
+chr1	90	170	s2	hom	0
+chr2	100	200	s1	het	0
+chr2	90	170	s2	het	0
+chr3	100	200	s1	hom	0
+chr3	90	170	s2	het	0
+chr3	95	190	s2	het	0
+chr4	100	200	s1	hom	0
+chr4	90	170	s2	het	1
+chr4	95	190	s2	hom	0
+chr5	100	200	s1	het	0
+chr5	90	140	s2	het	0
+chr5	150	190	s2	het	0
+chr5	105	230	s2	het	1

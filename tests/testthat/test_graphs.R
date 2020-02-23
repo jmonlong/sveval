@@ -34,3 +34,17 @@ test_that("Per region", {
   df = plot_perregion(res, reg, plot=FALSE)
   expect_gt(nrow(df), 0)
 })
+
+
+test_that("Ranges in a region in ggplot", {
+  ranges.l = list(
+    calls=readSVvcf('../calls.s0.vcf', right.trim=FALSE),
+    truth=readSVvcf('../truth.refalt.vcf', right.trim=FALSE)
+  )
+  reg.gr = ranges.l$calls[10]
+  pdf('temp.pdf')
+  print(plot_ranges(ranges.l, reg.gr))
+  dev.off()
+  expect_true(file.remove('temp.pdf'))
+})
+

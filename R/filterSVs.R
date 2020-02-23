@@ -14,9 +14,9 @@ filterSVs <- function(sv.gr, regions.gr=NULL, ol.prop=.5, min.size=0, max.size=I
                         sv.gr$size<=max.size)]
   }
   if(!is.null(regions.gr)){
-    ol.df = GenomicRanges::findOverlaps(sv.gr, regions.gr)
+    ol.df = suppressWarnings(GenomicRanges::findOverlaps(sv.gr, regions.gr))
     ol.df =  as.data.frame(ol.df)
-    ol.df$qsw = GenomicRanges::width(GenomicRanges::pintersect(sv.gr[ol.df$queryHits], regions.gr[ol.df$subjectHits]))
+    ol.df$qsw = suppressWarnings(GenomicRanges::width(GenomicRanges::pintersect(sv.gr[ol.df$queryHits], regions.gr[ol.df$subjectHits])))
     ol.df$qw = GenomicRanges::width(sv.gr[ol.df$queryHits])
     sv.gr = sv.gr[unique(ol.df$queryHits[which(ol.df$qsw >= ol.prop*ol.df$qw)])]
   }

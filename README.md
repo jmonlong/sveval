@@ -95,13 +95,17 @@ If using `plot=FALSE` they will return a data.frame.
 
 ### Genotype evaluation
 
-By default sveval doesn't take the genotype into account, more a calling evaluation than a genotype evaluation.
+By default sveval doesn't take the genotype into account, it's more a "calling" evaluation than a "genotyping" evaluation.
 To compare genotype, the evaluation can be performed separately for heterozygous and homozygous variants.
 Before doing that it sometimes help to merge very similar hets into homs.
 To a lower extent, it also helps to stitch fragmented hets before trying to merge them into homs.
+When comparing genotypes we'd rather match variants 1-to-1 instead of using the cumulative coverage metrics.
+It's not about testing if a SV was called in the region but to make sure the actual genotype in the region is correct.
+This penalizes "over-genotyping": genotyping the near-duplicate variants multiple times.
 The relevant parameters in `svevalOl` are:
 
 - `geno.eval=TRUE` compare hets/homs separately.
+- `method="bipartite"` matches variants 1-to-1 instead of the cumulative coverage metrics. 
 - `stitch.hets=TRUE` stitch fragmented hets.
 - `stitch.dist` the maximum distance between two hets to be stitched. Default 20 bp.
 - `merge.hets=TRUE` merge hets into hom before comparison.
@@ -110,7 +114,7 @@ The relevant parameters in `svevalOl` are:
 Hence, the **recommended command for genotype evaluation**:
 
 ```r
-eval.o = svevalOl('calls.vcf', 'truth.vcf', geno.eval=TRUE, stitch.hets=TRUE, merge.hets=TRUE)
+eval.o = svevalOl('calls.vcf', 'truth.vcf', geno.eval=TRUE, method="bipartite", stitch.hets=TRUE, merge.hets=TRUE)
 ```
 
 ### Frequency annotation
@@ -130,6 +134,10 @@ freqAnnotate('calls.vcf', 'gnomad.vcf', out.vcf='calls.withFreq.vcf')
 - For inversions, same as deletions. If using REF/ALT sequences (i.e. not symbolic ALT), inversions are variants longer than 10 bp where the reverse complement of ALT matches REF at least 80%.
 
 ![](docs/ol-cartoon.svg)
+
+When evaluating genotypes, the overlaps described above are used to build a bipartite graph. 
+Each *call* variant is matched with a *truth* variant using bipartite clustering. 
+All variants matched are considered true positives, and the rest errors.
 
 ## Docker
 

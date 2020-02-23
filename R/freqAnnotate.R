@@ -4,6 +4,7 @@
 ##' @param min.cov the minimum coverage to be considered a match. Default is 0.5
 ##' @param min.del.rol minimum reciprocal overlap for deletions. Default is 0.1
 ##' @param max.ins.dist maximum distance for insertions to be clustered. Default is 20.
+##' @param check.inv should the sequence of MNV be compared to identify inversions. 
 ##' @param ins.seq.comp compare sequence instead of insertion sizes. Default is FALSE.
 ##' @param out.vcf If non-NULL, write output to this VCF file. 
 ##' @param freq.field the field with the frequency estimate in the 'cat' input. Default is 'AF'.
@@ -23,15 +24,15 @@
 ##' cat.vcf = readSVvcf('gnomad.vcf', vcf.object=TRUE)
 ##' calls.freq.vcf = freqAnnotate(calls.vcf, cat.vcf)
 ##' }
-freqAnnotate <- function(svs, cat, min.cov=.5, min.del.rol=.1, max.ins.dist=20,
+freqAnnotate <- function(svs, cat, min.cov=.5, min.del.rol=.1, max.ins.dist=20, check.inv=FALSE,
                          ins.seq.comp=FALSE, out.vcf=NULL, freq.field='AF',
                          out.freq.field='AFMAX'){
 
   if(is.character(svs) && length(svs) == 1){
-    svs = readSVvcf(svs, vcf.object=TRUE)
+    svs = readSVvcf(svs, vcf.object=TRUE, check.inv=check.inv)
   }
   if(is.character(cat) && length(cat) == 1){
-    cat = readSVvcf(cat, vcf.object=TRUE)
+    cat = readSVvcf(cat, vcf.object=TRUE, check.inv=check.inv)
   }
   
   ## Read/parse inputs
@@ -47,6 +48,9 @@ freqAnnotate <- function(svs, cat, min.cov=.5, min.del.rol=.1, max.ins.dist=20,
   cat.gr$QUAL = VariantAnnotation::info(cat)$QUAL
 
   desc = VariantAnnotation::info(VariantAnnotation::header(cat))
+  if(!(freq.field %in% rownames(desc))){
+    stop(freq.field, ' is not an INFO field in the catalog')
+  }
   if(desc[freq.field, 'Number'] == '1'){
     cat.gr$freq = VariantAnnotation::info(cat)[[freq.field]]
   } else if(desc[freq.field, 'Number'] == 'A'){

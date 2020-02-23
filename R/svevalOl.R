@@ -29,10 +29,14 @@
 ##' Default is FALSE.
 ##' @param merge.rol the minimum reciprocal overlap to merge hets before genotype
 ##' evaluation.
+##' @param method the method to annotate the overlap. Either 'coverage' (default) for the
+##' cumulative coverage (e.g. to deal with fragmented calls); or 'bipartite' for a 1-to-1
+##' matching of variants in the calls and truth sets.
 ##' @return a list with
 ##' \item{eval}{a data.frame with TP, FP and FN for each SV type when including all variants}
 ##' \item{curve}{a data.frame with TP, FP and FN for each SV type when using different quality thesholds}
-##' \item{svs}{a list of GRanges object with FP, TP and FN for each SV type (when using QUAL>=0 threshold).}
+##' \item{svs}{a list of GRanges object with FP, TP and FN for each SV type (using QUAL threshold with best F1).}
+##' \item{mqual.bestf1}{the QUAL threshold that produces best F1 (and corresponding to 'svs' GRanges).}
 ##' @author Jean Monlong
 ##' @export
 ##' @examples
@@ -57,7 +61,7 @@ svevalOl <- function(calls.gr, truth.gr, max.ins.dist=20, min.cov=.5,
                      qual.ths=c(0, 2, 3, 4, 5, 7, 10, 12, 14, 21, 27, 35, 45, 50, 60, 75, 90, 99, 110, 133, 167, 180, 250, 350, 450, 550, 650),
                      qual.quantiles=seq(0,1,.1),
                      check.inv=FALSE, geno.eval=FALSE, stitch.hets=FALSE,
-                     stitch.dist=20, merge.hets=FALSE, merge.rol=.8){
+                     stitch.dist=20, merge.hets=FALSE, merge.rol=.8, method=c('coverage', 'bipartite')){
   if(is.character(calls.gr) & length(calls.gr)==1){
     calls.gr = readSVvcf(calls.gr, keep.ins.seq=ins.seq.comp, qual.field=qual.field, sample.name=sample.name, check.inv=check.inv)
   }
@@ -160,11 +164,11 @@ svevalOl <- function(calls.gr, truth.gr, max.ins.dist=20, min.cov=.5,
   }
   eval.quals.o = lapply(qual.r, function(mqual){
     ## Insertion annotation for each genotype
-    ins.a.gt = lapply(ol.gt, function(ll) annotateOl(ll$ol.ins, min.qual=mqual))
+    ins.a.gt = lapply(ol.gt, function(ll) annotateOl(ll$ol.ins, min.qual=mqual, method=method))
     ## Deletion annotation for each genotype
-    del.a.gt = lapply(ol.gt, function(ll) annotateOl(ll$ol.del, min.qual=mqual))
+    del.a.gt = lapply(ol.gt, function(ll) annotateOl(ll$ol.del, min.qual=mqual, method=method))
     ## Inversion annotation for each genotype
-    inv.a.gt = lapply(ol.gt, function(ll) annotateOl(ll$ol.inv, min.qual=mqual))
+    inv.a.gt = lapply(ol.gt, function(ll) annotateOl(ll$ol.inv, min.qual=mqual, method=method))
 
     ol.l = c(ins.a.gt, del.a.gt, inv.a.gt)
     ol.l = list(
@@ -189,7 +193,8 @@ svevalOl <- function(calls.gr, truth.gr, max.ins.dist=20, min.cov=.5,
   f1s = sapply(eval.quals.o, function(ll) ll$eval$F1[which(ll$eval$type=='Total')])
   bestf1 = utils::head(order(f1s, decreasing=TRUE), 1)
   eval.bestf1 = eval.quals.o[[bestf1]]
-
+  mqual.bestf1 = qual.r[bestf1]
+    
   ## Write BED files with FP, TP, FN
   if(!is.null(out.bed.prefix)){
     tmp = lapply(names(eval.bestf1$regions), function(svtype){
@@ -212,5 +217,5 @@ svevalOl <- function(calls.gr, truth.gr, max.ins.dist=20, min.cov=.5,
   if(!is.null(outfile)){
     utils::write.table(eval.df, file=outfile, sep='\t', row.names=FALSE, quote=FALSE)
   }
-  return(list(eval=eval.df, curve=eval.curve.df, svs=eval.bestf1$regions))
+  return(list(eval=eval.df, curve=eval.curve.df, svs=eval.bestf1$regions, mqual.bestf1=mqual.bestf1))
 }

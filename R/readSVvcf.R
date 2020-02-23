@@ -80,32 +80,33 @@ readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, keep.ref.seq=FALSE, sample.n
   }
 
   ## Any INFO fields that should be used
-  END.info = sum(!is.na(VariantAnnotation::info(vcf)$END))>0
-  SVLEN.info = sum(!is.na(VariantAnnotation::info(vcf)$SVLEN))>0
-  SVTYPE.info = sum(!is.na(VariantAnnotation::info(vcf)$SVTYPE))>0
-  INSLEN.info = sum(!is.na(VariantAnnotation::info(vcf)$INSLEN))>0
+  END.info = sum(!is.na(unlist(VariantAnnotation::info(vcf)$END)))>0
+  SVLEN.info = sum(!is.na(unlist(VariantAnnotation::info(vcf)$SVLEN)))>0
+  SVTYPE.info = sum(!is.na(unlist(VariantAnnotation::info(vcf)$SVTYPE)))>0
+  INSLEN.info = sum(!is.na(unlist(VariantAnnotation::info(vcf)$INSLEN)))>0
   ## Extract SV type and size
   ## First, try using SV-related info
   gr$size = gr$type = NA
   if(SVTYPE.info & (END.info | SVLEN.info)){
     gr$type = unlist(VariantAnnotation::info(vcf)$SVTYPE)
     if(SVLEN.info){
-      gr$size = abs(unlist(VariantAnnotation::info(vcf)$SVLEN))
+      gr$size = abs(unlist(lapply(VariantAnnotation::info(vcf)$SVLEN, '[', 1)))
     }
     if(INSLEN.info){
-      ins.len = abs(unlist(VariantAnnotation::info(vcf)$INSLEN))
+      ins.len = abs(unlist(lapply(VariantAnnotation::info(vcf)$INSLEN, '[', 1)))
       gr$size = ifelse(gr$type=='INS' & !is.na(ins.len),
                        ins.len,
                        gr$size)
     } 
     if(END.info){
-      ends.format = unlist(VariantAnnotation::info(vcf)$END)
+      ends.format = unlist(lapply(VariantAnnotation::info(vcf)$END, '[', 1))
       if(any(is.na(gr$size))){
         ## If some size info is missing, derive from the END coordinate
         gr$size = ifelse(is.na(gr$size) & gr$type != 'INS', ends.format-GenomicRanges::start(gr), gr$size)
       }
     }
   }
+
   ## Otherwise, use the REF/ALT sequences
   if(any(is.na(gr$size) | is.na(gr$type))) {
     ## ALT/REF
@@ -172,10 +173,12 @@ readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, keep.ref.seq=FALSE, sample.n
     gr$size = ifelse(is.na(gr$size) & gr$type %in% c('DEL', 'INS'), abs(alt.s - ref.s), gr$size)
     gr$size = ifelse(is.na(gr$size), GenomicRanges::width(gr), gr$size)
   }
-  ## In case there is no END info later, init with SVLEN
-  GenomicRanges::end(gr) = ifelse(is.na(gr$type) | gr$type=='INS' | is.na(gr$size) | gr$size<1,
-                                  GenomicRanges::end(gr),
-                                  GenomicRanges::start(gr) + gr$size)
+  ## Update the 'end' coordinate for ranges using the size.
+  ## E.g. deals with MNV-looking deletions where it's better to use the size delta also for coordinates.
+  update.end = !is.na(gr$type) & gr$type!='INS' & !is.na(gr$size) & gr$size>=1
+  GenomicRanges::end(gr) = ifelse(update.end,
+                                  GenomicRanges::start(gr) + gr$size,
+                                  GenomicRanges::end(gr))
 
   ## read support if available
   if('AD' %in% rownames(VariantAnnotation::geno(VariantAnnotation::header(vcf)))){

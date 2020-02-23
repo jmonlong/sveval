@@ -25,4 +25,5 @@ Imports:
 	shiny,
 	DiagrammeR,
         S4Vectors,
-	DT
+	DT,
+        igraph

@@ -21,6 +21,9 @@ stitchSVs <- function(svs, stitch.dist=20){
   ol = ol[which(ol$queryHits < ol$subjectHits),]
   ## Compute distance
   ol$d = GenomicRanges::distance(svs[ol$queryHits], svs[ol$subjectHits])
+  ## fix distance=0 for immediately adjacent regions
+  ol.any = IRanges::overlapsAny(svs[ol$queryHits], svs[ol$subjectHits])
+  ol$d = ifelse(ol$d==0 & !ol.any, 1, ol$d)
   ## Filter overlapping pairs, we want to stitch fragmented calls
   ## and we assume that fragmented pieces don't overlap
   ol = ol[which(ol$d>0),]
