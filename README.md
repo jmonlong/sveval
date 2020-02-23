@@ -4,6 +4,23 @@
 [![codecov](https://codecov.io/gh/jmonlong/sveval/branch/master/graph/badge.svg)](https://codecov.io/gh/jmonlong/sveval)
 
 Functions to compare a SV call sets against a truth set.
+This package uses mostly overlap-based metrics, although for insertions it can align the inserted sequences to match variants.
+It uses:
+
+- coverage-based metrics to evaluate SV *calling* without being affected by fragmented calls.
+- bipartite clustering to evaluate SV *genotyping*, combined with some tricks to minimize the effect of fragmented calls.
+
+1. [Installation](#installation)
+1. [Usage](#usage)
+    1. [Quickstart](#quickstart)
+    1. [Genotype evaluation](#genotype-evaluation)
+    1. [Evaluation per size or per region](#evaluation-per-size-or-per-region)
+    1. [Precision-recall curve comparing multiple methods](#precision-recall-curve-comparing-multiple-methods)
+    1. [Frequency annotation](#frequency-annotation)
+    1. [Snakemake pipeline](#snakemake-pipeline)
+1. [Methods](#methods)
+1. [Docker](#docker)
+1. [Interactive exploration of SVs in a variation graph](#interactive-exploration-of-svs-in-a-variation-graph)
 
 ## Installation
 
@@ -37,6 +54,8 @@ To install locally (e.g. in a HPC without root permission), one solution is to s
 
 ## Usage
 
+### Quickstart
+
 ```r
 library(sveval)
 eval.o = svevalOl('calls.vcf', 'truth.vcf')
@@ -60,38 +79,6 @@ Some of the most important other parameters:
 - `geno.eval`/`merge.hets`/`stitch.hets` options for genotype evaluation, see below.
 
 See full list of parameters in the [manual](docs/sveval-manual.pdf) or by typing `?svevalOl` in R.
-
-### Precision-recall curve comparing multiple methods
-
-```r
-eval.1 = svevalOl('calls1.vcf', 'truth.vcf')
-eval.2 = svevalOl('calls2.vcf', 'truth.vcf')
-plot_prcurve(list(eval.1$curve, eval.2$curve), labels=c('method1', 'method2'))
-```
-
-Or if the results were written in files:
-
-```r
-plot_prcurve(c('methods1-prcurve.tsv', 'methods2-prcurve.tsv'), labels=c('method1', 'method2'))
-```
-
-### Evaluation per size or per region
-
-The evaluation can already be narrowed down to a size range and a set of regions (`min.size=`/`max.size=`/`bed.regions=` in `svevalOl`).
-It's also interesting to split the result into (many) different SV classes without having to rerun `svevalOl`.
-Two functions are provided to take the output of `svevalOl` and compute the evaluation metrics per size class or per region: `plot_persize` and `plot_perregion`.
-Of note, there is no exploration of the calls' quality like for PR curves. 
-The new metrics are computed from the set of TP/FP/FN as defined by the "best" run (maximum F1 score).
-
-```r
-eval.o = svevalOl('calls.vcf', 'truth.vcf')
-plot_persize(eval.o)
-regs = GRanges(...)
-plot_perregion(eval.o, regs)
-```
-
-Both functions return a list of ggplot2 graphs.
-If using `plot=FALSE` they will return a data.frame.
 
 ### Genotype evaluation
 
@@ -117,6 +104,38 @@ Hence, the **recommended command for genotype evaluation**:
 eval.o = svevalOl('calls.vcf', 'truth.vcf', geno.eval=TRUE, method="bipartite", stitch.hets=TRUE, merge.hets=TRUE)
 ```
 
+### Evaluation per size or per region
+
+The evaluation can already be narrowed down to a size range and a set of regions (`min.size=`/`max.size=`/`bed.regions=` in `svevalOl`).
+It's also interesting to split the result into (many) different SV classes without having to rerun `svevalOl`.
+Two functions are provided to take the output of `svevalOl` and compute the evaluation metrics per size class or per region: `plot_persize` and `plot_perregion`.
+Of note, there is no exploration of the calls' quality like for PR curves. 
+The new metrics are computed from the set of TP/FP/FN as defined by the "best" run (maximum F1 score).
+
+```r
+eval.o = svevalOl('calls.vcf', 'truth.vcf')
+plot_persize(eval.o)
+regs = GRanges(...)
+plot_perregion(eval.o, regs)
+```
+
+Both functions return a list of ggplot2 graphs.
+If using `plot=FALSE` they will return a data.frame.
+
+### Precision-recall curve comparing multiple methods
+
+```r
+eval.1 = svevalOl('calls1.vcf', 'truth.vcf')
+eval.2 = svevalOl('calls2.vcf', 'truth.vcf')
+plot_prcurve(list(eval.1$curve, eval.2$curve), labels=c('method1', 'method2'))
+```
+
+Or if the results were written in files:
+
+```r
+plot_prcurve(c('methods1-prcurve.tsv', 'methods2-prcurve.tsv'), labels=c('method1', 'method2'))
+```
+
 ### Frequency annotation
 
 Assuming that we have a SV catalog with a field with frequency estimates, we can overlap called SVs and annotate them with the maximum frequency of overlapping SVs in the catalog.
@@ -127,17 +146,35 @@ For example:
 freqAnnotate('calls.vcf', 'gnomad.vcf', out.vcf='calls.withFreq.vcf')
 ```
 
+### Snakemake pipeline
+
+To streamline the process of evaluating multiple methods/VCFs, we use [Snakemake](https://snakemake.readthedocs.io/en/stable/index.html): more information in the [`snakemake` folder](snakmake).
+
 ## Methods
 
-- For deletions, at least 50% coverage and at least 10% reciprocal overlap.
+### SV presence
+
+To evaluate the *calling* performance, i.e. if the presence of a SV is correctly predicted disregarding the exact genotype, we use a coverage-based approach.
+In brief we ask how much a variant is "covered" by variants in the other set. 
+In contrast to a simple reciprocal overlap, this approach is robust to call fragmentation.
+
+The default criteria implemented are:
+
+- For deletions, at least 50% coverage by other deletions with at least 10% reciprocal overlap.
 - For insertions, size of nearby insertions (+- 20 bp) at least as much as 50% the size of insertion. Or comparing inserted sequence (sequence similarity instead of size).
 - For inversions, same as deletions. If using REF/ALT sequences (i.e. not symbolic ALT), inversions are variants longer than 10 bp where the reverse complement of ALT matches REF at least 80%.
 
 ![](docs/ol-cartoon.svg)
 
-When evaluating genotypes, the overlaps described above are used to build a bipartite graph. 
+### SV genotype
+
+When evaluating exact genotypes, heterozygous and homozygous variants are overlapped separately (with the same criteria described above).
+For each genotype, the overlaps are then used to build a bipartite graph. 
 Each *call* variant is matched with a *truth* variant using bipartite clustering. 
 All variants matched are considered true positives, and the rest errors.
+
+To reduce the effect of fragmented calls, we can stitch variants that are extremely close into one longer variant.
+Similarly, if two heterozygous variants are extremely similar, they can be merged into one homozygous variant.
 
 ## Docker
 

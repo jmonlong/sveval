@@ -1,0 +1,83 @@
+## Reference Fasta file
+REF = config['ref_fa']
+
+#### Enumerate all the output TSV files
+EVALOUT = ['prcurve', 'persize']
+REGS = config['regions'].split()
+EVAL = config['eval'].split()
+METHODS  = config['methods'].split()
+SAMPLES = config['samples'].split()
+INV = config['check_inv']
+PDF =  config['out_pdf']
+MIN_COV=config['min_cov']
+
+## Rules
+rule all:
+    input:
+        expand('tsv/hgsvc-{method}-{sample}-{region}-{eval}-{evalout}.tsv', method=METHODS,
+               sample=SAMPLES, region=REGS, eval=EVAL, evalout=EVALOUT)
+    output: PDF
+    shell:
+        'Rscript mergeTSVs.R {PDF} "{input}"'
+
+# Clean all the TSV and RData for the specified configuration. E.g. to rerun everything with a new sveval version.
+rule clean:
+    params:
+        tsv=expand('tsv/hgsvc-{method}-{sample}-{region}-{eval}-{evalout}.tsv', method=METHODS,
+                   sample=SAMPLES, region=REGS, eval=EVAL, evalout=EVALOUT),
+        rdata=expand('rdata/sveval-hgsvc-{method}-{sample}-{region}-{eval}.RData', method=METHODS,
+                   sample=SAMPLES, region=REGS, eval=EVAL)
+    shell:
+        'rm -rf {params.tsv} {params.rdata}'
+
+# bgzip a VCF file
+rule bgzip:
+    input: '{vcf}.vcf'
+    output: '{vcf}.vcf.gz'
+    shell:
+        'bgzip -c {input} > {output}'
+
+# normalize a VCF using bcftools
+rule vcfnorm:
+    input:
+        vcf="vcf/{exp}-{method}-{sample}.vcf.gz",
+    output:
+        "vcf/{exp}-{method}-{sample}.norm.vcf.gz"
+    shell:
+        'bcftools view {input.vcf} --exclude \'GT="0" || GT="." || GT="1"\' | bcftools norm - --fasta-ref {REF} --multiallelic -both | bcftools norm - --fasta-ref {REF} --multiallelic +both | bgzip > {output}'
+
+# function to eventually define more complex file inputs (e.g. to analyze different datasets with different reference versions)
+def evalinputs(wildcards):
+    ins = {}
+    ins['vcf'] = 'vcf/{}-{}-{}.norm.vcf.gz'.format(wildcards.exp, wildcards.method,
+                                                   wildcards.sample)
+    ins['truth'] = 'vcf/{}-truth-baseline.norm.vcf.gz'.format(wildcards.exp)
+    if wildcards.region == 'nonrep':
+        ins['bed'] = config['nonrep_bed']
+    return ins
+
+# run sveval on inputs. Creates a R object in 'rdata' folder
+rule sveval:
+    input:
+        unpack(evalinputs)
+    output:
+        "rdata/sveval-{exp}-{method}-{sample}-{region}-{eval}.RData"
+    run:
+        BED = "NA"
+        if wildcards.region != 'all':
+            BED = input.bed
+        GENO = wildcards.eval == 'geno'
+        SAMP = wildcards.sample
+        if wildcards.sample == 'chmpd':
+            SAMP = 'PSEUDOSET'
+        shell('Rscript sveval.R {input.vcf} {input.truth} {SAMP} {INV} {BED} {GENO} {output} {MIN_COV}')
+
+# extract some information and write TSVs in the 'tsv' folder
+rule parseeval:
+    input:
+        "rdata/sveval-{exp}-{method}-{sample}-{region}-{eval}.RData"
+    output:
+        pr="tsv/{exp}-{method}-{sample}-{region}-{eval}-prcurve.tsv",
+        ps="tsv/{exp}-{method}-{sample}-{region}-{eval}-persize.tsv"
+    shell:
+        "Rscript parseeval.R {input} {output}"
