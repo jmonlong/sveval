@@ -148,7 +148,7 @@ freqAnnotate('calls.vcf', 'gnomad.vcf', out.vcf='calls.withFreq.vcf')
 
 ### Snakemake pipeline
 
-To streamline the process of evaluating multiple methods/VCFs, we use [Snakemake](https://snakemake.readthedocs.io/en/stable/index.html): more information in the [`snakemake` folder](snakmake).
+To streamline the process of evaluating multiple methods/VCFs, we use [Snakemake](https://snakemake.readthedocs.io/en/stable/index.html): more information in the [`snakemake` folder](snakemake).
 
 ## Methods
 
