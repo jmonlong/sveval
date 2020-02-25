@@ -6,33 +6,61 @@
 ##' @param gr.l a list of GRanges. If named, the names are used to name the graph's panel.
 ##' @param region.gr the region of interest. If NULL (default), all variants are displayed.
 ##' @param pt.size the point (and line) sizes. Default is 2.
+##' @param lab.size the label size. Default is 4
 ##' @param maxgap the maximum gap allowed when filtering variants in regions. Default is 20.
 ##' @return a ggplot2 object
 ##' @author Jean Monlong
 ##' @export
-plot_ranges <- function(gr.l, region.gr=NULL, pt.size=2, maxgap=20){
+plot_ranges <- function(gr.l, region.gr=NULL, pt.size=2, lab.size=4, maxgap=20){
+
+  ## add number as names if missing
   if(is.null(names(gr.l))){
     names(gr.l) = 1:length(gr.l)
   }
+
+  ## zoom to region of interest
   if(!is.null(region.gr)){
     gr.l = lapply(gr.l, function(gr){
       IRanges::subsetByOverlaps(gr, region.gr, maxgap=maxgap)
     })
   }
+  ## keep elements with variants
   gr.l = gr.l[which(unlist(lapply(gr.l, length))>0)]
+
+  ## make a data.frame
   df = lapply(1:length(gr.l), function(ii){
     dff = GenomicRanges::as.data.frame(gr.l[[ii]])
     dff$set=names(gr.l)[ii]
-    dff[, c('seqnames', 'start', 'end', 'type', 'size', 'set')]
+    if(!('GT' %in% colnames(dff))){
+      dff$GT = NA
+    }
+    dff[, c('seqnames', 'start', 'end', 'type', 'size', 'set', 'GT')]
   })
   df = do.call(rbind, df)
+
+  ## order by start position and add IDs
   df = df[order(df$start),]
   df$id = 1:nrow(df)
-  start = end = type = id = set = size = NULL
+
+  ## label: "SIZE GT" or just "SIZE"
+  if(any(!is.na(df$GT))){
+    df$label = paste(df$size, df$GT) 
+  } else{
+    df$label = df$size
+  }
+
+  ## graph
+  start = end = type = id = set = label = NULL
+  min.pos = min(df$start, na.rm=TRUE)
+  max.pos = max(df$end, na.rm=TRUE)
+  pad.pos = max((max.pos-min.pos) * .1, 20)
   ggplot2::ggplot(df, ggplot2::aes(color=set)) +
     ggplot2::geom_point(ggplot2::aes(x=start, y=id, shape=type), size=pt.size*2) +
     ggplot2::geom_segment(ggplot2::aes(x=start, y=id, xend=end, yend=id), size=pt.size) +
-    ggplot2::geom_label(ggplot2::aes(x=end, y=id, label=size), hjust=0, vjust=1) + 
-    ggplot2::theme_bw() + ggplot2::theme(axis.text.y=ggplot2::element_blank()) + 
+    ggplot2::geom_label(ggplot2::aes(x=end, y=id, label=label), size=lab.size,
+                        hjust=0, vjust=1) + 
+    ggplot2::theme_bw() + ggplot2::theme(axis.text.y=ggplot2::element_blank()) +
+    ggplot2::scale_x_continuous(lim=c(min.pos-pad.pos, max.pos+pad.pos)) + 
+    ggplot2::scale_y_continuous(lim=c(0, max(df$id)+1)) + 
     ggplot2::xlab('position (bp)') + ggplot2::ylab('variant')
 }

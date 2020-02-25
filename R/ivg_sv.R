@@ -23,20 +23,23 @@ ivg_sv <- function(svs, xg, ucsc.genome='hg38'){
   svs.df = as.data.frame(svs) %>%
     dplyr::mutate(chr=.data$seqnames,
                   coord=paste0(.data$chr,':',.data$start,'-',.data$end)) %>% 
-    dplyr::filter(.data$chr=='chr10') %>% 
     dplyr::select(.data$coord, .data$type, .data$size)
-
+  svs.grl = GenomicRanges::split(svs, paste(svs$GT, svs$type))
+  
   ui <- shiny::fluidPage(
     shiny::titlePanel("IVG-SV"),
     shiny::sidebarLayout(
-      shiny::sidebarPanel(width=4,
+      shiny::sidebarPanel(width=3,
         shiny::numericInput('context', 'Context (nodes):', 3, min=1, max=100, step=1),
         DT::dataTableOutput('vartable')),
-      shiny::mainPanel(width=8,
-               shiny::column(3, shiny::selectInput('zoom', 'Zoom:',
+      shiny::mainPanel(width=9,
+                       shiny::fluidRow(
+                                shiny::column(4, shiny::selectInput('zoom', 'Zoom:',
                                                    c('100%','200%', '400%'), '100%')),
-        shiny::column(3, shiny::htmlOutput('url', class='btn btn-default action-button shiny-bound-input')),
-        shiny::uiOutput('svg')
+                                shiny::column(4, shiny::htmlOutput('url', class='btn btn-default action-button shiny-bound-input'))),
+                       shiny::fluidRow(shiny::plotOutput('ranges', height=300)),
+                       shiny::hr(),
+                       shiny::fluidRow(shiny::uiOutput('svg'))
       )
     )
   )
@@ -48,12 +51,23 @@ ivg_sv <- function(svs, xg, ucsc.genome='hg38'){
                              rownames=FALSE,
                              options=list(pageLength=15),
                              selection='single')
+    output$ranges <- shiny::renderPlot({
+      sv.sel = svs.df[input$vartable_rows_selected,]
+      ggp = NULL
+      if(!is.na(sv.sel$coord[1])){
+        gr = GenomicRanges::GRanges(sv.sel$coord[1])
+        ggp = plot_ranges(svs.grl, gr, maxgap=input$context * 32, pt.size=3, lab.size=6) +
+          ggplot2::theme(text=ggplot2::element_text(size=18))
+      }
+      return(ggp)
+    })
     output$diagram <- DiagrammeR::renderGrViz({
       sv.sel = svs.df[input$vartable_rows_selected,]
       find.o = system2('vg', args=c('find', '-x', xg, '-p', sv.sel$coord[1],
-                                    '-c', input$context), stdout='temp.vg')
-      mod.o = system2('vg', args=c('mod', '-u', 'temp.vg'), stdout='temp2.vg')
-      view.o = system2('vg', args=c('view', '-Sdp', 'temp2.vg'), stdout=TRUE)
+                                    '-c', input$context), stdout='temp_ivg_sv_subgraph.vg')
+      mod.o = system2('vg', args=c('mod', '-u', 'temp_ivg_sv_subgraph.vg'), stdout='temp_ivg_sv_subgraph_mod.vg')
+      view.o = system2('vg', args=c('view', '-Sdp', 'temp_ivg_sv_subgraph_mod.vg'), stdout=TRUE)
+      file.remove('temp_ivg_sv_subgraph.vg', 'temp_ivg_sv_subgraph_mod.vg')
       DiagrammeR::grViz(view.o)
     })
     output$svg = shiny::renderUI({
