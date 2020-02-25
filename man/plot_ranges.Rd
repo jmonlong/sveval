@@ -4,7 +4,8 @@
 \alias{plot_ranges}
 \title{Plot variants in a region}
 \usage{
-plot_ranges(gr.l, region.gr = NULL, pt.size = 2, maxgap = 20)
+plot_ranges(gr.l, region.gr = NULL, pt.size = 2, lab.size = 4,
+  maxgap = 20)
 }
 \arguments{
 \item{gr.l}{a list of GRanges. If named, the names are used to name the graph's panel.}
@@ -12,6 +13,8 @@ plot_ranges(gr.l, region.gr = NULL, pt.size = 2, maxgap = 20)
 \item{region.gr}{the region of interest. If NULL (default), all variants are displayed.}
 
 \item{pt.size}{the point (and line) sizes. Default is 2.}
+
+\item{lab.size}{the label size. Default is 4}
 
 \item{maxgap}{the maximum gap allowed when filtering variants in regions. Default is 20.}
 }
