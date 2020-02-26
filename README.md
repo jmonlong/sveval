@@ -185,3 +185,7 @@ A docker image of R with this package installed is available [here](https://hub.
 Using the `ivg_sv` function and a *xg* graph ([vg](https://github.com/vgteam/vg) must be installed):
 
 ![](docs/ivgsv.gif)
+
+The new version includes a linear representation of the variants in the region: 
+
+![](docs/ivgsv_screenshot.jpg)
