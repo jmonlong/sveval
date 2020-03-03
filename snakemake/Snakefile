@@ -5,6 +5,7 @@ REF = config['ref_fa']
 EVALOUT = ['prcurve', 'persize']
 REGS = config['regions'].split()
 EVAL = config['eval'].split()
+EXPS  = config['exp'].split()
 METHODS  = config['methods'].split()
 SAMPLES = config['samples'].split()
 INV = config['check_inv']
@@ -14,8 +15,8 @@ MIN_COV=config['min_cov']
 ## Rules
 rule all:
     input:
-        expand('tsv/hgsvc-{method}-{sample}-{region}-{eval}-{evalout}.tsv', method=METHODS,
-               sample=SAMPLES, region=REGS, eval=EVAL, evalout=EVALOUT)
+        expand('tsv/{exp}-{method}-{sample}-{region}-{eval}-{evalout}.tsv', exp=EXPS,
+               method=METHODS, sample=SAMPLES, region=REGS, eval=EVAL, evalout=EVALOUT)
     output: PDF
     shell:
         'Rscript mergeTSVs.R {PDF} "{input}"'
@@ -23,10 +24,12 @@ rule all:
 # Clean all the TSV and RData for the specified configuration. E.g. to rerun everything with a new sveval version.
 rule clean:
     params:
-        tsv=expand('tsv/hgsvc-{method}-{sample}-{region}-{eval}-{evalout}.tsv', method=METHODS,
+        tsv=expand('tsv/{exp}-{method}-{sample}-{region}-{eval}-{evalout}.tsv',
+                   exp=EXPS, method=METHODS,
                    sample=SAMPLES, region=REGS, eval=EVAL, evalout=EVALOUT),
-        rdata=expand('rdata/sveval-hgsvc-{method}-{sample}-{region}-{eval}.RData', method=METHODS,
-                   sample=SAMPLES, region=REGS, eval=EVAL)
+        rdata=expand('rdata/sveval-{exp}-{method}-{sample}-{region}-{eval}.RData',
+                     exp=EXPS, method=METHODS,
+                     sample=SAMPLES, region=REGS, eval=EVAL)
     shell:
         'rm -rf {params.tsv} {params.rdata}'
 
