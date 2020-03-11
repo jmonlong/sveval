@@ -1,4 +1,8 @@
 To streamline the process of evaluating multiple methods/VCFs, we use [Snakemake](https://snakemake.readthedocs.io/en/stable/index.html).
+The *sveval* docker image that we provide through [DockerHub](https://hub.docker.com/r/jmonlong/sveval/) contains all dependencies necessary to run the snakemake workflow (R+sveval, snakemake, bcftools, bgzip/tabix).
+
+It's a snakemake workflow so it should be as simple as naming the input correctly and running the `snakemake` command.
+The following instructions explain how to name the input file and set up the `config.yaml` file.
 
 The VCFs to analyze are placed in a `vcf` folder. 
 They must be named following the template: `{exp}-{method}-{sample}.vcf.gz` where:
