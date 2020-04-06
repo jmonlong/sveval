@@ -27,23 +27,26 @@ ivg_sv <- function(svs, xg, ucsc.genome='hg38'){
   svs.grl = GenomicRanges::split(svs, paste(svs$GT, svs$type))
   
   ui <- shiny::fluidPage(
-    shiny::titlePanel("IVG-SV"),
-    shiny::sidebarLayout(
-      shiny::sidebarPanel(width=3,
-        shiny::numericInput('context', 'Context (nodes):', 3, min=1, max=100, step=1),
-        DT::dataTableOutput('vartable')),
-      shiny::mainPanel(width=9,
-                       shiny::fluidRow(
-                                shiny::column(4, shiny::selectInput('zoom', 'Zoom:',
-                                                   c('100%','200%', '400%'), '100%')),
-                                shiny::column(4, shiny::htmlOutput('url', class='btn btn-default action-button shiny-bound-input'))),
-                       shiny::fluidRow(shiny::plotOutput('ranges', height=300)),
-                       shiny::hr(),
-                       shiny::fluidRow(shiny::uiOutput('svg'))
-      )
-    )
-  )
-
+                 shiny::titlePanel("IVG-SV"),
+                 shiny::sidebarLayout(
+                          shiny::sidebarPanel(
+                                   width=3,
+                                   shiny::selectInput('xg', '.xg file:', xg, xg[1]),
+                                   shiny::numericInput('context', 'Context (nodes):', 3, min=1, max=100, step=1),
+                                   DT::dataTableOutput('vartable')),
+                          shiny::mainPanel(
+                                   width=9,
+                                   shiny::fluidRow(
+                                            shiny::column(4, shiny::selectInput('zoom', 'Zoom:',
+                                                                                c('100%','200%', '400%'), '100%')),
+                                            shiny::column(4, shiny::htmlOutput('url', class='btn btn-default action-button shiny-bound-input'))),
+                                   shiny::fluidRow(shiny::plotOutput('ranges', height=300)),
+                                   shiny::hr(),
+                                   shiny::fluidRow(shiny::uiOutput('svg'))
+                                 )
+                        )
+               )
+  
   server <- function(input, output) {
     output$vartable <- DT::renderDataTable(
                              svs.df,
@@ -62,13 +65,17 @@ ivg_sv <- function(svs, xg, ucsc.genome='hg38'){
       return(ggp)
     })
     output$diagram <- DiagrammeR::renderGrViz({
-      sv.sel = svs.df[input$vartable_rows_selected,]
-      find.o = system2('vg', args=c('find', '-x', xg, '-p', sv.sel$coord[1],
-                                    '-c', input$context), stdout='temp_ivg_sv_subgraph.vg')
-      mod.o = system2('vg', args=c('mod', '-u', 'temp_ivg_sv_subgraph.vg'), stdout='temp_ivg_sv_subgraph_mod.vg')
-      view.o = system2('vg', args=c('view', '-Sdp', 'temp_ivg_sv_subgraph_mod.vg'), stdout=TRUE)
-      file.remove('temp_ivg_sv_subgraph.vg', 'temp_ivg_sv_subgraph_mod.vg')
-      DiagrammeR::grViz(view.o)
+      if(is.null(input$vartable_rows_selected)){
+        view.o = ''
+      } else {
+        sv.sel = svs.df[input$vartable_rows_selected,]
+        find.o = system2('vg', args=c('find', '-x', input$xg, '-p', sv.sel$coord[1],
+                                      '-c', input$context), stdout='temp_ivg_sv_subgraph.vg')
+        mod.o = system2('vg', args=c('mod', '-u', 'temp_ivg_sv_subgraph.vg'), stdout='temp_ivg_sv_subgraph_mod.vg')
+        view.o = system2('vg', args=c('view', '-Sdp', 'temp_ivg_sv_subgraph_mod.vg'), stdout=TRUE)
+        file.remove('temp_ivg_sv_subgraph.vg', 'temp_ivg_sv_subgraph_mod.vg')
+      }
+      return(DiagrammeR::grViz(view.o))
     })
     output$svg = shiny::renderUI({
       DiagrammeR::grVizOutput('diagram', width=input$zoom)
