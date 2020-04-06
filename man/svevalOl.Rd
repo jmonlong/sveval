@@ -4,17 +4,33 @@
 \alias{svevalOl}
 \title{SV evaluation based on overlap and variant size}
 \usage{
-svevalOl(calls.gr, truth.gr, max.ins.dist = 20, min.cov = 0.5,
-  min.del.rol = 0.1, ins.seq.comp = FALSE, nb.cores = 1,
-  min.size = 50, max.size = Inf, bed.regions = NULL,
-  bed.regions.ol = 0.5, qual.field = c("QUAL", "GQ"),
-  sample.name = NULL, outfile = NULL, out.bed.prefix = NULL,
-  qual.ths = c(0, 2, 3, 4, 5, 7, 10, 12, 14, 21, 27, 35, 45, 50, 60, 75,
-  90, 99, 110, 133, 167, 180, 250, 350, 450, 550, 650),
-  qual.quantiles = seq(0, 1, 0.1), check.inv = FALSE,
-  geno.eval = FALSE, stitch.hets = FALSE, stitch.dist = 20,
-  merge.hets = FALSE, merge.rol = 0.8, method = c("coverage",
-  "bipartite"))
+svevalOl(
+  calls.gr,
+  truth.gr,
+  max.ins.dist = 20,
+  min.cov = 0.5,
+  min.del.rol = 0.1,
+  ins.seq.comp = FALSE,
+  nb.cores = 1,
+  min.size = 50,
+  max.size = Inf,
+  bed.regions = NULL,
+  bed.regions.ol = 0.5,
+  qual.field = c("QUAL", "GQ"),
+  sample.name = NULL,
+  outfile = NULL,
+  out.bed.prefix = NULL,
+  qual.ths = c(0, 2, 3, 4, 5, 7, 10, 12, 14, 21, 27, 35, 45, 50, 60, 75, 90, 99, 110,
+    133, 167, 180, 250, 350, 450, 550, 650),
+  qual.quantiles = seq(0, 1, 0.1),
+  check.inv = FALSE,
+  geno.eval = FALSE,
+  stitch.hets = FALSE,
+  stitch.dist = 20,
+  merge.hets = FALSE,
+  merge.rol = 0.8,
+  method = c("coverage", "bipartite")
+)
 }
 \arguments{
 \item{calls.gr}{call set. A GRanges or the path to a VCF file.}

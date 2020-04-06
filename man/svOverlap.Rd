@@ -4,8 +4,15 @@
 \alias{svOverlap}
 \title{Overlap and annotate SV sets with coverage metrics}
 \usage{
-svOverlap(query, subject, max.ins.dist = 20, min.cov = 0.5,
-  min.del.rol = 0.1, ins.seq.comp = FALSE, nb.cores = 1)
+svOverlap(
+  query,
+  subject,
+  max.ins.dist = 20,
+  min.cov = 0.5,
+  min.del.rol = 0.1,
+  ins.seq.comp = FALSE,
+  nb.cores = 1
+)
 }
 \arguments{
 \item{query}{a GRanges object with SVs}

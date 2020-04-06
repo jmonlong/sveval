@@ -8,7 +8,7 @@
 ##' a VCF file.
 ##' @param xg the path to the xg object of the variation graph.
 ##' @param ucsc.genome the genome version for the UCSC Genome Browser automated link.
-##' @return Starts a Shniy app in a web browser.
+##' @return Starts a Shiny app in a web browser.
 ##' @author Jean Monlong
 ##' @importFrom magrittr %>%
 ##' @importFrom rlang .data
