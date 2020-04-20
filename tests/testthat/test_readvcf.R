@@ -21,21 +21,21 @@ test_that("VCF with symbolic SVs and different samples", {
 test_that("VCF with no QUAL but GQ field", {
   vcf = readSVvcf('../delly.vcf')
   expect_gt(length(vcf), 0)
-  expect_gt(sum(vcf$QUAL), 0)
+  expect_gt(sum(vcf$qual), 0)
 })
 
 test_that("VCF with existing QUAL and another FORMAT field", {
   vcf = readSVvcf('../calls.s0.vcf')
   vcf2 = readSVvcf('../calls.s0.vcf', qual.field='DP')
-  expect_true(any(vcf$QUAL != vcf2$QUAL))
+  expect_true(any(vcf$qual != vcf2$qual))
 })
 
 test_that("ALT/REF VCF with VCF output", {
-  vcf = readSVvcf('../truth.refalt.vcf', vcf.object=TRUE)
+  vcf = readSVvcf('../truth.refalt.vcf', out.fmt='vcf')
   expect_gt(length(vcf), 0)
 })
 
 test_that("VCF with symbolic SVs with VCF output", {
-  vcf = readSVvcf('../truth.symb.vcf', vcf.object=TRUE)
+  vcf = readSVvcf('../truth.symb.vcf', out.fmt='vcf')
   expect_gt(length(vcf), 0)
 })

@@ -7,7 +7,7 @@
 svevalOl(calls.gr, truth.gr, max.ins.dist = 20, min.cov = 0.5,
   min.del.rol = 0.1, ins.seq.comp = FALSE, nb.cores = 1,
   min.size = 50, max.size = Inf, bed.regions = NULL,
-  bed.regions.ol = 0.5, qual.field = c("QUAL", "GQ"),
+  bed.regions.ol = 0.5, qual.field = c("GQ", "QUAL"),
   sample.name = NULL, outfile = NULL, out.bed.prefix = NULL,
   qual.ths = c(0, 2, 3, 4, 5, 7, 10, 12, 14, 21, 27, 35, 45, 50, 60, 75,
   90, 99, 110, 133, 167, 180, 250, 350, 450, 550, 650),
@@ -41,7 +41,7 @@ svevalOl(calls.gr, truth.gr, max.ins.dist = 20, min.cov = 0.5,
 \item{bed.regions.ol}{minimum proportion of sv.gr that must overlap
 regions.gr. Default is 0.5}
 
-\item{qual.field}{fields to use as quality. Will be tried in order.}
+\item{qual.field}{fields to use as quality.}
 
 \item{sample.name}{the name of the sample to use if VCF files given as
 input. If NULL (default), use first sample.}
@@ -50,9 +50,9 @@ input. If NULL (default), use first sample.}
 
 \item{out.bed.prefix}{prefix for the output BED files. If NULL (default), no BED output.}
 
-\item{qual.ths}{the QUAL thresholds for the PR curve. If NULL, will use quantiles. see \code{qual.quantiles}.}
+\item{qual.ths}{the quality thresholds for the PR curve. If NULL, will use quantiles. see \code{qual.quantiles}.}
 
-\item{qual.quantiles}{the QUAL quantiles for the PR curve, if qual.ths is NULL. Default is (0, .1, ..., .9, 1).}
+\item{qual.quantiles}{the quality quantiles for the PR curve, if qual.ths is NULL. Default is (0, .1, ..., .9, 1).}
 
 \item{check.inv}{should the sequence of MNV be compared to identify inversions.}
 
@@ -78,8 +78,8 @@ matching of variants in the calls and truth sets.}
 a list with
 \item{eval}{a data.frame with TP, FP and FN for each SV type when including all variants}
 \item{curve}{a data.frame with TP, FP and FN for each SV type when using different quality thesholds}
-\item{svs}{a list of GRanges object with FP, TP and FN for each SV type (using QUAL threshold with best F1).}
-\item{mqual.bestf1}{the QUAL threshold that produces best F1 (and corresponding to 'svs' GRanges).}
+\item{svs}{a list of GRanges object with FP, TP and FN for each SV type (using quality threshold with best F1).}
+\item{mqual.bestf1}{the quality threshold that produces best F1 (and corresponding to 'svs' GRanges).}
 }
 \description{
 SV evaluation based on overlap and variant size

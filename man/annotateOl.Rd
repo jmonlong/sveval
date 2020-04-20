@@ -9,7 +9,7 @@ annotateOl(ol.l, min.qual = 0, method = c("coverage", "bipartite"))
 \arguments{
 \item{ol.l}{output of an overlap function (olInsertions or olRanges).}
 
-\item{min.qual}{the minimum QUAL considered for the calls.}
+\item{min.qual}{the minimum quality considered for the calls.}
 
 \item{method}{the method to annotate the overlap. Either 'coverage' (default) for the
 cumulative coverage (e.g. to deal with fragmented calls); or 'bipartite' for a 1-to-1

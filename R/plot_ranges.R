@@ -31,10 +31,10 @@ plot_ranges <- function(gr.l, region.gr=NULL, pt.size=2, lab.size=4, maxgap=20){
   df = lapply(1:length(gr.l), function(ii){
     dff = GenomicRanges::as.data.frame(gr.l[[ii]])
     dff$set=names(gr.l)[ii]
-    if(!('GT' %in% colnames(dff))){
-      dff$GT = NA
+    if(!('ac' %in% colnames(dff))){
+      dff$ac = NA
     }
-    dff[, c('seqnames', 'start', 'end', 'type', 'size', 'set', 'GT')]
+    dff[, c('seqnames', 'start', 'end', 'type', 'size', 'set', 'ac')]
   })
   df = do.call(rbind, df)
 
@@ -42,9 +42,9 @@ plot_ranges <- function(gr.l, region.gr=NULL, pt.size=2, lab.size=4, maxgap=20){
   df = df[order(df$start),]
   df$id = 1:nrow(df)
 
-  ## label: "SIZE GT" or just "SIZE"
-  if(any(!is.na(df$GT))){
-    df$label = paste(df$size, df$GT) 
+  ## label: "SIZE AC" or just "SIZE"
+  if(any(!is.na(df$ac))){
+    df$label = paste(df$size, df$ac) 
   } else{
     df$label = df$size
   }

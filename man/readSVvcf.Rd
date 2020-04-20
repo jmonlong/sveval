@@ -6,8 +6,8 @@
 \usage{
 readSVvcf(vcf.file, keep.ins.seq = FALSE, keep.ref.seq = FALSE,
   sample.name = NULL, qual.field = c("GQ", "QUAL"),
-  check.inv = FALSE, keep.ids = FALSE, nocalls = FALSE,
-  right.trim = TRUE, vcf.object = FALSE)
+  other.field = NULL, check.inv = FALSE, keep.ids = FALSE,
+  nocalls = FALSE, out.fmt = c("gr", "df", "vcf"), min.sv.size = 10)
 }
 \arguments{
 \item{vcf.file}{the path to the VCF file}
@@ -19,7 +19,10 @@ readSVvcf(vcf.file, keep.ins.seq = FALSE, keep.ref.seq = FALSE,
 \item{sample.name}{the name of the sample to use. If NULL (default), use
 first sample.}
 
-\item{qual.field}{fields to use as quality. Will be tried in order.}
+\item{qual.field}{field to use as quality. Can be in INFO (e.g. default GQ) or
+FORMAT (e.g. DP). If not found in INFO/FORMAT, QUAL field is used.}
+
+\item{other.field}{name of another field to extract from the INFO (e.g. AF). Default is NULL}
 
 \item{check.inv}{should the sequence of MNV be compared to identify inversions.}
 
@@ -27,10 +30,10 @@ first sample.}
 
 \item{nocalls}{if TRUE returns no-calls only (genotype ./.). Default FALSE.}
 
-\item{right.trim}{if TRUE (default) the REF/ALT sequences are right-trimmed
-after splitting up multi-ALT variants.}
+\item{out.fmt}{output format. Default is 'gr' for GRanges. Other options: 'df' for
+data.frame and 'vcf' for the VCF object from the VariantAnnotation package.}
 
-\item{vcf.object}{should the output be a VCF object instead. Default is FALSE.}
+\item{min.sv.size}{the minimum size of the variant to extract from the VCF. Default is 10}
 }
 \value{
 a GRanges object with relevant information.
@@ -39,9 +42,8 @@ a GRanges object with relevant information.
 Read a VCF file that contains SVs and create a GRanges with relevant information, e.g. SV size or genotype quality.
 }
 \details{
-By default, the quality information is taken from the QUAL field. If all
-values are NA or 0, the function will try other fields as speficied in
-the "qual.field" vector. Fields can be from the INFO or FORMAT fields.
+By default, the quality information is taken from the GQ field. If GQ (or the desired
+field) is missing from both FORMAT or INFO, QUAL will be used.
 }
 \examples{
 \dontrun{

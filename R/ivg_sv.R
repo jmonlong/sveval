@@ -24,7 +24,7 @@ ivg_sv <- function(svs, xg, ucsc.genome='hg38'){
     dplyr::mutate(chr=.data$seqnames,
                   coord=paste0(.data$chr,':',.data$start,'-',.data$end)) %>% 
     dplyr::select(.data$coord, .data$type, .data$size)
-  svs.grl = GenomicRanges::split(svs, paste(svs$GT, svs$type))
+  svs.grl = GenomicRanges::split(svs, paste(svs$ac, svs$type))
   
   ui <- shiny::fluidPage(
     shiny::titlePanel("IVG-SV"),

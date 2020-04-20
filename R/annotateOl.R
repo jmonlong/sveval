@@ -1,6 +1,6 @@
 ##' @title Annotate SVs from overlap
 ##' @param ol.l output of an overlap function (olInsertions or olRanges).
-##' @param min.qual the minimum QUAL considered for the calls.
+##' @param min.qual the minimum quality considered for the calls.
 ##' @param method the method to annotate the overlap. Either 'coverage' (default) for the
 ##' cumulative coverage (e.g. to deal with fragmented calls); or 'bipartite' for a 1-to-1
 ##' matching of variants in the calls and truth sets.
@@ -10,7 +10,7 @@
 ##' @importFrom rlang .data
 ##' @keywords internal
 annotateOl <- function(ol.l, min.qual=0, method=c('coverage', 'bipartite')){
-  hq.idx = which(ol.l$calls$QUAL >= min.qual)
+  hq.idx = which(ol.l$calls$qual >= min.qual)
   if(length(ol.l$truth)>0){
     ol.l$truth$cov = 0
   }

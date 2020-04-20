@@ -61,12 +61,12 @@ mergeHets <- function(svs, min.rol=.9, max.ins.gap=1, ins.seq.comp=FALSE){
   svs.merged = GenomicRanges::GRanges(chrs, IRanges::IRanges(starts, ends))
   ## Merge columns
   for(coln in colnames(GenomicRanges::mcols(svs))){
-    if(coln == 'GT'){
-      svs.merged$GT = 'hom'
-    } else if(coln == 'QUAL'){ # Should we use the average quality ???
-       svs.merged$QUAL = (svs$QUAL[ol$queryHits] + svs$QUAL[ol$subjectHits])/2
-    } else if(coln == 'ALT'){
-      svs.merged$ALT = svs$ALT[ol$queryHits]
+    if(coln == 'ac'){
+      svs.merged$ac = svs$ac[ol$queryHits] + svs$ac[ol$subjectHits]
+    } else if(coln == 'qual'){ # Should we use the average quality ???
+       svs.merged$qual = (svs$qual[ol$queryHits] + svs$qual[ol$subjectHits])/2
+    } else if(coln == 'alt'){
+      svs.merged$alt = svs$alt[ol$queryHits]
     } else if(coln == 'type'){
       svs.merged$type = svs$type[ol$queryHits]
     } else if(coln == 'size'){

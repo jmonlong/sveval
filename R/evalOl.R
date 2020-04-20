@@ -45,17 +45,17 @@ evalOl <- function(ol.l, min.cov=.8){
       ## Truth
       gr = ol.l$truth[which(ol.l$truth$type == svtype)]
       grr = gr[which(gr$cov / gr$size < min.cov)]
-      grr$ALT = NULL
+      grr$alt = NULL
       regs$FN = grr
       grr = gr[which(gr$cov / gr$size >= min.cov)]
-      grr$ALT = NULL
+      grr$alt = NULL
       regs$TP.baseline = grr
       ## Calls
       gr = ol.l$calls[which(ol.l$calls$type == svtype)]
       grr = gr[which(gr$cov / gr$size < min.cov)]
-      grr$ALT = NULL
+      grr$alt = NULL
       regs$FP = grr
-      gr$ALT = NULL
+      gr$alt = NULL
       grr = gr[which(gr$cov / gr$size >= min.cov)]
       regs$TP = grr
       regs

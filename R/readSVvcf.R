@@ -1,21 +1,22 @@
 ##' Read a VCF file that contains SVs and create a GRanges with relevant information, e.g. SV size or genotype quality.
 ##'
-##' By default, the quality information is taken from the QUAL field. If all
-##' values are NA or 0, the function will try other fields as speficied in
-##' the "qual.field" vector. Fields can be from the INFO or FORMAT fields.
+##' By default, the quality information is taken from the GQ field. If GQ (or the desired
+##' field) is missing from both FORMAT or INFO, QUAL will be used.  
 ##' @title Read SVs from a VCF file
 ##' @param vcf.file the path to the VCF file
 ##' @param keep.ins.seq should it keep the inserted sequence? Default is FALSE.
 ##' @param keep.ref.seq should it keep the reference allele sequence? Default is FALSE.
 ##' @param sample.name the name of the sample to use. If NULL (default), use
 ##' first sample.
-##' @param qual.field fields to use as quality. Will be tried in order.
+##' @param qual.field field to use as quality. Can be in INFO (e.g. default GQ) or
+##' FORMAT (e.g. DP). If not found in INFO/FORMAT, QUAL field is used.
+##' @param other.field name of another field to extract from the INFO (e.g. AF). Default is NULL
 ##' @param check.inv should the sequence of MNV be compared to identify inversions. 
 ##' @param keep.ids keep variant ids? Default is FALSE.
 ##' @param nocalls if TRUE returns no-calls only (genotype ./.). Default FALSE.
-##' @param right.trim if TRUE (default) the REF/ALT sequences are right-trimmed
-##' after splitting up multi-ALT variants.
-##' @param vcf.object should the output be a VCF object instead. Default is FALSE.
+##' @param out.fmt output format. Default is 'gr' for GRanges. Other options: 'df' for
+##' data.frame and 'vcf' for the VCF object from the VariantAnnotation package.
+##' @param min.sv.size the minimum size of the variant to extract from the VCF. Default is 10 
 ##' @return a GRanges object with relevant information.
 ##' @author Jean Monlong
 ##' @export
@@ -24,271 +25,104 @@
 ##' calls.gr = readSVvcf('calls.vcf')
 ##' }
 readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, keep.ref.seq=FALSE, sample.name=NULL,
-                      qual.field=c('GQ', 'QUAL'), check.inv=FALSE,
-                      keep.ids=FALSE, nocalls=FALSE, right.trim=TRUE,
-                      vcf.object=FALSE){
-  vcf = VariantAnnotation::readVcf(vcf.file, row.names=keep.ids)
-  GenomeInfoDb::seqlengths(vcf) = rep(NA, length(GenomeInfoDb::seqlengths(vcf)))
-  gr = DelayedArray::rowRanges(vcf)
-  
-  ## If no samples, read everything
-  if(length(VariantAnnotation::geno(vcf)) == 0){
-    gr$GT = '1'
-  } else {
-    ## If sample specified, retrieve appropriate GT
-    GT.idx = 1
-    if(!is.null(sample.name)){
-      GT.idx = which(sample.name == colnames(VariantAnnotation::geno(vcf)$GT))
-    } 
-    gr$GT = unlist(VariantAnnotation::geno(vcf)$GT[, GT.idx])
+                      qual.field=c('GQ', 'QUAL'), other.field=NULL, check.inv=FALSE,
+                      keep.ids=FALSE, nocalls=FALSE, out.fmt=c('gr', 'df', 'vcf'),
+                      min.sv.size=10){
+  ## guess if gzipped
+  con = file(vcf.file)
+  use_gz = FALSE
+  if(summary(con)$class == 'gzfile'){
+    use_gz = TRUE
   }
+  close(con)
   
-  ## Remove obvious SNVs
-  singlealt = which(unlist(lapply(Biostrings::nchar(gr$ALT), length))==1)
-  alt.sa = unlist(Biostrings::nchar(gr$ALT[singlealt]))
-  ref.sa = Biostrings::nchar(gr$REF[singlealt])
-  snv.idx = singlealt[which(ref.sa==1 & alt.sa==1)]
-  snv.idx = snv.idx[which(as.character(unlist(gr$ALT[snv.idx])) != as.character(gr$REF[snv.idx]))]
-  if(length(snv.idx)>0){
-    nonsnv.idx = setdiff(1:length(gr), snv.idx)
-    gr = gr[nonsnv.idx]
-    vcf = vcf[nonsnv.idx]
+  ## read VCF into a data.frame
+  if(is.null(sample.name)){
+    sample.name = ''
+  }
+  if(is.null(other.field)){
+    other.field = ''
+  }
+  svs = read_vcf_cpp(vcf.file, use_gz, sample_name=sample.name,
+                     shorten_ref=!keep.ref.seq, shorten_alt=!keep.ins.seq,
+                     check_inv=check.inv, gq_field=qual.field[1],
+                     keep_nocalls=nocalls, other_field=other.field,
+                     min_sv_size=min.sv.size)
+
+  ## Add missing information
+  svs$qual = ifelse(svs$qual==-1, NA, svs$qual)
+
+  ## Eventually convert the additional column extracted
+  if(other.field %in% colnames(svs)){
+    svs[, other.field] = utils::type.convert(svs[, other.field], as.is=TRUE)
   }
 
-  ## Remove "ref" variants or keep only no-calls variants
-  if(nocalls){
-    noc = which(gr$GT=='./.' | gr$GT=='.')
-    gr = gr[noc]
-    vcf = vcf[noc]
-  } else {
-    nonrefs = which(gr$GT!='0' & gr$GT!='0/0' & gr$GT!='0|0' & gr$GT!='./.' & gr$GT!='.')
-    gr = gr[nonrefs]
-    vcf = vcf[nonrefs]
+  ## Remove ids if we don't want them
+  if(!keep.ids){
+    svs$svid = NULL
   }
   
-  ## If no SVs
-  if(length(vcf) == 0){
-    if(!vcf.object){
-      gr$REF = gr$paramRangeID = gr$FILTER = NULL
-      if(!keep.ins.seq){
-        gr$ALT = NULL
-      }
-      return(gr)
+  ## Convert to GRanges or VCF object
+  if(out.fmt[1] == 'gr'){
+    if(nrow(svs)==0){
+      svs = GenomicRanges::GRanges()
     } else {
-      return(vcf)
+      svs = GenomicRanges::makeGRangesFromDataFrame(svs, keep.extra.columns=TRUE)
     }
   }
+  if(out.fmt[1] == 'vcf'){
 
-  ## Any INFO fields that should be used
-  END.info = sum(!is.na(unlist(VariantAnnotation::info(vcf)$END)))>0
-  SVLEN.info = sum(!is.na(unlist(VariantAnnotation::info(vcf)$SVLEN)))>0
-  SVTYPE.info = sum(!is.na(unlist(VariantAnnotation::info(vcf)$SVTYPE)))>0
-  INSLEN.info = sum(!is.na(unlist(VariantAnnotation::info(vcf)$INSLEN)))>0
-  ## Extract SV type and size
-  ## First, try using SV-related info
-  gr$size = gr$type = NA
-  if(SVTYPE.info & (END.info | SVLEN.info)){
-    gr$type = unlist(VariantAnnotation::info(vcf)$SVTYPE)
-    if(SVLEN.info){
-      gr$size = abs(unlist(lapply(VariantAnnotation::info(vcf)$SVLEN, '[', 1)))
-    }
-    if(INSLEN.info){
-      ins.len = abs(unlist(lapply(VariantAnnotation::info(vcf)$INSLEN, '[', 1)))
-      gr$size = ifelse(gr$type=='INS' & !is.na(ins.len),
-                       ins.len,
-                       gr$size)
-    } 
-    if(END.info){
-      ends.format = unlist(lapply(VariantAnnotation::info(vcf)$END, '[', 1))
-      if(any(is.na(gr$size))){
-        ## If some size info is missing, derive from the END coordinate
-        gr$size = ifelse(is.na(gr$size) & gr$type != 'INS', ends.format-GenomicRanges::start(gr), gr$size)
-      }
-    }
-  }
-
-  ## Otherwise, use the REF/ALT sequences
-  if(any(is.na(gr$size) | is.na(gr$type))) {
-    ## ALT/REF
-    if(nocalls){
-      ## For no-calls we just split the multi-allelic variants
-      idx = rep(1:length(gr), unlist(lapply(gr$ALT, length)))
-      als = unlist(lapply(gr$ALT, function(x) 1:length(x)))
-      gr = gr[idx]
-      vcf = vcf[idx]
+    if(nrow(svs)==0){
+      vcf.o = VariantAnnotation::VCF()
     } else {
-      ## Split and keep non-ref alleles
-      gt.s = strsplit(gr$GT, '[/\\|]')
-      gt.s = lapply(gt.s, unique)
-      idx = rep(1:length(gt.s), unlist(lapply(gt.s, length)))
-      als = unlist(gt.s)
-      keep = which(als!='0' & als!='.')
-      idx = idx[keep]
-      als = as.numeric(als[keep])
-      gr = gr[idx]
-      gr$al = als # save allele for quality extraction below
-      vcf = vcf[idx]
-    }
-    ## Get allele sequence
-    alts.seq = rep(NA, length(gr))
-    one.alt.idx = which(unlist(lapply(Biostrings::nchar(gr$ALT), length))==1)
-    alts.seq[one.alt.idx] = unlist(gr$ALT[one.alt.idx])
-    more.alt.idx = which(unlist(lapply(Biostrings::nchar(gr$ALT), length))>1)
-    alts.seq[more.alt.idx] = unlist(lapply(more.alt.idx, function(ii) as.character(unlist(gr$ALT[[ii]][als[ii]]))))
-    gr$ALT = Biostrings::DNAStringSet(alts.seq)
-    ## Right-trim REF/ALT
-    if(right.trim){
-      trim.size = estTrimSize(gr$REF, gr$ALT)
-      idx.trim = which(trim.size>0)
-      if(length(idx.trim)>0){
-        gr$REF[idx.trim] = Biostrings::DNAStringSet(lapply(idx.trim, function(ii)
-        {
-          trim.end = Biostrings::nchar(gr$REF[[ii]]) - trim.size[ii]
-          gr$REF[[ii]][1:trim.end]
-        }))
-        gr$ALT[idx.trim] = Biostrings::DNAStringSet(lapply(idx.trim, function(ii)
-        {
-          trim.end = Biostrings::nchar(gr$ALT[[ii]]) - trim.size[ii]
-          gr$ALT[[ii]][1:trim.end]
-        }))
+      vcf.o = VariantAnnotation::VCF(GenomicRanges::GRanges(
+                                                      svs$seqnames,
+                                                      IRanges::IRanges(svs$start, svs$end),
+                                                      ),
+                                     collapsed=FALSE)
+
+      VariantAnnotation::qual(vcf.o) = svs$qual
+      VariantAnnotation::ref(vcf.o) = Biostrings::DNAStringSet(svs$ref)
+      VariantAnnotation::alt(vcf.o) = svs$alt
+
+      info.h = S4Vectors::DataFrame(
+                            Number=rep('1', 4),
+                            Type=c(rep('Integer', 3), 'String'),
+                            Description=c(
+                              'End coordinate',
+                              'SV length (bp)',
+                              'Allele count (1:heterozygous, 2:homozygous)',
+                              'SV type (DEL, INS, INV)'))
+      rownames(info.h) = c('END', 'SVLEN', 'AC', 'SVTYPE')
+
+      info.df = S4Vectors::DataFrame(
+                             END=svs$end,
+                             SVLEN=svs$size,
+                             AC=svs$ac,
+                             SVTYPE=svs$type)
+      
+      ## other field
+      if(other.field != '' & other.field %in% colnames(svs)){
+        info.n = rownames(info.h)
+        info.h = rbind(info.h,
+                       x=S4Vectors::DataFrame(Number='1',
+                                              Type=ifelse(is.numeric(svs[,other.field]), 'Float', 'String'),
+                                              Description=''))
+        rownames(info.h) = c(info.n, other.field)
+        info.df = cbind(info.df, S4Vectors::DataFrame(OTHER=svs[,other.field]))
+        colnames(info.df)[ncol(info.df)] = other.field
       }
-    }
-    ## Compare ALT/REF size to define SV type
-    alt.s = Biostrings::nchar(gr$ALT)
-    ref.s = Biostrings::nchar(gr$REF)
-    ra.type = ifelse(alt.s>ref.s, 'INS', 'DEL')
-    ra.type = ifelse(alt.s==ref.s, 'MNV', ra.type)
-    ra.type = ifelse(alt.s==1 & ref.s==1, 'SNV', ra.type)
-    ## Variants other than clear DEL, INS or SNV. 
-    others = which(alt.s>10 & ref.s>10)
-    if(length(others)>0 & check.inv){
-      gr.inv = gr[others]
-      ref.seq = gr.inv$REF
-      isinv = checkInvSeq(gr.inv$REF, gr.inv$ALT)
-      ra.type[others] = ifelse(isinv, 'INV', ra.type[others])      
-    }
-    ## For insertions and deletions, use the difference of the REF/ALT sequences
-    ## For others (e.g. INV, DUP), just use the range size, i.e. the REF sequence length.
-    gr$type = ifelse(is.na(gr$type), ra.type, gr$type)
-    gr$size = ifelse(is.na(gr$size) & gr$type %in% c('DEL', 'INS'), abs(alt.s - ref.s), gr$size)
-    gr$size = ifelse(is.na(gr$size), GenomicRanges::width(gr), gr$size)
-  }
-  ## Update the 'end' coordinate for ranges using the size.
-  ## E.g. deals with MNV-looking deletions where it's better to use the size delta also for coordinates.
-  update.end = !is.na(gr$type) & gr$type!='INS' & !is.na(gr$size) & gr$size>=1
-  GenomicRanges::end(gr) = ifelse(update.end,
-                                  GenomicRanges::start(gr) + gr$size,
-                                  GenomicRanges::end(gr))
+      
+      VariantAnnotation::info(VariantAnnotation::header(vcf.o)) = info.h
+      VariantAnnotation::info(vcf.o) = info.df
+      names(vcf.o) = svs$svid
 
-  ## read support if available
-  if('AD' %in% rownames(VariantAnnotation::geno(VariantAnnotation::header(vcf)))){
-    ad.l = VariantAnnotation::geno(vcf)$AD[, GT.idx]
-    gr$ref.cov = unlist(lapply(ad.l, '[', 1))
-    gr$alt.cov = unlist(lapply(ad.l, '[', 2))
-  } else if(all(c('RO', 'AO') %in% rownames(VariantAnnotation::geno(VariantAnnotation::header(vcf))))){
-    gr$ref.cov = as.numeric(VariantAnnotation::geno(vcf)$RO)
-    gr$alt.cov = unlist(lapply(VariantAnnotation::geno(vcf)$AO, '[', 1))
-  } else {
-    gr$alt.cov = gr$ref.cov = NA
+      ## unname geno (otherwise error when using writeVcf)
+      names(VariantAnnotation::geno(vcf.o)) = character(0)
+    }
+    
+    svs = vcf.o
   }
 
-  ## Extract quality information
-  qual.found = FALSE
-  qfield.ii = 1
-  while(!qual.found & qfield.ii <= length(qual.field)){
-    if(qual.field[qfield.ii] == 'QUAL' & any(gr$QUAL>0, na.rm=TRUE)){
-      qual.found = TRUE
-    } else if(qual.field[qfield.ii] %in% names(VariantAnnotation::geno(vcf))){
-      qual.geno = VariantAnnotation::geno(vcf)[[qual.field[qfield.ii]]]
-      if(length(dim(qual.geno)) == 3){
-        ## Assuming that info for each allele starting with ref
-        if('al' %in% colnames(gr)){
-          ## If we know which allele to use
-          gr$QUAL = unlist(qual.geno[, GT.idx, gr$al + 1])
-        } else {
-          ## Otherwise assume only one alt
-          gr$QUAL = unlist(qual.geno[, GT.idx, 2])
-        }
-        qual.found = TRUE
-      } else if(length(dim(qual.geno)) == 2){
-        gr$QUAL = unlist(qual.geno[, GT.idx])
-        qual.found = TRUE
-      }
-    } else if(qual.field[qfield.ii] %in% colnames(VariantAnnotation::info(vcf))){
-      gr$QUAL = unlist(VariantAnnotation::info(vcf)[[qual.field[qfield.ii]]])
-      qual.found = TRUE
-    }
-    qfield.ii = qfield.ii + 1
-  }
-  ## Convert missing qualities to 0
-  if(any(is.na(gr$QUAL))){
-    gr$QUAL[which(is.na(gr$QUAL))] = 0
-  }
-
-  if(!nocalls){
-    ## Group into het/hom
-    homs = sapply(1:10, function(ii) paste0(ii, '/', ii))
-    homs = c(homs, sapply(1:10, function(ii) paste0(ii, '|', ii)))
-    gr$GT = ifelse(gr$GT %in% homs, 'hom', 'het')
-  }
-  
-  ## Remove unused columns
-  gr$paramRangeID = gr$FILTER = gr$al = NULL
-  if(!keep.ins.seq){
-    gr$ALT = NULL
-  }
-  if(!keep.ref.seq){
-    gr$REF = NULL
-  }
-
-  ## Remove SNVs and MNVs
-  vcf = vcf[which(gr$type!='SNV' & gr$type!='MNV')]
-  gr = gr[which(gr$type!='SNV' & gr$type!='MNV')]
-
-  ## Update VCF object if desired
-  if(vcf.object){
-    new.info.h = S4Vectors::DataFrame(Number='1', Type='String',
-                                      Description='Genotype of the sample')
-    new.info.n = 'GT'
-    ## SV type
-    if(!('SVTYPE' %in% names(VariantAnnotation::info(vcf)))){
-      new.info.n = c(new.info.n, 'SVTYPE')
-      new.info.h = rbind(new.info.h,
-                         S4Vectors::DataFrame(Number='1', Type='String',
-                                              Description='SV type'))
-    }
-    ## SV size
-    if(!('SIZE' %in% names(VariantAnnotation::info(vcf)))){
-      new.info.n = c(new.info.n, 'SIZE')
-      new.info.h = rbind(new.info.h,
-                         S4Vectors::DataFrame(Number='1', Type='Integer',
-                                              Description='SV size'))
-    }
-    ## quality
-    if(!('QUAL' %in% names(VariantAnnotation::info(vcf)))){
-      new.info.n = c(new.info.n, 'QUAL')
-      new.info.h = rbind(new.info.h,
-                         S4Vectors::DataFrame(Number='1', Type='Integer',
-                                              Description='Call quality'))
-    }
-    ## end
-    if(!('END' %in% names(VariantAnnotation::info(vcf)))){
-      new.info.n = c(new.info.n, 'END')
-      new.info.h = rbind(new.info.h,
-                         S4Vectors::DataFrame(Number='1', Type='Integer',
-                                              Description='End coordinate'))
-    }
-    row.names(new.info.h) = new.info.n
-    VariantAnnotation::info(VariantAnnotation::header(vcf)) =
-      rbind(VariantAnnotation::info(VariantAnnotation::header(vcf)),
-            new.info.h)
-    VariantAnnotation::info(vcf)$SVTYPE = gr$type
-    VariantAnnotation::info(vcf)$GT = gr$GT
-    VariantAnnotation::info(vcf)$SIZE = gr$size
-    VariantAnnotation::info(vcf)$QUAL = gr$QUAL
-    VariantAnnotation::info(vcf)$END = GenomicRanges::end(gr)
-    return(vcf)
-  } else {
-    return(gr)
-  }
+  return(svs)  
 }

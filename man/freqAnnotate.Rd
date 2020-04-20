@@ -41,8 +41,8 @@ Annotate SVs with frequency in catalog
 freqAnnotate('calls.vcf', 'gnomad.vcf', out.vcf='calls.withFreq.vcf')
 
 ## Within R
-calls.vcf = readSVvcf('calls.vcf', vcf.object=TRUE)
-cat.vcf = readSVvcf('gnomad.vcf', vcf.object=TRUE)
+calls.vcf = readSVvcf('calls.vcf', out.fmt="vcf")
+cat.vcf = readSVvcf('gnomad.vcf', out.fmt="vcf")
 calls.freq.vcf = freqAnnotate(calls.vcf, cat.vcf)
 }
 }
