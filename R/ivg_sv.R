@@ -15,17 +15,22 @@
 ##' @export
 ivg_sv <- function(svs, xg, ucsc.genome='hg38'){
 
+  ## read vcf if necessary
   if(is.character(svs) & length(svs)==1){
     message("Reading VCF file...")
     svs = readSVvcf(svs)
   }
-  
+
+  ## format SVs for the dynamic table
   svs.df = as.data.frame(svs) %>%
     dplyr::mutate(chr=.data$seqnames,
-                  coord=paste0(.data$chr,':',.data$start,'-',.data$end)) %>% 
+                  coord=paste0(.data$chr,':',.data$start,'-',.data$end),
+                  type=factor(.data$type)) %>% 
     dplyr::select(.data$coord, .data$type, .data$size)
+  ## prepare list of GRanges for plot_ranges graph (here one horizontal panel per type+genotype).
   svs.grl = GenomicRanges::split(svs, paste(svs$GT, svs$type))
-  
+
+  ## app interface
   ui <- shiny::fluidPage(
                  shiny::titlePanel("IVG-SV"),
                  shiny::sidebarLayout(
@@ -46,16 +51,20 @@ ivg_sv <- function(svs, xg, ucsc.genome='hg38'){
                                  )
                         )
                )
-  
+
+  ## server side of the app
   server <- function(input, output) {
+    ## dynamic table
     output$vartable <- DT::renderDataTable(
                              svs.df,
                              filter='top',
                              rownames=FALSE,
                              options=list(pageLength=15),
                              selection='single')
+    ## ggplot graph with the SVs in the region
     output$ranges <- shiny::renderPlot({
       sv.sel = svs.df[input$vartable_rows_selected,]
+      ## if no variant was select, don't try to make the graph and return NULL
       ggp = NULL
       if(!is.na(sv.sel$coord[1])){
         gr = GenomicRanges::GRanges(sv.sel$coord[1])
@@ -64,22 +73,30 @@ ivg_sv <- function(svs, xg, ucsc.genome='hg38'){
       }
       return(ggp)
     })
+    ## diagram representing the subgraph around the variant extracted from vg view
     output$diagram <- DiagrammeR::renderGrViz({
       if(is.null(input$vartable_rows_selected)){
+        ## if no variant was select, don't try to make a diagram
         view.o = ''
       } else {
         sv.sel = svs.df[input$vartable_rows_selected,]
+        ## extract subgraph in region
         find.o = system2('vg', args=c('find', '-x', input$xg, '-p', sv.sel$coord[1],
                                       '-c', input$context), stdout='temp_ivg_sv_subgraph.vg')
+        ## merge consecutive nodes (unchop)
         mod.o = system2('vg', args=c('mod', '-u', 'temp_ivg_sv_subgraph.vg'), stdout='temp_ivg_sv_subgraph_mod.vg')
+        ## make .dot diagram using vg view
         view.o = system2('vg', args=c('view', '-Sdp', 'temp_ivg_sv_subgraph_mod.vg'), stdout=TRUE)
         file.remove('temp_ivg_sv_subgraph.vg', 'temp_ivg_sv_subgraph_mod.vg')
       }
+      ## return a vialualization of the dot diagram
       return(DiagrammeR::grViz(view.o))
     })
+    ## for some reason another level of render function was necessary to export to svg (I think)
     output$svg = shiny::renderUI({
       DiagrammeR::grVizOutput('diagram', width=input$zoom)
     })
+    ## text for the button. link to the region in the UCSC browser
     output$url = shiny::renderText({
       sv.sel = svs.df[input$vartable_rows_selected,]      
       paste0('<a href="https://genome.ucsc.edu/cgi-bin/hgTracks?db=', ucsc.genome,
@@ -87,5 +104,6 @@ ivg_sv <- function(svs, xg, ucsc.genome='hg38'){
     })
   }
 
+  ## launch app
   shiny::shinyApp(ui=ui, server=server)
 }
