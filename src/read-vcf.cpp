@@ -183,7 +183,7 @@ DataFrame read_vcf_cpp(std::string filename, bool use_gz, std::string sample_nam
 
     // rare situation where we don't want to guess the size/end from REF/ALT sequence
     // but some information is missing from the INFO field
-    if (svtype == "INV"){
+    if ((svtype == "INV") & (size == -1)){
       size = ref_l;
     } 
 
