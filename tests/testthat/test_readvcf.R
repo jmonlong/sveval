@@ -15,6 +15,8 @@ test_that("VCF with symbolic SVs and different samples", {
   expect_gt(length(vcf), 0)
   vcf2 = readSVvcf('../truth.symb.vcf', sample.name='s1')
   expect_gt(length(vcf2), 0)
+  vcf = subset(vcf, ac>0)
+  vcf2 = subset(vcf2, ac>0)
   expect_true(length(vcf) != length(vcf2))
 })
 

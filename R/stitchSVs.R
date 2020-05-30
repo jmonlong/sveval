@@ -53,9 +53,7 @@ stitchSVs <- function(svs, stitch.dist=20){
     } else if(coln == 'qual'){ # Should we use the average quality ???
        svs.stitch$qual = (svs$qual[ol$queryHits] + svs$qual[ol$subjectHits])/2
     } else if(coln == 'alt'){
-      svs.stitch$alt = Biostrings::DNAStringSet(lapply(1:nrow(ol), function(ii){
-        c(svs$alt[[ol$queryHits[ii]]], svs$alt[[ol$subjectHits[ii]]])
-      }))
+      svs.stitch$alt = paste(svs$alt[ol$queryHits], svs$alt[ol$subjectHits], sep='NNN')
     } else if(coln == 'type'){
       svs.stitch$type = svs$type[ol$queryHits]
     } else if(coln == 'size'){

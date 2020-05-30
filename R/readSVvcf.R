@@ -1,13 +1,24 @@
 ##' Read a VCF file that contains SVs and create a GRanges with relevant information, e.g. SV size or genotype quality.
-##'
+##' 
 ##' By default, the quality information is taken from the GQ field. If GQ (or the desired
-##' field) is missing from both FORMAT or INFO, QUAL will be used.  
+##' field) is missing from both FORMAT or INFO, QUAL will be used.
+##'
+##' The 'sample.name' argument can be used to select genotypes for specific sample from the VCF. In addition,
+##' variants that are homozygous reference in this sample will be filtered. If 'sample.name' is not in
+##' the VCF, the first sample will be selected (default). To force the entire VCF to be read no matter the
+##' genotypes of samples, use 'sample.name=NULL'.
+##'
+##' Alleles are split and, for each, column 'ac' reports the allele count. Notable cases incude
+##' 'ac=-1' for no/missing calls (e.g. './.'), and 'ac=0' on the first allele to report hom ref,
+##' variants. These cases are often filtered later with 'ac>0' to keep only non-ref calls. If
+##' the VCF contains no samples or if no sample selection if forced (sample.name=NULL), 'ac' will
+##' contain '-1' for all variants in the VCF.
 ##' @title Read SVs from a VCF file
 ##' @param vcf.file the path to the VCF file
 ##' @param keep.ins.seq should it keep the inserted sequence? Default is FALSE.
 ##' @param keep.ref.seq should it keep the reference allele sequence? Default is FALSE.
-##' @param sample.name the name of the sample to use. If NULL (default), use
-##' first sample.
+##' @param sample.name the name of the sample to use. If "" (default) or sample names not in the VCF,
+##' select the first sample. If NULL, don't select particular sample.
 ##' @param qual.field field to use as quality. Can be in INFO (e.g. default GQ) or
 ##' FORMAT (e.g. DP). If not found in INFO/FORMAT, QUAL field is used.
 ##' @param other.field name of another field to extract from the INFO (e.g. AF). Default is NULL
@@ -17,18 +28,24 @@
 ##' @param out.fmt output format. Default is 'gr' for GRanges. Other options: 'df' for
 ##' data.frame and 'vcf' for the VCF object from the VariantAnnotation package.
 ##' @param min.sv.size the minimum size of the variant to extract from the VCF. Default is 10 
-##' @return a GRanges object with relevant information.
+##' @return depending on 'out.fmt', a GRanges, data.frame, or VCF object with relevant information.
 ##' @author Jean Monlong
 ##' @export
 ##' @examples
 ##' \dontrun{
 ##' calls.gr = readSVvcf('calls.vcf')
 ##' }
-readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, keep.ref.seq=FALSE, sample.name=NULL,
+readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, keep.ref.seq=FALSE, sample.name='',
                       qual.field=c('GQ', 'QUAL'), other.field=NULL, check.inv=FALSE,
                       keep.ids=FALSE, nocalls=FALSE, out.fmt=c('gr', 'df', 'vcf'),
                       min.sv.size=10){
-  ## guess if gzipped
+  ## check file path
+  vcf.file = path.expand(vcf.file)
+  if(!file.exists(vcf.file)){
+    stop(vcf.file, ' not found')
+  }
+
+  ## guess if gzipped or not
   con = file(vcf.file)
   use_gz = FALSE
   if(summary(con)$class == 'gzfile'){
@@ -38,7 +55,8 @@ readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, keep.ref.seq=FALSE, sample.n
   
   ## read VCF into a data.frame
   if(is.null(sample.name)){
-    sample.name = ''
+    ## if NULL, read the entire VCF, encoded with a * in the cpp function
+    sample.name = '*'
   }
   if(is.null(other.field)){
     other.field = ''

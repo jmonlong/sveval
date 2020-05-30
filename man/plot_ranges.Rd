@@ -4,8 +4,7 @@
 \alias{plot_ranges}
 \title{Plot variants in a region}
 \usage{
-plot_ranges(gr.l, region.gr = NULL, pt.size = 2, lab.size = 4,
-  maxgap = 20)
+plot_ranges(gr.l, region.gr = NULL, pt.size = 2, lab.size = 4, maxgap = 20)
 }
 \arguments{
 \item{gr.l}{a list of GRanges. If named, the names are used to name the graph's panel.}

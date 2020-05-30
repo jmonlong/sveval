@@ -41,10 +41,16 @@ std::string rev_comp(std::string seq){
 //' If multiple alleles are defined in ALT, they are split and the allele count extracted
 //' from the GT field.
 //'
+//' Alleles are split and, for each, column 'ac' reports the allele count. Notable cases incude
+//' 'ac=-1' for no/missing calls (e.g. './.'), and 'ac=0' on the first allele to report hom ref,
+//' variants. These cases are often filtered later with 'ac>0' to keep only non-ref calls. If
+//' the VCF contains no samples or if no sample selection if forced (sample_name='*'), 'ac' will
+//' contain '-1' for all variants in the VCF.
 //' @title Read VCF using CPP reader
 //' @param filename the path to the VCF file (unzipped or gzipped).
 //' @param use_gz is the VCF file gzipped?
 //' @param sample_name which sample to process. If not found, uses first sample in VCF file.
+//' If "*", force no sample selection
 //' @param min_sv_size minimum variant size to keep in bp. Variants shorter than this
 //' will be skipped. Default is 10. 
 //' @param shorten_ref should the REF sequence be shortened to the first 10 bp. Default is TRUE
@@ -100,7 +106,7 @@ DataFrame read_vcf_cpp(std::string filename, bool use_gz, std::string sample_nam
       if(line[1] != '#'){
         // header line with column names including sample names
         std::vector<std::string> header_v = split_str(line);
-        if(header_v.size() >= 10){ // samples in VCF
+        if((header_v.size() >= 10) & (sample_name != "*")){ // samples in VCF
           sample_col = 9; // default is first sample column
           for(unsigned int ii=9; ii<header_v.size(); ii++){
             if(header_v[ii] == sample_name){
@@ -189,6 +195,7 @@ DataFrame read_vcf_cpp(std::string filename, bool use_gz, std::string sample_nam
 
     // decide which alleles to process
     std::map<int,int> als_count;
+    bool any_nonref = false; // any non-ref allele. if not, include hom ref in output
     if(sample_col == -1){
       // keep all alleles
       for(unsigned int ii=0; ii < alt_seqs.size(); ii++){
@@ -206,7 +213,7 @@ DataFrame read_vcf_cpp(std::string filename, bool use_gz, std::string sample_nam
       // split GT
       if(gt_fields.find("GT") == gt_fields.end()){
         Rcout << "GT is missing from FORMAT and genotype field, exiting." << std::endl;
-        als_count[0] = 0;
+        als_count[0] = -1;
       } else {
         std::string gt_value = gt_fields["GT"];
         std::vector<std::string> gt_s;
@@ -220,15 +227,17 @@ DataFrame read_vcf_cpp(std::string filename, bool use_gz, std::string sample_nam
         // count how many times each allele is present.
         // for diploid: 1=het, 2=hom (e.g. 1/1)
         for(unsigned int ii=0; ii<gt_s.size(); ii++){
-          int al_id = 0; // default to first allele, for example to record no-calls (e.g. './.')
           if(gt_s[ii] == "."){
-            // if missing genotype save the allele but don't add to allele count
-            if(als_count.count(al_id) == 0){
-              als_count[al_id] = 0;
+            // if missing genotype, save the allele but don't add to allele count
+            if(als_count.count(0) == 0){
+              als_count[0] = -1;
             }
           } else {
             // otherwise increment the allele count of the appropriate allele
-            al_id = atoi(gt_s[ii].c_str()) - 1;
+            int al_id = atoi(gt_s[ii].c_str()) - 1;
+            if(al_id > -1){
+              any_nonref = true;
+            }
             if(als_count.count(al_id) == 0){
               als_count[al_id] = 1;
             } else {
@@ -256,11 +265,19 @@ DataFrame read_vcf_cpp(std::string filename, bool use_gz, std::string sample_nam
     
     // for each allele to process, update info and output columns
     for(std::map<int,int>::iterator iter=als_count.begin(); iter!=als_count.end(); iter++){
-      if(iter->first == -1){
-        // ref allele skip
-        continue;
+      int al_id = iter->first;
+      int al_count = iter->second;
+      if(al_id == -1){
+        if(any_nonref){
+          // skip ref allele because we found at least one alt allele
+          continue;
+        } else {
+          // output hom ref, i.e. first allele with ac=0
+          al_id = 0;
+          al_count = 0;
+        }
       }
-      int alt_l = alt_seqs[iter->first].length();
+      int alt_l = alt_seqs[al_id].length();
       // update size if necessary
       int size_al = size;
       if (size_al == -1){
@@ -280,7 +297,7 @@ DataFrame read_vcf_cpp(std::string filename, bool use_gz, std::string sample_nam
         }
         // compare REF vs ALT to guess invesions
         if(check_inv & (alt_l > 10) & (ref_l > 10)){
-          std::string alt_rc = rev_comp(alt_seqs[iter->first]);
+          std::string alt_rc = rev_comp(alt_seqs[al_id]);
           // compare sequences
           EdlibAlignResult ed_o = edlibAlign(line_v[3].c_str(), ref_l,
                                              alt_rc.c_str(), alt_l,
@@ -296,8 +313,9 @@ DataFrame read_vcf_cpp(std::string filename, bool use_gz, std::string sample_nam
       if(size_al < min_sv_size){
         continue;
       }
-      // skip if not called, e.g. './.' (except if we want to keep no-calls)
-      if((iter->second == 0) & !keep_nocalls){
+      // skip if not called, e.g. './.'
+      // (except if we want to keep no-calls or we are not selecting for a specific sample)
+      if((al_count == -1) & !keep_nocalls & (sample_col > 0)){
         continue;
       }
       // update end if necessary
@@ -315,7 +333,7 @@ DataFrame read_vcf_cpp(std::string filename, bool use_gz, std::string sample_nam
       starts.push_back(start_rec);
       ends.push_back(end_rec_al);
       svids.push_back(line_v[2]);
-      acs.push_back(iter->second);
+      acs.push_back(al_count);
       sizes.push_back(size_al);
       svtypes.push_back(svtype_al);
       quals.push_back(qual);
@@ -327,7 +345,7 @@ DataFrame read_vcf_cpp(std::string filename, bool use_gz, std::string sample_nam
       }
       refs.push_back(ref_seq);
       // shorten REF is necessary
-      std::string alt_seq = alt_seqs[iter->first];
+      std::string alt_seq = alt_seqs[al_id];
       if(shorten_alt & (alt_seq.length() > 10)){
         alt_seq = alt_seq.substr(0, 10).insert(10, "...");
       }

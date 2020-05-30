@@ -4,8 +4,13 @@
 \alias{olInsertions}
 \title{Overlap calls and truth set for insertions}
 \usage{
-olInsertions(calls.gr, truth.gr, max.ins.gap = 1, ins.seq.comp = FALSE,
-  nb.cores = 1)
+olInsertions(
+  calls.gr,
+  truth.gr,
+  max.ins.gap = 1,
+  ins.seq.comp = FALSE,
+  nb.cores = 1
+)
 }
 \arguments{
 \item{calls.gr}{call set}

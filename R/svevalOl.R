@@ -62,12 +62,19 @@ svevalOl <- function(calls.gr, truth.gr, max.ins.dist=20, min.cov=.5,
                      qual.quantiles=seq(0,1,.1),
                      check.inv=FALSE, geno.eval=FALSE, stitch.hets=FALSE,
                      stitch.dist=20, merge.hets=FALSE, merge.rol=.8, method=c('coverage', 'bipartite')){
+  ## to retrieve the first sample, use something like "" in readSVvcf (NULL means all variants)
+  if(is.null(sample.name)){
+    sample.name = ''
+  }
   if(is.character(calls.gr) & length(calls.gr)==1){
     calls.gr = readSVvcf(calls.gr, keep.ins.seq=ins.seq.comp, qual.field=qual.field, sample.name=sample.name, check.inv=check.inv)
   }
   if(is.character(truth.gr) & length(truth.gr)==1){
     truth.gr = readSVvcf(truth.gr, keep.ins.seq=ins.seq.comp, qual.field=qual.field, sample.name=sample.name, check.inv=check.inv)
   }
+  # keep only non-ref calls
+  calls.gr = calls.gr[which(calls.gr$ac>0)]
+  truth.gr = truth.gr[which(truth.gr$ac>0)]
   if(length(truth.gr) == 0){
     stop("Truth set has no SVs.")
   }

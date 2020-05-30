@@ -4,10 +4,19 @@
 \alias{readSVvcf}
 \title{Read SVs from a VCF file}
 \usage{
-readSVvcf(vcf.file, keep.ins.seq = FALSE, keep.ref.seq = FALSE,
-  sample.name = NULL, qual.field = c("GQ", "QUAL"),
-  other.field = NULL, check.inv = FALSE, keep.ids = FALSE,
-  nocalls = FALSE, out.fmt = c("gr", "df", "vcf"), min.sv.size = 10)
+readSVvcf(
+  vcf.file,
+  keep.ins.seq = FALSE,
+  keep.ref.seq = FALSE,
+  sample.name = "",
+  qual.field = c("GQ", "QUAL"),
+  other.field = NULL,
+  check.inv = FALSE,
+  keep.ids = FALSE,
+  nocalls = FALSE,
+  out.fmt = c("gr", "df", "vcf"),
+  min.sv.size = 10
+)
 }
 \arguments{
 \item{vcf.file}{the path to the VCF file}
@@ -16,8 +25,8 @@ readSVvcf(vcf.file, keep.ins.seq = FALSE, keep.ref.seq = FALSE,
 
 \item{keep.ref.seq}{should it keep the reference allele sequence? Default is FALSE.}
 
-\item{sample.name}{the name of the sample to use. If NULL (default), use
-first sample.}
+\item{sample.name}{the name of the sample to use. If "" (default) or sample names not in the VCF,
+select the first sample. If NULL, don't select particular sample.}
 
 \item{qual.field}{field to use as quality. Can be in INFO (e.g. default GQ) or
 FORMAT (e.g. DP). If not found in INFO/FORMAT, QUAL field is used.}
@@ -36,7 +45,7 @@ data.frame and 'vcf' for the VCF object from the VariantAnnotation package.}
 \item{min.sv.size}{the minimum size of the variant to extract from the VCF. Default is 10}
 }
 \value{
-a GRanges object with relevant information.
+depending on 'out.fmt', a GRanges, data.frame, or VCF object with relevant information.
 }
 \description{
 Read a VCF file that contains SVs and create a GRanges with relevant information, e.g. SV size or genotype quality.
@@ -44,6 +53,17 @@ Read a VCF file that contains SVs and create a GRanges with relevant information
 \details{
 By default, the quality information is taken from the GQ field. If GQ (or the desired
 field) is missing from both FORMAT or INFO, QUAL will be used.
+
+The 'sample.name' argument can be used to select genotypes for specific sample from the VCF. In addition,
+variants that are homozygous reference in this sample will be filtered. If 'sample.name' is not in
+the VCF, the first sample will be selected (default). To force the entire VCF to be read no matter the
+genotypes of samples, use 'sample.name=NULL'.
+
+Alleles are split and, for each, column 'ac' reports the allele count. Notable cases incude
+'ac=-1' for no/missing calls (e.g. './.'), and 'ac=0' on the first allele to report hom ref,
+variants. These cases are often filtered later with 'ac>0' to keep only non-ref calls. If
+the VCF contains no samples or if no sample selection if forced (sample.name=NULL), 'ac' will
+contain '-1' for all variants in the VCF.
 }
 \examples{
 \dontrun{

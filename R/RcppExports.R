@@ -6,10 +6,16 @@
 #' If multiple alleles are defined in ALT, they are split and the allele count extracted
 #' from the GT field.
 #'
+#' Alleles are split and, for each, column 'ac' reports the allele count. Notable cases incude
+#' 'ac=-1' for no/missing calls (e.g. './.'), and 'ac=0' on the first allele to report hom ref,
+#' variants. These cases are often filtered later with 'ac>0' to keep only non-ref calls. If
+#' the VCF contains no samples or if no sample selection if forced (sample_name='*'), 'ac' will
+#' contain '-1' for all variants in the VCF.
 #' @title Read VCF using CPP reader
 #' @param filename the path to the VCF file (unzipped or gzipped).
 #' @param use_gz is the VCF file gzipped?
 #' @param sample_name which sample to process. If not found, uses first sample in VCF file.
+#' If "*", force no sample selection
 #' @param min_sv_size minimum variant size to keep in bp. Variants shorter than this
 #' will be skipped. Default is 10. 
 #' @param shorten_ref should the REF sequence be shortened to the first 10 bp. Default is TRUE
