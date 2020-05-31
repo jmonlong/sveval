@@ -15,7 +15,7 @@ a VCF file.}
 \item{ucsc.genome}{the genome version for the UCSC Genome Browser automated link.}
 }
 \value{
-Starts a Shniy app in a web browser.
+Starts a Shiny app in a web browser.
 }
 \description{
 Opens a Shiny app with a dynamic table that contains input SVs. Clicking on a
