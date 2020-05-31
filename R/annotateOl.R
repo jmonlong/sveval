@@ -49,10 +49,17 @@ annotateOl <- function(ol.l, min.qual=0, method=c('coverage', 'bipartite')){
         igraph::edge_attr(gg)$weight = ifelse(calls.size>truth.size,
                                               truth.size/calls.size,
                                               calls.size/truth.size)
-        ## bipartite clustering
+        ## components with only 2 variants are matched, no need to use bipartite
+        comp.m = igraph::components(gg)$membership
+        comp.mt = table(comp.m)
+        comp2 = names(comp.mt)[which(comp.mt==2)]
+        comp2.v = names(comp.m)[comp.m %in% comp2]
+        gg = igraph::delete_vertices(gg, comp2.v)
+        ## bipartite clustering on variants in larger components
         bpm = igraph::max_bipartite_match(gg)$matching
         bpm = bpm[which(!is.na(bpm))]
-        matched.labs = c(names(bpm), as.character(bpm))
+        ## matched variants: variants in 2-variants comp or bipartite matched
+        matched.labs = c(comp2.v, names(bpm), as.character(bpm))
         ## translate into "coverage" for the rest of the pipeline
         truth.idx.m = ol.l$ol$truth.idx[which(ol.l$ol$truth.lab %in% matched.labs)]
         ol.l$truth$cov[truth.idx.m] = ol.l$truth$size[truth.idx.m]

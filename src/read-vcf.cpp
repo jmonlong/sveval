@@ -322,7 +322,8 @@ DataFrame read_vcf_cpp(std::string filename, bool use_gz, std::string sample_nam
       int end_rec_al = end_rec;
       if(end_rec_al == -1){
         if(svtype_al == "INS"){
-          end_rec_al = start_rec;
+          // simple definition to avoid being too conservative on complex insertions
+          end_rec_al = start_rec + ref_l - 1;
         } else {
           end_rec_al = start_rec + size_al;
         }
