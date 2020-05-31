@@ -24,12 +24,12 @@ olInsertions <- function(calls.gr, truth.gr, max.ins.gap=1,
     ol.ins = as.data.frame(ol.ins)
     if(ins.seq.comp){
       ## Sequence comparison
-      if(!('ALT' %in% colnames(GenomicRanges::mcols(truth.ins))) |
-         !('ALT' %in% colnames(GenomicRanges::mcols(calls.ins)))){
+      if(!('alt' %in% colnames(GenomicRanges::mcols(truth.ins))) |
+         !('alt' %in% colnames(GenomicRanges::mcols(calls.ins)))){
         stop('Missing sequence information. Did you run use "keep.ins.seq" when reading the VCF?')
       }
-      truth.seq = truth.ins$ALT[ol.ins$queryHits]
-      calls.seq = calls.ins$ALT[ol.ins$subjectHits]
+      truth.seq = truth.ins$alt[ol.ins$queryHits]
+      calls.seq = calls.ins$alt[ol.ins$subjectHits]
       if(nb.cores > 1){
         chunk.idx = tapply(1:length(truth.seq),
                            cut(1:length(truth.seq), nb.cores),

@@ -1,4 +1,5 @@
 check:
+	Rscript -e 'devtools::load_all()'
 	Rscript -e 'devtools::check()'
 
 build:

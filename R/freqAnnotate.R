@@ -20,8 +20,8 @@
 ##' freqAnnotate('calls.vcf', 'gnomad.vcf', out.vcf='calls.withFreq.vcf')
 ##'
 ##' ## Within R
-##' calls.vcf = readSVvcf('calls.vcf', vcf.object=TRUE)
-##' cat.vcf = readSVvcf('gnomad.vcf', vcf.object=TRUE)
+##' calls.vcf = readSVvcf('calls.vcf', out.fmt="vcf")
+##' cat.vcf = readSVvcf('gnomad.vcf', out.fmt="vcf")
 ##' calls.freq.vcf = freqAnnotate(calls.vcf, cat.vcf)
 ##' }
 freqAnnotate <- function(svs, cat, min.cov=.5, min.del.rol=.1, max.ins.dist=20, check.inv=FALSE,
@@ -29,23 +29,21 @@ freqAnnotate <- function(svs, cat, min.cov=.5, min.del.rol=.1, max.ins.dist=20, 
                          out.freq.field='AFMAX'){
 
   if(is.character(svs) && length(svs) == 1){
-    svs = readSVvcf(svs, vcf.object=TRUE, check.inv=check.inv)
+    svs = readSVvcf(svs, out.fmt='vcf', check.inv=check.inv)
   }
   if(is.character(cat) && length(cat) == 1){
-    cat = readSVvcf(cat, vcf.object=TRUE, check.inv=check.inv)
+    cat = readSVvcf(cat, out.fmt='vcf', check.inv=check.inv, other.field=freq.field)
   }
   
   ## Read/parse inputs
   svs.gr = DelayedArray::rowRanges(svs)
-  svs.gr$size = VariantAnnotation::info(svs)$SIZE
+  svs.gr$size = VariantAnnotation::info(svs)$SVLEN
   svs.gr$type = VariantAnnotation::info(svs)$SVTYPE
-  svs.gr$QUAL = VariantAnnotation::info(svs)$QUAL
   GenomicRanges::end(svs.gr) = VariantAnnotation::info(svs)$END
   svs.gr$id = 1:length(svs.gr)
   cat.gr = DelayedArray::rowRanges(cat)
-  cat.gr$size = VariantAnnotation::info(cat)$SIZE
+  cat.gr$size = VariantAnnotation::info(cat)$SVLEN
   cat.gr$type = VariantAnnotation::info(cat)$SVTYPE
-  cat.gr$QUAL = VariantAnnotation::info(cat)$QUAL
 
   desc = VariantAnnotation::info(VariantAnnotation::header(cat))
   if(!(freq.field %in% rownames(desc))){

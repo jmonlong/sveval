@@ -48,14 +48,12 @@ stitchSVs <- function(svs, stitch.dist=20){
   svs.stitch = GenomicRanges::GRanges(chrs, IRanges::IRanges(starts, ends))
   ## Merge columns
   for(coln in colnames(GenomicRanges::mcols(svs))){
-    if(coln == 'GT'){
-      svs.stitch$GT = svs$GT[ol$queryHits]
-    } else if(coln == 'QUAL'){ # Should we use the average quality ???
-       svs.stitch$QUAL = (svs$QUAL[ol$queryHits] + svs$QUAL[ol$subjectHits])/2
-    } else if(coln == 'ALT'){
-      svs.stitch$ALT = Biostrings::DNAStringSet(lapply(1:nrow(ol), function(ii){
-        c(svs$ALT[[ol$queryHits[ii]]], svs$ALT[[ol$subjectHits[ii]]])
-      }))
+    if(coln == 'ac'){
+      svs.stitch$ac = svs$ac[ol$queryHits]
+    } else if(coln == 'qual'){ # Should we use the average quality ???
+       svs.stitch$qual = (svs$qual[ol$queryHits] + svs$qual[ol$subjectHits])/2
+    } else if(coln == 'alt'){
+      svs.stitch$alt = paste(svs$alt[ol$queryHits], svs$alt[ol$subjectHits], sep='NNN')
     } else if(coln == 'type'){
       svs.stitch$type = svs$type[ol$queryHits]
     } else if(coln == 'size'){

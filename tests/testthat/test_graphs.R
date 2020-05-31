@@ -38,8 +38,8 @@ test_that("Per region", {
 
 test_that("Ranges in a region in ggplot", {
   ranges.l = list(
-    calls=readSVvcf('../calls.s0.vcf', right.trim=FALSE),
-    truth=readSVvcf('../truth.refalt.vcf', right.trim=FALSE)
+    calls=readSVvcf('../calls.s0.vcf'),
+    truth=readSVvcf('../truth.refalt.vcf')
   )
   reg.gr = ranges.l$calls[10]
   pdf('temp.pdf')

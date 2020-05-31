@@ -28,8 +28,7 @@ ivg_sv <- function(svs, xg, ucsc.genome='hg38'){
                   type=factor(.data$type)) %>% 
     dplyr::select(.data$coord, .data$type, .data$size)
   ## prepare list of GRanges for plot_ranges graph (here one horizontal panel per type+genotype).
-  svs.grl = GenomicRanges::split(svs, paste(svs$GT, svs$type))
-
+  svs.grl = GenomicRanges::split(svs, paste(svs$ac, svs$type))
   ## app interface
   ui <- shiny::fluidPage(
                  shiny::titlePanel("IVG-SV"),

@@ -3,7 +3,7 @@
 #' \tabular{ll}{
 #' Package: \tab sveval\cr
 #' Type: \tab Package\cr
-#' Version: \tab 1.2.2\cr
+#' Version: \tab 2.0.0\cr
 #' Date: \tab 2019-09-16\cr
 #' License: \tab MIT\cr
 #' }
@@ -22,4 +22,10 @@
 ##' eval.2 = svevalOl('calls2.vcf', 'truth.vcf')
 ##' plot_prcurve(list(eval.1$curve, eval.2$curve), labels=c('method1', 'method2'))
 ##' }
+## usethis namespace: start
+#' @useDynLib sveval, .registration = TRUE
+## usethis namespace: end
+## usethis namespace: start
+#' @importFrom Rcpp sourceCpp
+## usethis namespace: end
 NULL

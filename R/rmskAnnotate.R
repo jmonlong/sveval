@@ -27,9 +27,9 @@ rmskAnnotate <- function(svs.gr, nb.cores=1, species='human', docker.image=NULL)
   svs.gr$id = paste(as.character(GenomicRanges::seqnames(svs.gr)),
                     GenomicRanges::start(svs.gr), svs.gr$type, svs.gr$size, sep='_')
   ## Write sequence FASTA for each variant
-  ## seqs = Biostrings::DNAString(ifelse(svs.gr$type %in% c('DEL', 'INV', 'DUP'), svs.gr$REF, svs.gr$ALT))
-  seqs = svs.gr$ALT
-  seqs[which(svs.gr$type %in% c('DEL', 'INV', 'DUP'))] = svs.gr$REF[which(svs.gr$type %in% c('DEL', 'INV', 'DUP'))]
+  ## seqs = Biostrings::DNAString(ifelse(svs.gr$type %in% c('DEL', 'INV', 'DUP'), svs.gr$REF, svs.gr$alt))
+  seqs = svs.gr$alt
+  seqs[which(svs.gr$type %in% c('DEL', 'INV', 'DUP'))] = svs.gr$ref[which(svs.gr$type %in% c('DEL', 'INV', 'DUP'))]
   names(seqs) = svs.gr$id
   temp.fa = paste0(tempfile(), '.fa')
   Biostrings::writeXStringSet(seqs, temp.fa, format='FASTA')

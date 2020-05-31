@@ -21,13 +21,17 @@
 findNocalls <- function(calls.gr, truth.gr, max.ins.dist=20, min.cov=.5,
                         min.del.rol=.1, ins.seq.comp=FALSE, nb.cores=1,
                         sample.name=NULL, check.inv=FALSE){
+  ## to retrieve the first sample, use something like "" in readSVvcf (NULL means all variants)
+  if(is.null(sample.name)){
+    sample.name = ''
+  }
   ## Read/keep no-calls variants from the call set
   if(is.character(calls.gr) & length(calls.gr)==1){
     calls.gr = readSVvcf(calls.gr, keep.ins.seq=ins.seq.comp,
                          sample.name=sample.name,
                          check.inv=check.inv, nocalls=TRUE)
   }
-  calls.gr = calls.gr[which(calls.gr$GT == './.' | calls.gr$GT == '.')]
+  calls.gr = calls.gr[which(calls.gr$ac == -1)]
   if(length(calls.gr) == 0){
     return(data.frame())
   }
@@ -68,11 +72,13 @@ findNocalls <- function(calls.gr, truth.gr, max.ins.dist=20, min.cov=.5,
   nocalls.df = lapply(names(eval.o$regions), function(svtype){
     regs = eval.o$regions[[svtype]]
     tps = regs$TP.baseline
+    if(length(tps)==0){
+      return(NULL)
+    }
     tps = GenomicRanges::resize(tps, fix='center',
                                 width=GenomicRanges::width(tps) + 2*max.ins.dist)
-    tps$varid = names(tps)
     tps = as.data.frame(tps)
-    tps[, c('seqnames','start','end','varid','type')]
+    tps[, c('seqnames','start','end','svid','type')]
   })
   nocalls.df = do.call(rbind, nocalls.df)
   
