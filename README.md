@@ -2,7 +2,8 @@
 
 [![Build Status](https://travis-ci.com/jmonlong/sveval.svg?branch=master)](https://travis-ci.com/jmonlong/sveval)
 [![codecov](https://codecov.io/gh/jmonlong/sveval/branch/master/graph/badge.svg)](https://codecov.io/gh/jmonlong/sveval)
-![Docker Image Version (latest by date)](https://img.shields.io/docker/v/jmonlong/sveval?label=docker%20hub)
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/jmonlong/sveval)](https://hub.docker.com/r/jmonlong/sveval)
+[![Docker Image Version (latest by date)](https://img.shields.io/docker/v/jmonlong/sveval?label=docker%20hub)](https://github.com/jmonlong/sveval/releases/latest)
 
 Functions to compare a SV call sets against a truth set.
 This package uses mostly overlap-based metrics, although for insertions it can align the inserted sequences to match variants.
