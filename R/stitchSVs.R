@@ -54,6 +54,8 @@ stitchSVs <- function(svs, stitch.dist=20){
       svs.stitch$ac = svs$ac[ol$queryHits]
     } else if(coln == 'qual'){ # Should we use the average quality ???
        svs.stitch$qual = (svs$qual[ol$queryHits] + svs$qual[ol$subjectHits])/2
+    } else if(coln == 'ref'){
+      svs.stitch$ref = paste(svs$ref[ol$queryHits], svs$ref[ol$subjectHits], sep='NNN')
     } else if(coln == 'alt'){
       svs.stitch$alt = paste(svs$alt[ol$queryHits], svs$alt[ol$subjectHits], sep='NNN')
     } else if(coln == 'type'){
