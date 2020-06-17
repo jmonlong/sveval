@@ -29,8 +29,10 @@ stitchSVs <- function(svs, stitch.dist=20){
   ol = ol[which(ol$d>0),]
   ## If nothing, return input variants
   if(nrow(ol)==0){
+    logging::loginfo('no variants to stitch')
     return(svs)
   }
+  logging::loginfo(paste(nrow(ol), 'pairs of variants to stitch'))
   ## Select pairs to stitch, nearest to each other first
   ol = ol[order(ol$d),]
   dup = duplicated(as.vector(rbind(ol$queryHits, ol$subjectHits)))

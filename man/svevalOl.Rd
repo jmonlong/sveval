@@ -29,7 +29,8 @@ svevalOl(
   stitch.dist = 20,
   merge.hets = FALSE,
   merge.rol = 0.8,
-  method = c("coverage", "bipartite")
+  method = c("coverage", "bipartite"),
+  log.level = c("CRITICAL", "WARNING", "INFO")
 )
 }
 \arguments{
@@ -89,6 +90,8 @@ evaluation.}
 \item{method}{the method to annotate the overlap. Either 'coverage' (default) for the
 cumulative coverage (e.g. to deal with fragmented calls); or 'bipartite' for a 1-to-1
 matching of variants in the calls and truth sets.}
+
+\item{log.level}{the level of information in the log. Default is "CRITICAL" (basically no log).}
 }
 \value{
 a list with

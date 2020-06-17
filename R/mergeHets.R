@@ -42,8 +42,10 @@ mergeHets <- function(svs, min.rol=.9, max.ins.gap=1, ins.seq.comp=FALSE){
   ol = ol[which(ol$rol>min.rol),]
   ## If nothing, return input variants
   if(nrow(ol)==0){
+    logging::loginfo('Nothing variants to merge')
     return(svs)
-    }
+  }
+  logging::loginfo(paste(nrow(ol), 'pairs of variants to merge'))
   ## Select pairs to merge, best overlap first
   ol = ol[order(-ol$rol),]
   dup = duplicated(as.vector(rbind(ol$queryHits, ol$subjectHits)))
@@ -65,6 +67,8 @@ mergeHets <- function(svs, min.rol=.9, max.ins.gap=1, ins.seq.comp=FALSE){
       svs.merged$ac = svs$ac[ol$queryHits] + svs$ac[ol$subjectHits]
     } else if(coln == 'qual'){ # Should we use the average quality ???
        svs.merged$qual = (svs$qual[ol$queryHits] + svs$qual[ol$subjectHits])/2
+    } else if(coln == 'ref'){
+      svs.merged$ref = svs$ref[ol$queryHits]
     } else if(coln == 'alt'){
       svs.merged$alt = svs$alt[ol$queryHits]
     } else if(coln == 'type'){

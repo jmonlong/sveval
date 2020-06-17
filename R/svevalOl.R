@@ -32,6 +32,7 @@
 ##' @param method the method to annotate the overlap. Either 'coverage' (default) for the
 ##' cumulative coverage (e.g. to deal with fragmented calls); or 'bipartite' for a 1-to-1
 ##' matching of variants in the calls and truth sets.
+##' @param log.level the level of information in the log. Default is "CRITICAL" (basically no log).
 ##' @return a list with
 ##' \item{eval}{a data.frame with TP, FP and FN for each SV type when including all variants}
 ##' \item{curve}{a data.frame with TP, FP and FN for each SV type when using different quality thesholds}
@@ -61,15 +62,19 @@ svevalOl <- function(calls.gr, truth.gr, max.ins.dist=20, min.cov=.5,
                      qual.ths=c(0, 2, 3, 4, 5, 7, 10, 12, 14, 21, 27, 35, 45, 50, 60, 75, 90, 99, 110, 133, 167, 180, 250, 350, 450, 550, 650),
                      qual.quantiles=seq(0,1,.1),
                      check.inv=FALSE, geno.eval=FALSE, stitch.hets=FALSE,
-                     stitch.dist=20, merge.hets=FALSE, merge.rol=.8, method=c('coverage', 'bipartite')){
+                     stitch.dist=20, merge.hets=FALSE, merge.rol=.8, method=c('coverage', 'bipartite'),
+                     log.level=c('CRITICAL', 'WARNING', 'INFO')){
+  logging::setLevel(log.level[1])
   ## to retrieve the first sample, use something like "" in readSVvcf (NULL means all variants)
   if(is.null(sample.name)){
     sample.name = ''
   }
   if(is.character(calls.gr) & length(calls.gr)==1){
+    logging::loginfo(paste('Reading SVs from', calls.gr))
     calls.gr = readSVvcf(calls.gr, keep.ins.seq=ins.seq.comp, qual.field=qual.field, sample.name=sample.name, check.inv=check.inv)
   }
   if(is.character(truth.gr) & length(truth.gr)==1){
+    logging::loginfo(paste('Reading SVs from', truth.gr))
     truth.gr = readSVvcf(truth.gr, keep.ins.seq=ins.seq.comp, qual.field=qual.field, sample.name=sample.name, check.inv=check.inv)
   }
   # keep only non-ref calls
@@ -93,6 +98,7 @@ svevalOl <- function(calls.gr, truth.gr, max.ins.dist=20, min.cov=.5,
         svs.gr = lapply(unique(svs.gr$type), function(type){
           svs.t = svs.gr[which(svs.gr$type==type)]
           nhets = Inf
+          logging::loginfo(paste('Iteratively stitch', type))
           while(length((hets.idx = which(svs.t$ac == 1))) < nhets){
             nhets = length(hets.idx)
             hets = stitchSVs(svs.t[hets.idx], stitch.dist=stitch.dist)
@@ -106,6 +112,7 @@ svevalOl <- function(calls.gr, truth.gr, max.ins.dist=20, min.cov=.5,
         svs.gr = lapply(unique(svs.gr$type), function(type){
           svs.t = svs.gr[which(svs.gr$type==type)]
           nhets = Inf
+          logging::loginfo(paste('Iteratively merge hets', type))
           while(length((hets.idx = which(svs.t$ac == 1))) < nhets){
             nhets = length(hets.idx)
             hets = mergeHets(svs.t[hets.idx], min.rol=min.rol,
@@ -120,21 +127,27 @@ svevalOl <- function(calls.gr, truth.gr, max.ins.dist=20, min.cov=.5,
       if(stitch.hets){
         ## Merge hets once first
         if(merge.hets){
+          logging::loginfo('Pre-stitching merge hets in calls')
           calls.gr = iterMerge(calls.gr, min.rol=merge.rol,
                                max.ins.gap=max.ins.dist,
                                ins.seq.comp=ins.seq.comp)
+          logging::loginfo('Pre-stitching merge hets in truth')
           truth.gr = iterMerge(truth.gr, min.rol=merge.rol,
                                max.ins.gap=max.ins.dist,
                                ins.seq.comp=ins.seq.comp)
         }
+        logging::loginfo('Stitch hets in calls')
         calls.gr = iterStitch(calls.gr, stitch.dist=stitch.dist)
+        logging::loginfo('Stitch hets in truth')
         truth.gr = iterStitch(truth.gr, stitch.dist=stitch.dist)
       }
       ## Merge hets
       if(merge.hets){
+        logging::loginfo('Merge hets in calls')
         calls.gr = iterMerge(calls.gr, min.rol=merge.rol,
                              max.ins.gap=max.ins.dist,
                              ins.seq.comp=ins.seq.comp)
+        logging::loginfo('Merge hets in truth')
         truth.gr = iterMerge(truth.gr, min.rol=merge.rol,
                              max.ins.gap=max.ins.dist,
                              ins.seq.comp=ins.seq.comp)

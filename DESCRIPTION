@@ -28,4 +28,5 @@ Imports:
         S4Vectors,
 	DT,
         igraph,
-        Rcpp
+        Rcpp,
+        logging
