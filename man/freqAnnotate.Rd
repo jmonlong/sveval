@@ -7,14 +7,16 @@
 freqAnnotate(
   svs,
   cat,
-  min.cov = 0.5,
+  min.ol = 0.5,
   min.del.rol = 0.1,
   max.ins.dist = 20,
   check.inv = FALSE,
   ins.seq.comp = FALSE,
   out.vcf = NULL,
   freq.field = "AF",
-  out.freq.field = "AFMAX"
+  out.freq.field = "AFMAX",
+  method = c("reciprocal", "coverage", "bipartite"),
+  nb.cores = 1
 )
 }
 \arguments{
@@ -22,7 +24,7 @@ freqAnnotate(
 
 \item{cat}{a VCF object with the SV catalog with frequency estimates.}
 
-\item{min.cov}{the minimum coverage to be considered a match. Default is 0.5}
+\item{min.ol}{the minimum overlap/coverage to be considered a match. Default is 0.5}
 
 \item{min.del.rol}{minimum reciprocal overlap for deletions. Default is 0.1}
 
@@ -37,12 +39,21 @@ freqAnnotate(
 \item{freq.field}{the field with the frequency estimate in the 'cat' input. Default is 'AF'.}
 
 \item{out.freq.field}{the new field's name. Default is 'AFMAX'}
+
+\item{method}{the method to annotate the overlap. Recommended is 'reciprocal' (default). See details.}
+
+\item{nb.cores}{number of processors to use. Default is 1.}
 }
 \value{
 a GRanges object.
 }
 \description{
-Annotate SVs with frequency in catalog
+Input SVs are matched to SVs in the catalog. Each SV is then annotated with the
+maximum frequency across all the variants in the catalog that match. Although the
+different overlap approaches could be used here, the 'reciprocal' overlap makes the
+more sense because we want to list all possible matches without penalizing over-matching
+(like 'bipartite' would) or include fragmented calls (like 'coverage' would) as they
+could be very variants with uncomparable frequencies.
 }
 \examples{
 \dontrun{

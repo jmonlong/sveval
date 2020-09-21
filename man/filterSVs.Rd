@@ -9,7 +9,8 @@ filterSVs(
   regions.gr = NULL,
   ol.prop = 0.5,
   min.size = 0,
-  max.size = Inf
+  max.size = Inf,
+  mark.pass = FALSE
 )
 }
 \arguments{
@@ -23,9 +24,12 @@ Default is 0.5}
 \item{min.size}{the minimum SV size to be considered. Default 0.}
 
 \item{max.size}{the maximum SV size to be considered. Default is Inf.}
+
+\item{mark.pass}{don't actually filter variants but mark the variants with a 'pass' columns. Default is FALSE.}
 }
 \value{
-a subset of sv.gr that overlaps regions.gr or in the specified size range.
+\item{if mark.pass=FALSE (default)}{a subset of sv.gr that overlaps regions.gr or in the specified size range.}
+\item{if mark.pass=TRUE}{the input sv.gr with a new column 'pass' to mark the variants to keep.}
 }
 \description{
 Filter SVs for size and regions of interest

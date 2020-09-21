@@ -11,7 +11,7 @@ Evaluate SV in a call set against a truth set using overlap-based approaches and
 \tabular{ll}{
 Package: \tab sveval\cr
 Type: \tab Package\cr
-Version: \tab 2.0.0\cr
+Version: \tab 2.1.0\cr
 Date: \tab 2019-09-16\cr
 License: \tab MIT\cr
 }

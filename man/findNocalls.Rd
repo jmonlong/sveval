@@ -8,12 +8,13 @@ findNocalls(
   calls.gr,
   truth.gr,
   max.ins.dist = 20,
-  min.cov = 0.5,
+  min.ol = 0.5,
   min.del.rol = 0.1,
   ins.seq.comp = FALSE,
   nb.cores = 1,
   sample.name = NULL,
-  check.inv = FALSE
+  check.inv = FALSE,
+  method = c("coverage", "bipartite")
 )
 }
 \arguments{
@@ -23,7 +24,7 @@ findNocalls(
 
 \item{max.ins.dist}{maximum distance for insertions to be clustered. Default is 20.}
 
-\item{min.cov}{the minimum coverage to be considered a match. Default is 0.5}
+\item{min.ol}{the minimum overlap/coverage to be considered a match. Default is 0.5}
 
 \item{min.del.rol}{minimum reciprocal overlap for deletions. Default is 0.1}
 
@@ -35,6 +36,10 @@ findNocalls(
 input. If NULL (default), use first sample.}
 
 \item{check.inv}{should the sequence of MNV be compared to identify inversions.}
+
+\item{method}{the method to annotate the overlap. Either 'coverage' (default) for the
+cumulative coverage (e.g. to deal with fragmented calls); or 'bipartite' for a 1-to-1
+matching of variants in the calls and truth sets.}
 }
 \value{
 a data.frame with coordinates and variant ids from the truth set

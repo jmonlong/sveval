@@ -4,15 +4,21 @@
 \alias{evalOl}
 \title{Compute FP, FN, TP}
 \usage{
-evalOl(ol.l, min.cov = 0.8)
+evalOl(ol.gr, truth.gr, calls.gr)
 }
 \arguments{
-\item{ol.l}{list returned by annotation functions like \code{annotateOl}}
+\item{ol.gr}{an GRanges with overlap information and filtered/annotated by \code{annotateOl}}
 
-\item{min.cov}{the minimum coverage to be considered a match. Default is 0.5}
+\item{truth.gr}{the original SVs from the truthset. Correspond to the queryHits in ol.gr. Use
+only variants with 'pass' column.}
+
+\item{calls.gr}{the original SVs from the callset. Correspond to the subjectHits in ol.gr. Use
+only variants with 'pass' column.}
 }
 \value{
-a data.frame with FP, FN and TP for each SV type.
+a list with
+\item{eval}{a data.frame with FP, FN and TP for each SV type.}
+\item{regions}{a list of FN/FP/TP regions for each SV type}
 }
 \description{
 Compute FP, FN, TP

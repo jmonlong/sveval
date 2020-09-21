@@ -4,14 +4,14 @@
 \alias{mergeHets}
 \title{Merge heterozygous variants}
 \usage{
-mergeHets(svs, min.rol = 0.9, max.ins.gap = 1, ins.seq.comp = FALSE)
+mergeHets(svs, min.rol = 0.9, max.ins.dist = 1, ins.seq.comp = FALSE)
 }
 \arguments{
 \item{svs}{GRanges with SV information}
 
 \item{min.rol}{minimum reciprocal overlap to match variants.}
 
-\item{max.ins.gap}{maximum distance for insertions to be clustered.}
+\item{max.ins.dist}{maximum distance for insertions to be clustered.}
 
 \item{ins.seq.comp}{compare sequence instead of insertion sizes. Default is FALSE.}
 }
@@ -22,7 +22,7 @@ an upated GRanges.
 Merge together heterozygous SVs that are very similar. This should
 be done for SVs of the same type and genotype. When several SV pairs
 can be merged in a cluster, only the best pair (best overlap) is
-merged, hence this should be run several times (e.g. until the
+merged, hence this could be run several times (e.g. until the
 size of the output is similar to the input's).
 }
 \author{

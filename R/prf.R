@@ -13,5 +13,6 @@ prf <- function(eval.df){
   eval.df$F1 = 2 * eval.df$precision * eval.df$recall /
     (eval.df$precision + eval.df$recall)
   eval.df$F1 = round(eval.df$F1, 4)
+  eval.df$F1 = ifelse(eval.df$precision == 0 & eval.df$recall == 0, 0, eval.df$F1)
   return(eval.df)
 }

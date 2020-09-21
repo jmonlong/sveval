@@ -1,88 +1,71 @@
 ##' Merge together heterozygous SVs that are very similar. This should
 ##' be done for SVs of the same type and genotype. When several SV pairs
 ##' can be merged in a cluster, only the best pair (best overlap) is
-##' merged, hence this should be run several times (e.g. until the
+##' merged, hence this could be run several times (e.g. until the
 ##' size of the output is similar to the input's).
 ##' @title Merge heterozygous variants
 ##' @param svs GRanges with SV information
 ##' @param min.rol minimum reciprocal overlap to match variants.
-##' @param max.ins.gap maximum distance for insertions to be clustered.
+##' @param max.ins.dist maximum distance for insertions to be clustered.
 ##' @param ins.seq.comp compare sequence instead of insertion sizes. Default is FALSE.
 ##' @return an upated GRanges.
 ##' @author Jean Monlong
 ##' @keywords internal
-mergeHets <- function(svs, min.rol=.9, max.ins.gap=1, ins.seq.comp=FALSE){
+mergeHets <- function(svs, min.rol=.9, max.ins.dist=1, ins.seq.comp=FALSE){
   if(length(svs)==0){
     return(svs)
   }
   if(length(unique(svs$type))>1){
     stop('mergeHets should be run separately for each type.')
   }
-  if(svs$type[1] == 'INS'){
-    ol = olInsertions(svs, svs, max.ins.gap=max.ins.gap, ins.seq.comp=ins.seq.comp)
-    ol = ol$ol
-    ol$queryHits = ol$truth.idx
-    ol$subjectHits = ol$call.idx
-    ol = ol[which(ol$queryHits < ol$subjectHits),]
-    rol.call = svs$size[ol$call.idx] / ol$call.cov
-    rol.truth = svs$size[ol$truth.idx] / ol$truth.cov
-    ol$rol = ifelse(rol.call<rol.truth, rol.call, rol.truth)
-  } else {
-    ol = GenomicRanges::findOverlaps(svs, svs)
-    ol = as.data.frame(ol)
-    ## Remove identity and redundant pairs
-    ol = ol[which(ol$queryHits < ol$subjectHits),]
-    ## Compute reciprocal overlap
-    ol$qsw = GenomicRanges::width(GenomicRanges::pintersect(svs[ol$queryHits], svs[ol$subjectHits]))
-    ol$qw = GenomicRanges::width(svs[ol$queryHits])
-    ol$sw = GenomicRanges::width(svs[ol$subjectHits])
-    ol$rol = ol$qsw / ifelse(ol$qw > ol$sw, ol$qw, ol$sw)
-  }
-  ## Filter overlapping pairs with low reciprocal overlap
-  ol = ol[which(ol$rol>min.rol),]
+
+  ## overlap SVs
+  ol.gr = prepareOl(svs, svs, min.rol=min.rol, max.ins.dist=max.ins.dist, ins.seq.comp=ins.seq.comp)
+  ol.gr = annotateOl(ol.gr, min.ol=min.rol, method='reciprocal')
+  
   ## If nothing, return input variants
-  if(nrow(ol)==0){
-    logging::loginfo('Nothing variants to merge')
+  if(length(ol.gr)==0){
+    logging::loginfo('No variants to merge')
     return(svs)
   }
-  logging::loginfo(paste(nrow(ol), 'pairs of variants to merge'))
+  logging::loginfo(paste(length(ol.gr), 'pairs of variants to merge'))
   ## Select pairs to merge, best overlap first
-  ol = ol[order(-ol$rol),]
-  dup = duplicated(as.vector(rbind(ol$queryHits, ol$subjectHits)))
+  ol.gr = ol.gr[order(-ol.gr$olScore),]
+  dup = duplicated(as.vector(rbind(ol.gr$queryHits, ol.gr$subjectHits)))
   dup = matrix(dup, 2)
   dup = colSums(dup)
-  ol = ol[which(dup==0),]
+  ol.gr = ol.gr[which(dup==0),]
   ## merge pairs
-  s1 = GenomicRanges::start(svs[ol$queryHits])
-  s2 = GenomicRanges::start(svs[ol$subjectHits])
-  e1 = GenomicRanges::end(svs[ol$queryHits])
-  e2 = GenomicRanges::end(svs[ol$subjectHits])
+  s1 = GenomicRanges::start(svs[ol.gr$queryHits])
+  s2 = GenomicRanges::start(svs[ol.gr$subjectHits])
+  e1 = GenomicRanges::end(svs[ol.gr$queryHits])
+  e2 = GenomicRanges::end(svs[ol.gr$subjectHits])
   starts = (s1 + s2)/2
   ends = (e1 + e2)/2
-  chrs = as.character(GenomicRanges::seqnames(svs))[ol$queryHits]
+  chrs = as.character(GenomicRanges::seqnames(svs))[ol.gr$queryHits]
   svs.merged = GenomicRanges::GRanges(chrs, IRanges::IRanges(starts, ends))
   ## Merge columns
   for(coln in colnames(GenomicRanges::mcols(svs))){
     if(coln == 'ac'){
-      svs.merged$ac = svs$ac[ol$queryHits] + svs$ac[ol$subjectHits]
+      svs.merged$ac = svs$ac[ol.gr$queryHits] + svs$ac[ol.gr$subjectHits]
     } else if(coln == 'qual'){ # Should we use the average quality ???
-       svs.merged$qual = (svs$qual[ol$queryHits] + svs$qual[ol$subjectHits])/2
+       svs.merged$qual = (svs$qual[ol.gr$queryHits] + svs$qual[ol.gr$subjectHits])/2
     } else if(coln == 'ref'){
-      svs.merged$ref = svs$ref[ol$queryHits]
+      svs.merged$ref = svs$ref[ol.gr$queryHits]
     } else if(coln == 'alt'){
-      svs.merged$alt = svs$alt[ol$queryHits]
+      svs.merged$alt = svs$alt[ol.gr$queryHits]
     } else if(coln == 'type'){
-      svs.merged$type = svs$type[ol$queryHits]
+      svs.merged$type = svs$type[ol.gr$queryHits]
     } else if(coln == 'size'){
-      svs.merged$size = (svs$size[ol$queryHits] + svs$size[ol$subjectHits]) / 2
+      svs.merged$size = (svs$size[ol.gr$queryHits] + svs$size[ol.gr$subjectHits]) / 2
     } else if(coln == 'ref.cov'){
-      svs.merged$ref.cov = svs$ref.cov[ol$queryHits] + svs$ref.cov[ol$subjectHits]
+      svs.merged$ref.cov = svs$ref.cov[ol.gr$queryHits] + svs$ref.cov[ol.gr$subjectHits]
     } else if(coln == 'alt.cov'){
-      svs.merged$alt.cov = svs$alt.cov[ol$queryHits] + svs$alt.cov[ol$subjectHits]
+      svs.merged$alt.cov = svs$alt.cov[ol.gr$queryHits] + svs$alt.cov[ol.gr$subjectHits]
     }
   }
   ## Remove merged pairs and add new SVs
-  svs = svs[setdiff(1:length(svs), unique(c(ol$queryHits, ol$subjectHits)))]
+  svs = svs[setdiff(1:length(svs), unique(c(ol.gr$queryHits, ol.gr$subjectHits)))]
   svs = c(svs, svs.merged)
   return(svs)
 }

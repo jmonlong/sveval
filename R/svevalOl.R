@@ -1,8 +1,24 @@
+##' Compares SVs from a call-set to SVs from a truth-set.
+##'
+##' Different overlapping approaches are available. See \code{svOverlap} for more details.
+##' We recommend using the default \code{method='coverage'} when evaluating the calls (absence/presence
+##' of SVs) and \code{method='bipartite'} when evaluating genotypes. The latter will match
+##' a variant in the call-set with at most one variant in the truth-set which will penalyze.
+##' one-to-many configurations as is usually preferred when comparing exact genotypes. To further
+##' switch on the 'genotype evaluation' mode, use \code{geno.eval=TRUE}. It can also help to stitch
+##' fragmented calls and merge heterozygotes into homozygotes using \code{merge.hets=TRUE} and
+##' \code{stitch.hets=TRUE} (see example below).
+##'
+##' The evaluation will be performed for different quality thresholds on the call-set in order to make
+##' a precision-recall curve. If the VCF are to be read it will look for the field specified in
+##' \code{qual.field} (GQ by default, and QUAL if not found). If you don't want the PR curve,
+##' the evaluation can be sped up by running with for example \code{qual.ths=0}.
+##' 
 ##' @title SV evaluation based on overlap and variant size
 ##' @param calls.gr call set. A GRanges or the path to a VCF file.
 ##' @param truth.gr truth set. A GRanges or the path to a VCF file.
 ##' @param max.ins.dist maximum distance for insertions to be clustered. Default is 20.
-##' @param min.cov the minimum coverage to be considered a match. Default is 0.5
+##' @param min.ol the minimum overlap/coverage to be considered a match. Default is 0.5
 ##' @param min.del.rol minimum reciprocal overlap for deletions. Default is 0.1
 ##' @param ins.seq.comp compare sequence instead of insertion sizes. Default is FALSE.
 ##' @param nb.cores number of processors to use. Default is 1.
@@ -17,7 +33,7 @@
 ##' input. If NULL (default), use first sample.
 ##' @param outfile the TSV file to output the results. If NULL (default), returns a data.frame.
 ##' @param out.bed.prefix prefix for the output BED files. If NULL (default), no BED output.
-##' @param qual.ths the quality thresholds for the PR curve. If NULL, will use quantiles. see \code{qual.quantiles}.
+##' @param qual.ths the quality thresholds for the PR curve. If NULL, will use quantiles. see the \code{qual.quantiles} parameter below.
 ##' @param qual.quantiles the quality quantiles for the PR curve, if qual.ths is NULL. Default is (0, .1, ..., .9, 1).
 ##' @param check.inv should the sequence of MNV be compared to identify inversions. 
 ##' @param geno.eval should het/hom be evaluated separately (genotype evaluation). Default
@@ -51,9 +67,10 @@
 ##' eval = svevalOl(calls.gr, truth.gr)
 ##'
 ##' ## Genotype evaluation
-##' eval = svevalOl(calls.gr, truth.gr, geno.eval=TRUE, merge.hets=TRUE, stitch.hets=TRUE)
+##' eval = svevalOl(calls.gr, truth.gr, geno.eval=TRUE, merge.hets=TRUE,
+##'                 stitch.hets=TRUE, method='bipartite')
 ##' }
-svevalOl <- function(calls.gr, truth.gr, max.ins.dist=20, min.cov=.5,
+svevalOl <- function(calls.gr, truth.gr, max.ins.dist=20, min.ol=.5,
                      min.del.rol=.1, ins.seq.comp=FALSE, nb.cores=1,
                      min.size=50, max.size=Inf, bed.regions=NULL,
                      bed.regions.ol=.5, qual.field=c('GQ', 'QUAL'),
@@ -85,138 +102,63 @@ svevalOl <- function(calls.gr, truth.gr, max.ins.dist=20, min.cov=.5,
   }
   if(length(calls.gr)>0 & length(truth.gr)>0 & !is.null(bed.regions)){
     if(is.character(bed.regions) & length(bed.regions) == 1){
+      logging::loginfo(paste('Reading regions from', bed.regions))
       bed.regions = utils::read.table(bed.regions, sep='\t', as.is=TRUE)
       colnames(bed.regions)[1:3] = c('chr','start','end')
       bed.regions = GenomicRanges::makeGRangesFromDataFrame(bed.regions)
     }
   }
 
-  ## If not per genotype, set every variant to homozygous
+  ## If evaluation per genotype, do we want to stitch and/or merge heterozygous variants?
   if(length(calls.gr)>0 & length(truth.gr)>0){
-    if(geno.eval){
-      iterStitch <- function(svs.gr, stitch.dist){
-        svs.gr = lapply(unique(svs.gr$type), function(type){
-          svs.t = svs.gr[which(svs.gr$type==type)]
-          nhets = Inf
-          logging::loginfo(paste('Iteratively stitch', type))
-          while(length((hets.idx = which(svs.t$ac == 1))) < nhets){
-            nhets = length(hets.idx)
-            hets = stitchSVs(svs.t[hets.idx], stitch.dist=stitch.dist)
-            svs.t = c(hets, svs.t[which(svs.t$ac > 1)])
-          }
-          return(svs.t)
-        })
-        do.call(c, svs.gr)
-      }
-      iterMerge <- function(svs.gr, min.rol, max.ins.gap, ins.seq.comp){
-        svs.gr = lapply(unique(svs.gr$type), function(type){
-          svs.t = svs.gr[which(svs.gr$type==type)]
-          nhets = Inf
-          logging::loginfo(paste('Iteratively merge hets', type))
-          while(length((hets.idx = which(svs.t$ac == 1))) < nhets){
-            nhets = length(hets.idx)
-            hets = mergeHets(svs.t[hets.idx], min.rol=min.rol,
-                             max.ins.gap=max.ins.gap, ins.seq.comp=ins.seq.comp)
-            svs.t = c(hets, svs.t[which(svs.t$ac > 1)])
-          }
-          return(svs.t)
-        })
-        do.call(c, svs.gr)
-      }
-      ## Stitch hets SVs
-      if(stitch.hets){
-        ## Merge hets once first
-        if(merge.hets){
-          logging::loginfo('Pre-stitching merge hets in calls')
-          calls.gr = iterMerge(calls.gr, min.rol=merge.rol,
-                               max.ins.gap=max.ins.dist,
-                               ins.seq.comp=ins.seq.comp)
-          logging::loginfo('Pre-stitching merge hets in truth')
-          truth.gr = iterMerge(truth.gr, min.rol=merge.rol,
-                               max.ins.gap=max.ins.dist,
-                               ins.seq.comp=ins.seq.comp)
-        }
-        logging::loginfo('Stitch hets in calls')
-        calls.gr = iterStitch(calls.gr, stitch.dist=stitch.dist)
-        logging::loginfo('Stitch hets in truth')
-        truth.gr = iterStitch(truth.gr, stitch.dist=stitch.dist)
-      }
-      ## Merge hets
-      if(merge.hets){
-        logging::loginfo('Merge hets in calls')
-        calls.gr = iterMerge(calls.gr, min.rol=merge.rol,
-                             max.ins.gap=max.ins.dist,
-                             ins.seq.comp=ins.seq.comp)
-        logging::loginfo('Merge hets in truth')
-        truth.gr = iterMerge(truth.gr, min.rol=merge.rol,
-                             max.ins.gap=max.ins.dist,
-                             ins.seq.comp=ins.seq.comp)
-      }
+    if(geno.eval & (stitch.hets | merge.hets)){
+      calls.gr = stitchMergeHets(calls.gr, do.stitch=stitch.hets, do.merge=merge.hets, min.rol=merge.rol,
+                                 max.ins.dist=max.ins.dist, ins.seq.comp=ins.seq.comp, stitch.dist=stitch.dist)
+      truth.gr = stitchMergeHets(truth.gr, do.stitch=stitch.hets, do.merge=merge.hets, min.rol=merge.rol,
+                                 max.ins.dist=max.ins.dist, ins.seq.comp=ins.seq.comp, stitch.dist=stitch.dist)
     } 
   }
-  
-  ## Overlap per genotype
-  if(geno.eval){
-    gts = unique(c(truth.gr$ac, calls.gr$ac))
-  } else {
-    gts = 'called'
-  }
-  ol.gt = lapply(gts, function(gt){
-    if(gt == 'called'){
-      calls.gr = calls.gr[which(calls.gr$ac > 0)]
-      truth.gr = truth.gr[which(truth.gr$ac > 0)]
-    } else {
-      calls.gr = calls.gr[which(calls.gr$ac == gt)]
-      truth.gr = truth.gr[which(truth.gr$ac == gt)]
-    }
-    ## Overlap SVs
-    ol.ins = suppressWarnings(
-      olInsertions(calls.gr, truth.gr, max.ins.gap=max.ins.dist,
-                   ins.seq.comp=ins.seq.comp, nb.cores=nb.cores)
-    )
-    ol.del = suppressWarnings(
-      olRanges(calls.gr, truth.gr, min.rol=min.del.rol, type='DEL')
-    )
-    ol.inv = suppressWarnings(
-      olRanges(calls.gr, truth.gr, min.rol=min.del.rol, type='INV')
-    )
-    return(list(ol.ins=ol.ins, ol.del=ol.del, ol.inv=ol.inv))
-  })
 
-  ## Compute coverage and evaluation metrics
+  ## Prepare the overlaps, by SV type and eventually by genotype
+  ol.gr = prepareOl(truth.gr, calls.gr, min.rol=min.del.rol,
+                   max.ins.dist=max.ins.dist,
+                   ins.seq.comp=ins.seq.comp, nb.cores=nb.cores,
+                   by.gt=geno.eval)
+
+  ## Filter SVs out of the desired size range or regions
+  calls.gr = filterSVs(calls.gr, regions.gr=bed.regions,
+                       ol.prop=bed.regions.ol,
+                       min.size=min.size, max.size=max.size,
+                       mark.pass=TRUE)
+  truth.gr = filterSVs(truth.gr, regions.gr=bed.regions,
+                       ol.prop=bed.regions.ol,
+                       min.size=min.size, max.size=max.size,
+                       mark.pass=TRUE)
+  if(length(ol.gr)>0){
+    ol.gr = ol.gr[which((ol.gr$queryHits %in% which(truth.gr$pass)) |
+                        (ol.gr$subjectHits %in% which(calls.gr$pass)))]
+  }
+
+  ## Compute evaluation metrics for each quality threshold
   if(!is.null(qual.ths)){
     qual.r = unique(c(0, qual.ths))
   } else {
     qual.r = unique(c(0, stats::quantile(calls.gr$qual, probs=qual.quantiles)))
   }
-  eval.quals.o = lapply(qual.r, function(mqual){
-    ## Insertion annotation for each genotype
-    ins.a.gt = lapply(ol.gt, function(ll) annotateOl(ll$ol.ins, min.qual=mqual, method=method))
-    ## Deletion annotation for each genotype
-    del.a.gt = lapply(ol.gt, function(ll) annotateOl(ll$ol.del, min.qual=mqual, method=method))
-    ## Inversion annotation for each genotype
-    inv.a.gt = lapply(ol.gt, function(ll) annotateOl(ll$ol.inv, min.qual=mqual, method=method))
-
-    ol.l = c(ins.a.gt, del.a.gt, inv.a.gt)
-    ol.l = list(
-      calls=do.call(c, lapply(ol.l, function(ll) ll$calls)),
-      truth=do.call(c, lapply(ol.l, function(ll) ll$truth))
-    )
-
-    ol.l$calls = filterSVs(ol.l$calls, regions.gr=bed.regions,
-                           ol.prop=bed.regions.ol,
-                           min.size=min.size, max.size=max.size)
-    ol.l$truth = filterSVs(ol.l$truth, regions.gr=bed.regions,
-                           ol.prop=bed.regions.ol,
-                           min.size=min.size, max.size=max.size)
-    eval.o = evalOl(ol.l, min.cov=min.cov)
+  eval.quals.o = parallel::mclapply(qual.r, function(mqual){
+    ## message(mqual)
+    ## remove calls with quality lower than threshold
+    calls.gr$pass[which(calls.gr$qual < mqual)] = FALSE
+    ol.gr = ol.gr[which(ol.gr$subjectHits %in% which(calls.gr$pass))]
+    ## annotate the overlaps and compute evaluation metrics
+    ol.gr = annotateOl(ol.gr, min.ol=min.ol, method=method)
+    eval.o = evalOl(ol.gr, truth.gr, calls.gr)
     eval.o$eval$qual = mqual
     eval.o
-  })
+  }, mc.cores=nb.cores)
+  ## all metrics in a data.frame
   eval.curve.df = do.call(rbind, lapply(eval.quals.o, function(ll) ll$eval))
-  eval.df = eval.curve.df[which(eval.curve.df$qual==0),]
-  eval.df$qual = NULL
-  ## results with best F1 score
+  ## best quality threshold (maximizing total F1)
   f1s = sapply(eval.quals.o, function(ll) ll$eval$F1[which(ll$eval$type=='Total')])
   bestf1 = utils::head(order(f1s, decreasing=TRUE), 1)
   eval.bestf1 = eval.quals.o[[bestf1]]
@@ -242,7 +184,7 @@ svevalOl <- function(calls.gr, truth.gr, max.ins.dist=20, min.cov=.5,
   }
   
   if(!is.null(outfile)){
-    utils::write.table(eval.df, file=outfile, sep='\t', row.names=FALSE, quote=FALSE)
+    utils::write.table(eval.bestf1$eval, file=outfile, sep='\t', row.names=FALSE, quote=FALSE)
   }
-  return(list(eval=eval.df, curve=eval.curve.df, svs=eval.bestf1$regions, mqual.bestf1=mqual.bestf1))
+  return(list(eval=eval.bestf1$eval, curve=eval.curve.df, svs=eval.bestf1$regions, mqual.bestf1=mqual.bestf1))
 }

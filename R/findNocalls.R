@@ -7,7 +7,7 @@
 ##' @param calls.gr call set. A GRanges or the path to a VCF file.
 ##' @param truth.gr truth set. A GRanges or the path to a VCF file.
 ##' @param max.ins.dist maximum distance for insertions to be clustered. Default is 20.
-##' @param min.cov the minimum coverage to be considered a match. Default is 0.5
+##' @param min.ol the minimum overlap/coverage to be considered a match. Default is 0.5
 ##' @param min.del.rol minimum reciprocal overlap for deletions. Default is 0.1
 ##' @param ins.seq.comp compare sequence instead of insertion sizes. Default is FALSE.
 ##' @param nb.cores number of processors to use. Default is 1.
@@ -16,11 +16,15 @@
 ##' @param check.inv should the sequence of MNV be compared to identify inversions. 
 ##' @return a data.frame with coordinates and variant ids from the truth set
 ##' corresponding to no-calls.
+##' @param method the method to annotate the overlap. Either 'coverage' (default) for the
+##' cumulative coverage (e.g. to deal with fragmented calls); or 'bipartite' for a 1-to-1
+##' matching of variants in the calls and truth sets.
 ##' @author Jean Monlong
 ##' @export
-findNocalls <- function(calls.gr, truth.gr, max.ins.dist=20, min.cov=.5,
+findNocalls <- function(calls.gr, truth.gr, max.ins.dist=20, min.ol=.5,
                         min.del.rol=.1, ins.seq.comp=FALSE, nb.cores=1,
-                        sample.name=NULL, check.inv=FALSE){
+                        sample.name=NULL, check.inv=FALSE, method=c('coverage', 'bipartite')){
+
   ## to retrieve the first sample, use something like "" in readSVvcf (NULL means all variants)
   if(is.null(sample.name)){
     sample.name = ''
@@ -34,6 +38,8 @@ findNocalls <- function(calls.gr, truth.gr, max.ins.dist=20, min.cov=.5,
   calls.gr = calls.gr[which(calls.gr$ac == -1)]
   if(length(calls.gr) == 0){
     return(data.frame())
+  } else {
+    calls.gr$ac = 1
   }
   ## Truth set
   if(is.character(truth.gr) & length(truth.gr)==1){
@@ -45,40 +51,28 @@ findNocalls <- function(calls.gr, truth.gr, max.ins.dist=20, min.cov=.5,
     stop("Truth set has no SVs.")
   }
   
-  ## Overlap no-calls with truth set
-  ol.ins = suppressWarnings(
-    olInsertions(calls.gr, truth.gr, max.ins.gap=max.ins.dist,
-                 ins.seq.comp=ins.seq.comp, nb.cores=nb.cores)
-  )
-  ol.del = suppressWarnings(
-    olRanges(calls.gr, truth.gr, min.rol=min.del.rol, type='DEL')
-  )
-  ol.inv = suppressWarnings(
-    olRanges(calls.gr, truth.gr, min.rol=min.del.rol, type='INV')
-  )
+  ## Prepare overlaps between no-calls and truth set
+  ol.gr = prepareOl(truth.gr, calls.gr, min.rol=min.del.rol,
+                   max.ins.dist=max.ins.dist,
+                   ins.seq.comp=ins.seq.comp, nb.cores=nb.cores)
 
-  ## Annotation with the overlap coverage
-  ins.a = annotateOl(ol.ins)
-  del.a = annotateOl(ol.del)
-  inv.a = annotateOl(ol.inv)
-  ol.l = list(ins.a, del.a, inv.a)
-  ol.l = list(
-    calls=do.call(c, lapply(ol.l, function(ll) ll$calls)),
-    truth=do.call(c, lapply(ol.l, function(ll) ll$truth))
-  )
-
-  ## Extract no-calls variants 
-  eval.o = evalOl(ol.l, min.cov=min.cov)
+  ## Annotation overlaps
+  ol.gr = annotateOl(ol.gr, min.ol=min.ol, method=method)
+  
+  ## Extract no-calls variants
+  eval.o = evalOl(ol.gr, truth.gr, calls.gr)
   nocalls.df = lapply(names(eval.o$regions), function(svtype){
     regs = eval.o$regions[[svtype]]
-    tps = regs$TP.baseline
+    tps = regs$TP
     if(length(tps)==0){
       return(NULL)
     }
     tps = GenomicRanges::resize(tps, fix='center',
                                 width=GenomicRanges::width(tps) + 2*max.ins.dist)
     tps = as.data.frame(tps)
-    tps[, c('seqnames','start','end','svid','type')]
+    cols.tokeep = c('seqnames','start','end','type')
+    if(!is.null(tps$svid)) cols.tokeep = c(cols.tokeep, 'svid')
+    tps[, cols.tokeep]
   })
   nocalls.df = do.call(rbind, nocalls.df)
   

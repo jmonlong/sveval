@@ -165,7 +165,7 @@ DataFrame read_vcf_cpp(std::string filename, bool use_gz, std::string sample_nam
       size = atoi(infos["INSLEN"].c_str());
     }
     if ((end_rec == -1) & (size != -1)){ // END from position + size
-      if(svtype != "INS"){
+      if((svtype != "INS") & (svtype != "")){
         end_rec = start_rec + size;
       }
     }

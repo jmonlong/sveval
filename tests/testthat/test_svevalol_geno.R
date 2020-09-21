@@ -4,8 +4,8 @@ test_that("ALT/REF inputs and output in file", {
   res = svevalOl('../calls.s0.vcf', '../truth.refalt.vcf', outfile='temp.tsv', out.bed.prefix='tempfortest', geno.eval=TRUE)
   res = read.table('temp.tsv', header=TRUE, as.is=TRUE, sep='\t')
   expect_gt(nrow(res), 0)
-  expect_true(all(res$TP>0))
-  expect_true(all(res$TP.baseline>0))
+  expect_true(any(res$TP>0))
+  expect_true(any(res$TP.baseline>0))
   file.remove('temp.tsv')
   file.remove(list.files('.', 'tempfortest'))
 })
@@ -14,8 +14,8 @@ test_that("Stitch and merge hets", {
   res = svevalOl('../calls.s0.vcf', '../truth.refalt.vcf', geno.eval=TRUE, merge.hets=TRUE, stitch.hets=TRUE)
   res = res$eval
   expect_gt(nrow(res), 0)
-  expect_true(all(res$TP>0))
-  expect_true(all(res$TP.baseline>0))
+  expect_true(any(res$TP>0))
+  expect_true(any(res$TP.baseline>0))
 })
 
 test_that("Input with symbolic VCF representation", {
@@ -33,8 +33,8 @@ test_that("Filters", {
   res = svevalOl('../calls.s0.vcf', '../truth.refalt.vcf', bed.regions='temp.bed', min.size=0, geno.eval=TRUE)
   res = res$eval
   expect_gt(nrow(res), 0)
-  expect_true(all(res$TP>0))
-  expect_true(all(res$TP.baseline>0))
+  expect_true(any(res$TP>0))
+  expect_true(any(res$TP.baseline>0))
   expect_true(all(as.matrix(res[1:3,2:5])<=as.matrix(res.all[1:3,2:5])))
   file.remove('temp.bed')
   ## BED file overlapping nothing
@@ -43,14 +43,14 @@ test_that("Filters", {
   res = svevalOl('../calls.s0.vcf', '../truth.refalt.vcf', bed.regions='temp.bed', min.size=0, geno.eval=TRUE)
   res = res$eval
   expect_gt(nrow(res), 0)
-  expect_true(all(is.na(res$TP)))
+  expect_true(all(is.na(res$recall)))
   file.remove('temp.bed')
   ## Small variants
   res = svevalOl('../calls.s0.vcf', '../truth.refalt.vcf', min.size=20, geno.eval=TRUE)
   res = res$eval
   expect_gt(nrow(res), 0)
-  expect_true(all(res$TP>0))
-  expect_true(all(res$TP.baseline>0))
+  expect_true(any(res$TP>0))
+  expect_true(any(res$TP.baseline>0))
   expect_true(all(as.matrix(res[,2:5])<=as.matrix(res.all[,2:5])))
 })
 
@@ -66,7 +66,7 @@ test_that("Sequence comparison for insertions", {
   res = res$eval
   expect_gt(nrow(res), 0)
   expect_true(any(as.matrix(res[1:3,2:5])>0))
-  expect_true(all(res$TP.baseline[1:3]>0))
+  expect_true(any(res$TP.baseline[1:3]>0))
 })
 
 
@@ -75,8 +75,8 @@ test_that("Empty inputs", {
   truth.gr = readSVvcf('../truth.refalt.vcf')
   ## Empty calls
   res = svevalOl('../empty.vcf', truth.gr, min.size=20, geno.eval=TRUE)
-  res = res$eval
-  expect_true(all(is.na(as.matrix(res[,2:5]))))
+  expect_true(all(res$eval$recall == 0))
+  expect_true(all(res$curve$recall == 0))
   ## Empty truth set
   expect_error(svevalOl(calls.gr, '../empty.vcf', geno.eval=TRUE), "no SVs")
   ## One type missing

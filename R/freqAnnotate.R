@@ -1,7 +1,14 @@
+##' Input SVs are matched to SVs in the catalog. Each SV is then annotated with the
+##' maximum frequency across all the variants in the catalog that match. Although the
+##' different overlap approaches could be used here, the 'reciprocal' overlap makes the
+##' more sense because we want to list all possible matches without penalizing over-matching
+##' (like 'bipartite' would) or include fragmented calls (like 'coverage' would) as they
+##' could be very variants with uncomparable frequencies.
+##'
 ##' @title Annotate SVs with frequency in catalog
 ##' @param svs a VCF object with SVs to annotate.
 ##' @param cat a VCF object with the SV catalog with frequency estimates.
-##' @param min.cov the minimum coverage to be considered a match. Default is 0.5
+##' @param min.ol the minimum overlap/coverage to be considered a match. Default is 0.5
 ##' @param min.del.rol minimum reciprocal overlap for deletions. Default is 0.1
 ##' @param max.ins.dist maximum distance for insertions to be clustered. Default is 20.
 ##' @param check.inv should the sequence of MNV be compared to identify inversions. 
@@ -9,6 +16,8 @@
 ##' @param out.vcf If non-NULL, write output to this VCF file. 
 ##' @param freq.field the field with the frequency estimate in the 'cat' input. Default is 'AF'.
 ##' @param out.freq.field the new field's name. Default is 'AFMAX'
+##' @param method the method to annotate the overlap. Recommended is 'reciprocal' (default). See details.
+##' @param nb.cores number of processors to use. Default is 1.
 ##' @return a GRanges object.
 ##' @author Jean Monlong
 ##' @importFrom magrittr %>%
@@ -24,9 +33,10 @@
 ##' cat.vcf = readSVvcf('gnomad.vcf', out.fmt="vcf")
 ##' calls.freq.vcf = freqAnnotate(calls.vcf, cat.vcf)
 ##' }
-freqAnnotate <- function(svs, cat, min.cov=.5, min.del.rol=.1, max.ins.dist=20, check.inv=FALSE,
+freqAnnotate <- function(svs, cat, min.ol=.5, min.del.rol=.1, max.ins.dist=20, check.inv=FALSE,
                          ins.seq.comp=FALSE, out.vcf=NULL, freq.field='AF',
-                         out.freq.field='AFMAX'){
+                         out.freq.field='AFMAX', method=c('reciprocal', 'coverage', 'bipartite'),
+                         nb.cores=1){
 
   if(is.character(svs) && length(svs) == 1){
     svs = readSVvcf(svs, out.fmt='vcf', check.inv=check.inv)
@@ -40,7 +50,6 @@ freqAnnotate <- function(svs, cat, min.cov=.5, min.del.rol=.1, max.ins.dist=20, 
   svs.gr$size = VariantAnnotation::info(svs)$SVLEN
   svs.gr$type = VariantAnnotation::info(svs)$SVTYPE
   GenomicRanges::end(svs.gr) = VariantAnnotation::info(svs)$END
-  svs.gr$id = 1:length(svs.gr)
   cat.gr = DelayedArray::rowRanges(cat)
   cat.gr$size = VariantAnnotation::info(cat)$SVLEN
   cat.gr$type = VariantAnnotation::info(cat)$SVTYPE
@@ -56,69 +65,25 @@ freqAnnotate <- function(svs, cat, min.cov=.5, min.del.rol=.1, max.ins.dist=20, 
   }
   
   GenomicRanges::end(cat.gr) = VariantAnnotation::info(cat)$END
-  cat.gr$id = 1:length(cat.gr)
 
   ## Prepare VCF field
   freqs = rep(0, length(svs))
- 
-  ## Overlap insertions
-  ol.ins = suppressWarnings(
-    olInsertions(svs.gr, cat.gr, max.ins.gap=max.ins.dist,
-                 ins.seq.comp=ins.seq.comp)
-  )
 
-  ## Overlap deletions
-  ol.del = suppressWarnings(
-    olRanges(svs.gr, cat.gr, min.rol=min.del.rol, type='DEL')
-  )
+  ## Overlap SVs
+  ol.gr = prepareOl(cat.gr, svs.gr, min.rol=min.del.rol, max.ins.dist=max.ins.dist,
+                    ins.seq.comp=ins.seq.comp, nb.cores=nb.cores, by.gt=FALSE)
+  ol.gr = annotateOl(ol.gr, min.ol=min.ol, method=method)
 
-  ## Overlap inversions
-  ol.inv = suppressWarnings(
-    olRanges(svs.gr, cat.gr, min.rol=min.del.rol, type='INV')
-  )
-
-  ## Overlap duplications
-  ol.dup = suppressWarnings(
-    olRanges(svs.gr, cat.gr, min.rol=min.del.rol, type='DUP')
-  )
-
-  ## Annotate SVs
-  if(!is.null(ol.ins$ol)){
-    freq.ins = ol.ins$ol %>%
-      dplyr::mutate(freq=ol.ins$truth$freq[.data$truth.idx],
-                    id=ol.ins$calls$id[.data$call.idx]) %>% 
-      dplyr::group_by(.data$id) %>%
-      dplyr::summarize(freq=max(.data$freq))
-    freqs[freq.ins$id] = freq.ins$freq
-  }
-  if(!is.null(ol.del$rol.gr)){
-    freq.del = ol.del$rol.gr %>%
+  if(length(ol.gr)>0){
+    ## maximum frequency for each input SV
+    freq.df = ol.gr %>%
       as.data.frame %>% 
-      dplyr::mutate(freq=ol.del$truth$freq[.data$truth.idx],
-                    id=ol.del$calls$id[.data$call.idx]) %>% 
-      dplyr::group_by(.data$id) %>%
+      dplyr::mutate(freq=cat.gr$freq[.data$queryHits]) %>% 
+      dplyr::group_by(.data$subjectHits) %>%
       dplyr::summarize(freq=max(.data$freq))
-    freqs[freq.del$id] = freq.del$freq
+    freqs[freq.df$subjectHits] = freq.df$freq
   }
-  if(!is.null(ol.inv$rol.gr)){
-    freq.inv = ol.inv$rol.gr %>%
-      as.data.frame %>% 
-      dplyr::mutate(freq=ol.inv$truth$freq[.data$truth.idx],
-                    id=ol.inv$calls$id[.data$call.idx]) %>% 
-      dplyr::group_by(.data$id) %>%
-      dplyr::summarize(freq=max(.data$freq))
-    freqs[freq.inv$id] = freq.inv$freq
-  }
-  if(!is.null(ol.dup$rol.gr)){
-    freq.dup = ol.dup$rol.gr %>%
-      as.data.frame %>% 
-      dplyr::mutate(freq=ol.dup$truth$freq[.data$truth.idx],
-                    id=ol.dup$calls$id[.data$call.idx]) %>% 
-      dplyr::group_by(.data$id) %>%
-      dplyr::summarize(freq=max(.data$freq))
-    freqs[freq.dup$id] = freq.dup$freq
-  }
-
+  
   ## Add frequency field
   new.info.h = S4Vectors::DataFrame(Number='1', Type='Float',
                                     Description=desc[freq.field,'Description'])

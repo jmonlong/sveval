@@ -8,7 +8,7 @@ svevalOl(
   calls.gr,
   truth.gr,
   max.ins.dist = 20,
-  min.cov = 0.5,
+  min.ol = 0.5,
   min.del.rol = 0.1,
   ins.seq.comp = FALSE,
   nb.cores = 1,
@@ -40,7 +40,7 @@ svevalOl(
 
 \item{max.ins.dist}{maximum distance for insertions to be clustered. Default is 20.}
 
-\item{min.cov}{the minimum coverage to be considered a match. Default is 0.5}
+\item{min.ol}{the minimum overlap/coverage to be considered a match. Default is 0.5}
 
 \item{min.del.rol}{minimum reciprocal overlap for deletions. Default is 0.1}
 
@@ -67,7 +67,7 @@ input. If NULL (default), use first sample.}
 
 \item{out.bed.prefix}{prefix for the output BED files. If NULL (default), no BED output.}
 
-\item{qual.ths}{the quality thresholds for the PR curve. If NULL, will use quantiles. see \code{qual.quantiles}.}
+\item{qual.ths}{the quality thresholds for the PR curve. If NULL, will use quantiles. see the \code{qual.quantiles} parameter below.}
 
 \item{qual.quantiles}{the quality quantiles for the PR curve, if qual.ths is NULL. Default is (0, .1, ..., .9, 1).}
 
@@ -101,7 +101,22 @@ a list with
 \item{mqual.bestf1}{the quality threshold that produces best F1 (and corresponding to 'svs' GRanges).}
 }
 \description{
-SV evaluation based on overlap and variant size
+Compares SVs from a call-set to SVs from a truth-set.
+}
+\details{
+Different overlapping approaches are available. See \code{svOverlap} for more details.
+We recommend using the default \code{method='coverage'} when evaluating the calls (absence/presence
+of SVs) and \code{method='bipartite'} when evaluating genotypes. The latter will match
+a variant in the call-set with at most one variant in the truth-set which will penalyze.
+one-to-many configurations as is usually preferred when comparing exact genotypes. To further
+switch on the 'genotype evaluation' mode, use \code{geno.eval=TRUE}. It can also help to stitch
+fragmented calls and merge heterozygotes into homozygotes using \code{merge.hets=TRUE} and
+\code{stitch.hets=TRUE} (see example below).
+
+The evaluation will be performed for different quality thresholds on the call-set in order to make
+a precision-recall curve. If the VCF are to be read it will look for the field specified in
+\code{qual.field} (GQ by default, and QUAL if not found). If you don't want the PR curve,
+the evaluation can be sped up by running with for example \code{qual.ths=0}.
 }
 \examples{
 \dontrun{
@@ -114,7 +129,8 @@ truth.gr = readSVvcf('truth.vcf')
 eval = svevalOl(calls.gr, truth.gr)
 
 ## Genotype evaluation
-eval = svevalOl(calls.gr, truth.gr, geno.eval=TRUE, merge.hets=TRUE, stitch.hets=TRUE)
+eval = svevalOl(calls.gr, truth.gr, geno.eval=TRUE, merge.hets=TRUE,
+                stitch.hets=TRUE, method='bipartite')
 }
 }
 \author{

@@ -16,7 +16,8 @@ an upated GRanges.
 }
 \description{
 Stitch together SVs that are close together. This should be done for SVs of the same
-type and genotype. When several SV pairs can be stitched in a cluster, only the best pair (closest to each other) is merged, hence this should be run several times (e.g. until the
+type and genotype. When several SV pairs can be stitched in a cluster, only the best
+pair (closest to each other) is merged, hence this could be run several times (e.g. until the
 size of the output is similar to the input's).
 }
 \author{
