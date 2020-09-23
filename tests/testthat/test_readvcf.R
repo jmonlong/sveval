@@ -32,6 +32,12 @@ test_that("VCF with existing QUAL and another FORMAT field", {
   expect_true(any(vcf$qual != vcf2$qual))
 })
 
+test_that("VCF with missing quality filter", {
+  vcf = readSVvcf('../calls.s0.vcf')
+  vcf2 = readSVvcf('../calls.s0.vcf', qual.field='QAUL')
+  expect_true(any(vcf$qual == vcf2$qual))
+})
+
 test_that("ALT/REF VCF with VCF output", {
   vcf = readSVvcf('../truth.refalt.vcf', out.fmt='vcf')
   expect_gt(length(vcf), 0)
@@ -39,5 +45,15 @@ test_that("ALT/REF VCF with VCF output", {
 
 test_that("VCF with symbolic SVs with VCF output", {
   vcf = readSVvcf('../truth.symb.vcf', out.fmt='vcf')
+  expect_gt(length(vcf), 0)
+})
+
+test_that("ALT/REF VCF with data.frame output", {
+  vcf = readSVvcf('../truth.refalt.vcf', out.fmt='df')
+  expect_gt(length(vcf), 0)
+})
+
+test_that("VCF with symbolic SVs with data.frame output", {
+  vcf = readSVvcf('../truth.symb.vcf', out.fmt='df')
   expect_gt(length(vcf), 0)
 })
