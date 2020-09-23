@@ -63,10 +63,6 @@ stitchSVs <- function(svs, stitch.dist=20){
       svs.stitch$type = svs$type[ol$queryHits]
     } else if(coln == 'size'){
       svs.stitch$size = svs$size[ol$queryHits] + svs$size[ol$subjectHits]
-    } else if(coln == 'ref.cov'){
-      svs.stitch$ref.cov = svs$ref.cov[ol$queryHits] + svs$ref.cov[ol$subjectHits]
-    } else if(coln == 'alt.cov'){
-      svs.stitch$alt.cov = svs$alt.cov[ol$queryHits] + svs$alt.cov[ol$subjectHits]
     }
   }
   ## Remove stitched pairs and add new SVs

@@ -58,10 +58,6 @@ mergeHets <- function(svs, min.rol=.9, max.ins.dist=1, ins.seq.comp=FALSE){
       svs.merged$type = svs$type[ol.gr$queryHits]
     } else if(coln == 'size'){
       svs.merged$size = (svs$size[ol.gr$queryHits] + svs$size[ol.gr$subjectHits]) / 2
-    } else if(coln == 'ref.cov'){
-      svs.merged$ref.cov = svs$ref.cov[ol.gr$queryHits] + svs$ref.cov[ol.gr$subjectHits]
-    } else if(coln == 'alt.cov'){
-      svs.merged$alt.cov = svs$alt.cov[ol.gr$queryHits] + svs$alt.cov[ol.gr$subjectHits]
     }
   }
   ## Remove merged pairs and add new SVs

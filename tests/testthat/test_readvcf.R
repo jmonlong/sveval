@@ -20,6 +20,18 @@ test_that("VCF with symbolic SVs and different samples", {
   expect_true(length(vcf) != length(vcf2))
 })
 
+test_that("VCF gzipped", {
+  vcf = readSVvcf('../delly.vcf.gz')
+  expect_gt(length(vcf), 0)
+  expect_gt(sum(vcf$qual), 0)
+})
+
+test_that("VCF bgzipped", {
+  vcf = readSVvcf('../delly.vcf.bgz')
+  expect_gt(length(vcf), 0)
+  expect_gt(sum(vcf$qual), 0)
+})
+
 test_that("VCF with no QUAL but GQ field", {
   vcf = readSVvcf('../delly.vcf')
   expect_gt(length(vcf), 0)
