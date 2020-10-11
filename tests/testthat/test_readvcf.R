@@ -69,3 +69,15 @@ test_that("VCF with symbolic SVs with data.frame output", {
   vcf = readSVvcf('../truth.symb.vcf', out.fmt='df')
   expect_gt(length(vcf), 0)
 })
+
+
+test_that("Multisamples with ALT/REF", {
+  vcf = readSVvcf.multisamps('../truth.refalt.vcf')
+  expect_gt(length(vcf), 0)
+  expect_true(any(vcf$af>0))
+  vcf = readSVvcf.multisamps('../truth.refalt.vcf', keep.ins.seq=TRUE, keep.ref.seq=TRUE,
+                             check.inv=TRUE, keep.ids=TRUE, out.fmt='df')
+  expect_gt(length(vcf), 0)
+  expect_true(any(vcf$af>0))
+})
+
