@@ -28,7 +28,13 @@ prepareOl <- function(query, subject, min.rol=.1, max.ins.dist=1,
   if(is.null(query$ac) & length(query)>0){
     query$ac = 1
   }
+  if(!is.null(query$ac) && all(query$ac == -1)){
+    query$ac = 1
+  }
   if(is.null(subject$ac) & length(subject)>0){
+    subject$ac = 1
+  }
+  if(!is.null(subject$ac) && all(subject$ac == -1)){
     subject$ac = 1
   }
 
