@@ -4,15 +4,8 @@
 \alias{prepareOl}
 \title{Prepare SV overlaps before annotation}
 \usage{
-prepareOl(
-  query,
-  subject,
-  min.rol = 0.1,
-  max.ins.dist = 1,
-  ins.seq.comp = FALSE,
-  nb.cores = 1,
-  by.gt = FALSE
-)
+prepareOl(query, subject, min.rol = 0.1, max.ins.dist = 1,
+  ins.seq.comp = FALSE, nb.cores = 1, by.gt = FALSE)
 }
 \arguments{
 \item{query}{a query GRanges object}

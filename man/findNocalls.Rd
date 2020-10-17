@@ -4,18 +4,10 @@
 \alias{findNocalls}
 \title{Find no-calls variants}
 \usage{
-findNocalls(
-  calls.gr,
-  truth.gr,
-  max.ins.dist = 20,
-  min.ol = 0.5,
-  min.del.rol = 0.1,
-  ins.seq.comp = FALSE,
-  nb.cores = 1,
-  sample.name = NULL,
-  check.inv = FALSE,
-  method = c("coverage", "bipartite")
-)
+findNocalls(calls.gr, truth.gr, max.ins.dist = 20, min.ol = 0.5,
+  min.del.rol = 0.1, ins.seq.comp = FALSE, nb.cores = 1,
+  sample.name = NULL, check.inv = FALSE, method = c("coverage",
+  "bipartite"))
 }
 \arguments{
 \item{calls.gr}{call set. A GRanges or the path to a VCF file.}

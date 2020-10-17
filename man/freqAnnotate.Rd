@@ -4,20 +4,10 @@
 \alias{freqAnnotate}
 \title{Annotate SVs with frequency in catalog}
 \usage{
-freqAnnotate(
-  svs,
-  cat,
-  min.ol = 0.5,
-  min.del.rol = 0.1,
-  max.ins.dist = 20,
-  check.inv = FALSE,
-  ins.seq.comp = FALSE,
-  out.vcf = NULL,
-  freq.field = "AF",
-  out.freq.field = "AFMAX",
-  method = c("reciprocal", "coverage", "bipartite"),
-  nb.cores = 1
-)
+freqAnnotate(svs, cat, min.ol = 0.5, min.del.rol = 0.1,
+  max.ins.dist = 20, check.inv = FALSE, ins.seq.comp = FALSE,
+  out.vcf = NULL, freq.field = "AF", out.freq.field = "AFMAX",
+  method = c("reciprocal", "coverage", "bipartite"), nb.cores = 1)
 }
 \arguments{
 \item{svs}{a VCF object with SVs to annotate.}

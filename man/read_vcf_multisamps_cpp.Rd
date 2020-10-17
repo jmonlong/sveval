@@ -4,14 +4,8 @@
 \alias{read_vcf_multisamps_cpp}
 \title{Read VCF using CPP reader}
 \usage{
-read_vcf_multisamps_cpp(
-  filename,
-  use_gz,
-  min_sv_size = 10L,
-  shorten_ref = TRUE,
-  shorten_alt = TRUE,
-  check_inv = FALSE
-)
+read_vcf_multisamps_cpp(filename, use_gz, min_sv_size = 10L,
+  shorten_ref = TRUE, shorten_alt = TRUE, check_inv = FALSE)
 }
 \arguments{
 \item{filename}{the path to the VCF file (unzipped or gzipped).}

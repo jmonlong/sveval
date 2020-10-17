@@ -4,15 +4,9 @@
 \alias{stitchMergeHets}
 \title{Stitch and merge heterozygous SVs}
 \usage{
-stitchMergeHets(
-  svs.gr,
-  do.stitch = TRUE,
-  do.merge = TRUE,
-  stitch.dist = 20,
-  min.rol = 0.8,
-  max.ins.dist = 20,
-  ins.seq.comp = FALSE
-)
+stitchMergeHets(svs.gr, do.stitch = TRUE, do.merge = TRUE,
+  stitch.dist = 20, min.rol = 0.8, max.ins.dist = 20,
+  ins.seq.comp = FALSE)
 }
 \arguments{
 \item{svs.gr}{input GRanges with SVs, e.g. read from \code{readSVvcf}.}

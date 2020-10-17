@@ -4,11 +4,8 @@
 \alias{annotateOl}
 \title{Annotate the overlap between SVs}
 \usage{
-annotateOl(
-  ol.gr,
-  min.ol = 0.5,
-  method = c("coverage", "reciprocal", "bipartite")
-)
+annotateOl(ol.gr, min.ol = 0.5, method = c("coverage", "reciprocal",
+  "bipartite"))
 }
 \arguments{
 \item{ol.gr}{overlaps prepared with \code{prepareOl} function.}

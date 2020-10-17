@@ -4,7 +4,8 @@
 \alias{rmskAnnotate}
 \title{Annotate REF/ALT sequence with RepeatMasker}
 \usage{
-rmskAnnotate(svs.gr, nb.cores = 1, species = "human", docker.image = NULL)
+rmskAnnotate(svs.gr, nb.cores = 1, species = "human",
+  docker.image = NULL)
 }
 \arguments{
 \item{svs.gr}{SVs. A GRanges or the path to a VCF file.}
