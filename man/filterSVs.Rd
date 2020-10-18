@@ -4,8 +4,14 @@
 \alias{filterSVs}
 \title{Filter SVs for size and regions of interest}
 \usage{
-filterSVs(sv.gr, regions.gr = NULL, ol.prop = 0.5, min.size = 0,
-  max.size = Inf, mark.pass = FALSE)
+filterSVs(
+  sv.gr,
+  regions.gr = NULL,
+  ol.prop = 0.5,
+  min.size = 0,
+  max.size = Inf,
+  mark.pass = FALSE
+)
 }
 \arguments{
 \item{sv.gr}{the input SVs (e.g. read from \code{readSVvcf})}

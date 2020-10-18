@@ -10,13 +10,15 @@
 ##' @param stitch.dist the maximum distance allowed for two SVs to be stitched.
 ##' @param min.rol minimum reciprocal overlap to merge two hets into one hom
 ##' @param max.ins.dist maximum distance for insertions to be clustered when merging hets.
+##' @param range.seq.comp compare sequence instead of overlapping deletions/inversion/etc. Default is FALSE.
 ##' @param ins.seq.comp compare sequence instead of insertion sizes. Default is FALSE.
 ##' @return a GRanges with het SVs from input svs.gr stitched and/or merged.
 ##' @author Jean Monlong
 stitchMergeHets <- function(svs.gr, do.stitch=TRUE, do.merge=TRUE,
-                            stitch.dist=20, min.rol=.8, max.ins.dist=20, ins.seq.comp=FALSE){
+                            stitch.dist=20, min.rol=.8, max.ins.dist=20,
+                            range.seq.comp=FALSE, ins.seq.comp=FALSE){
   ## iteratively stitch SVs until no more pairs can be stitched
-  iterStitch <- function(svs.gr, stitch.dist){
+  iterStitch <- function(svs.gr){
     svs.gr = lapply(unique(svs.gr$type), function(type){
       svs.t = svs.gr[which(svs.gr$type==type)]
       nhets = Inf
@@ -31,7 +33,7 @@ stitchMergeHets <- function(svs.gr, do.stitch=TRUE, do.merge=TRUE,
     do.call(c, svs.gr)
   }
   ## iteratively merge hets until no more pairs can be merged
-  iterMerge <- function(svs.gr, min.rol, max.ins.dist, ins.seq.comp){
+  iterMerge <- function(svs.gr){
     svs.gr = lapply(unique(svs.gr$type), function(type){
       svs.t = svs.gr[which(svs.gr$type==type)]
       nhets = Inf
@@ -39,7 +41,7 @@ stitchMergeHets <- function(svs.gr, do.stitch=TRUE, do.merge=TRUE,
       while(length((hets.idx = which(svs.t$ac == 1))) < nhets){
         nhets = length(hets.idx)
         hets = mergeHets(svs.t[hets.idx], min.rol=min.rol,
-                         max.ins.dist=max.ins.dist, ins.seq.comp=ins.seq.comp)
+                         max.ins.dist=max.ins.dist, range.seq.comp=range.seq.comp, ins.seq.comp=ins.seq.comp)
         svs.t = c(hets, svs.t[which(svs.t$ac > 1)])
       }
       return(svs.t)
@@ -51,19 +53,15 @@ stitchMergeHets <- function(svs.gr, do.stitch=TRUE, do.merge=TRUE,
     ## Merge hets once first
     if(do.merge){
       logging::loginfo('Pre-stitching merge hets')
-      svs.gr = iterMerge(svs.gr, min.rol=min.rol,
-                           max.ins.dist=max.ins.dist,
-                           ins.seq.comp=ins.seq.comp)
+      svs.gr = iterMerge(svs.gr)
     }
     logging::loginfo('Stitch hets')
-    svs.gr = iterStitch(svs.gr, stitch.dist=stitch.dist)
+    svs.gr = iterStitch(svs.gr)
   }
   ## Merge hets
   if(do.merge){
     logging::loginfo('Merge hets')
-    svs.gr = iterMerge(svs.gr, min.rol=min.rol,
-                       max.ins.dist=max.ins.dist,
-                       ins.seq.comp=ins.seq.comp)
+    svs.gr = iterMerge(svs.gr)
   }
   return(svs.gr)
 }

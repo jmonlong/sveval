@@ -4,10 +4,19 @@
 \alias{readSVvcf}
 \title{Read SVs from a VCF file}
 \usage{
-readSVvcf(vcf.file, keep.ins.seq = FALSE, keep.ref.seq = FALSE,
-  sample.name = "", qual.field = c("GQ", "QUAL"), other.field = NULL,
-  check.inv = FALSE, keep.ids = FALSE, nocalls = FALSE,
-  out.fmt = c("gr", "df", "vcf"), min.sv.size = 10)
+readSVvcf(
+  vcf.file,
+  keep.ins.seq = FALSE,
+  keep.ref.seq = FALSE,
+  sample.name = "",
+  qual.field = c("GQ", "QUAL"),
+  other.field = NULL,
+  check.inv = FALSE,
+  keep.ids = FALSE,
+  nocalls = FALSE,
+  out.fmt = c("gr", "df", "vcf"),
+  min.sv.size = 10
+)
 }
 \arguments{
 \item{vcf.file}{the path to the VCF file}

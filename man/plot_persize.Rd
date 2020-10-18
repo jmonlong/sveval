@@ -4,8 +4,11 @@
 \alias{plot_persize}
 \title{Recall, precision, F1 per SV size}
 \usage{
-plot_persize(eval, size.breaks = c(50, 100, 500, 1000, 10000, Inf),
-  plot = TRUE)
+plot_persize(
+  eval,
+  size.breaks = c(50, 100, 500, 1000, 10000, Inf),
+  plot = TRUE
+)
 }
 \arguments{
 \item{eval}{the output of \code{svevalOl}.}

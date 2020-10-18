@@ -4,9 +4,16 @@
 \alias{stitchMergeHets}
 \title{Stitch and merge heterozygous SVs}
 \usage{
-stitchMergeHets(svs.gr, do.stitch = TRUE, do.merge = TRUE,
-  stitch.dist = 20, min.rol = 0.8, max.ins.dist = 20,
-  ins.seq.comp = FALSE)
+stitchMergeHets(
+  svs.gr,
+  do.stitch = TRUE,
+  do.merge = TRUE,
+  stitch.dist = 20,
+  min.rol = 0.8,
+  max.ins.dist = 20,
+  range.seq.comp = FALSE,
+  ins.seq.comp = FALSE
+)
 }
 \arguments{
 \item{svs.gr}{input GRanges with SVs, e.g. read from \code{readSVvcf}.}
@@ -20,6 +27,8 @@ stitchMergeHets(svs.gr, do.stitch = TRUE, do.merge = TRUE,
 \item{min.rol}{minimum reciprocal overlap to merge two hets into one hom}
 
 \item{max.ins.dist}{maximum distance for insertions to be clustered when merging hets.}
+
+\item{range.seq.comp}{compare sequence instead of overlapping deletions/inversion/etc. Default is FALSE.}
 
 \item{ins.seq.comp}{compare sequence instead of insertion sizes. Default is FALSE.}
 }

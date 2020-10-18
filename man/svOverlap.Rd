@@ -4,9 +4,17 @@
 \alias{svOverlap}
 \title{Overlap SVs}
 \usage{
-svOverlap(query, subject, min.ol = 0.5, method = c("reciprocal",
-  "coverage", "bipartite"), max.ins.dist = 20, min.del.rol = 0.1,
-  ins.seq.comp = FALSE, nb.cores = 1)
+svOverlap(
+  query,
+  subject,
+  min.ol = 0.5,
+  method = c("reciprocal", "coverage", "bipartite"),
+  max.ins.dist = 20,
+  min.del.rol = 0.1,
+  range.seq.comp = FALSE,
+  ins.seq.comp = FALSE,
+  nb.cores = 1
+)
 }
 \arguments{
 \item{query}{a GRanges object with SVs}
@@ -22,6 +30,8 @@ matching of variants in the calls and truth sets.}
 \item{max.ins.dist}{maximum distance for insertions to be clustered. Default is 20.}
 
 \item{min.del.rol}{minimum reciprocal overlap for deletions. Default is 0.1}
+
+\item{range.seq.comp}{compare sequence instead of overlapping deletions/inversions/etc. Default is FALSE.}
 
 \item{ins.seq.comp}{compare sequence instead of insertion sizes. Default is FALSE.}
 

@@ -31,6 +31,7 @@
 ##' matching of variants in the calls and truth sets.
 ##' @param max.ins.dist maximum distance for insertions to be clustered. Default is 20.
 ##' @param min.del.rol minimum reciprocal overlap for deletions. Default is 0.1
+##' @param range.seq.comp compare sequence instead of overlapping deletions/inversions/etc. Default is FALSE.
 ##' @param ins.seq.comp compare sequence instead of insertion sizes. Default is FALSE.
 ##' @param nb.cores number of processors to use. Default is 1.
 ##' @return a GRanges with information about pairs of SVs in query and subject that overlap
@@ -47,11 +48,12 @@
 svOverlap <- function(query, subject, min.ol=.5,
                       method=c('reciprocal', 'coverage', 'bipartite'),
                       max.ins.dist=20, 
-                      min.del.rol=.1, ins.seq.comp=FALSE, nb.cores=1){  
+                      min.del.rol=.1, range.seq.comp=FALSE, ins.seq.comp=FALSE, nb.cores=1){  
   ## Prepare overlap
   ol.gr = prepareOl(query, subject, min.rol=min.del.rol,
                    max.ins.dist=max.ins.dist,
-                   ins.seq.comp=ins.seq.comp, nb.cores=nb.cores)
+                   range.seq.comp=range.seq.comp, ins.seq.comp=ins.seq.comp,
+                   nb.cores=nb.cores)
 
   ## Annotate the overlaps
   ol.gr = annotateOl(ol.gr, min.ol=min.ol, method=method)

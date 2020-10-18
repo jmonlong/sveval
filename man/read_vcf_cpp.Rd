@@ -4,9 +4,18 @@
 \alias{read_vcf_cpp}
 \title{Read VCF using CPP reader}
 \usage{
-read_vcf_cpp(filename, use_gz, sample_name = "", min_sv_size = 10L,
-  shorten_ref = TRUE, shorten_alt = TRUE, gq_field = "GQ",
-  check_inv = FALSE, keep_nocalls = FALSE, other_field = "")
+read_vcf_cpp(
+  filename,
+  use_gz,
+  sample_name = "",
+  min_sv_size = 10L,
+  shorten_ref = TRUE,
+  shorten_alt = TRUE,
+  gq_field = "GQ",
+  check_inv = FALSE,
+  keep_nocalls = FALSE,
+  other_field = ""
+)
 }
 \arguments{
 \item{filename}{the path to the VCF file (unzipped or gzipped).}

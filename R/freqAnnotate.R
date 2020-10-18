@@ -12,6 +12,7 @@
 ##' @param min.del.rol minimum reciprocal overlap for deletions. Default is 0.1
 ##' @param max.ins.dist maximum distance for insertions to be clustered. Default is 20.
 ##' @param check.inv should the sequence of MNV be compared to identify inversions. 
+##' @param range.seq.comp compare sequence instead of only overlapping deletions/inversions/etc. Default is FALSE.
 ##' @param ins.seq.comp compare sequence instead of insertion sizes. Default is FALSE.
 ##' @param out.vcf If non-NULL, write output to this VCF file. 
 ##' @param freq.field the field with the frequency estimate in the 'cat' input. Default is 'AF'.
@@ -34,7 +35,7 @@
 ##' calls.freq.vcf = freqAnnotate(calls.vcf, cat.vcf)
 ##' }
 freqAnnotate <- function(svs, cat, min.ol=.5, min.del.rol=.1, max.ins.dist=20, check.inv=FALSE,
-                         ins.seq.comp=FALSE, out.vcf=NULL, freq.field='AF',
+                         range.seq.comp=FALSE, ins.seq.comp=FALSE, out.vcf=NULL, freq.field='AF',
                          out.freq.field='AFMAX', method=c('reciprocal', 'coverage', 'bipartite'),
                          nb.cores=1){
 
@@ -71,7 +72,8 @@ freqAnnotate <- function(svs, cat, min.ol=.5, min.del.rol=.1, max.ins.dist=20, c
 
   ## Overlap SVs
   ol.gr = prepareOl(cat.gr, svs.gr, min.rol=min.del.rol, max.ins.dist=max.ins.dist,
-                    ins.seq.comp=ins.seq.comp, nb.cores=nb.cores, by.gt=FALSE)
+                    range.seq.comp=range.seq.comp, ins.seq.comp=ins.seq.comp,
+                    nb.cores=nb.cores, by.gt=FALSE)
   ol.gr = annotateOl(ol.gr, min.ol=min.ol, method=method)
 
   if(length(ol.gr)>0){

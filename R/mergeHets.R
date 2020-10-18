@@ -7,11 +7,12 @@
 ##' @param svs GRanges with SV information
 ##' @param min.rol minimum reciprocal overlap to match variants.
 ##' @param max.ins.dist maximum distance for insertions to be clustered.
+##' @param range.seq.comp compare sequence instead of only overlapping deletions/inversion/etc. Default is FALSE.
 ##' @param ins.seq.comp compare sequence instead of insertion sizes. Default is FALSE.
 ##' @return an upated GRanges.
 ##' @author Jean Monlong
 ##' @keywords internal
-mergeHets <- function(svs, min.rol=.9, max.ins.dist=1, ins.seq.comp=FALSE){
+mergeHets <- function(svs, min.rol=.9, max.ins.dist=1, range.seq.comp=FALSE, ins.seq.comp=FALSE){
   if(length(svs)==0){
     return(svs)
   }
@@ -20,7 +21,8 @@ mergeHets <- function(svs, min.rol=.9, max.ins.dist=1, ins.seq.comp=FALSE){
   }
 
   ## overlap SVs
-  ol.gr = prepareOl(svs, svs, min.rol=min.rol, max.ins.dist=max.ins.dist, ins.seq.comp=ins.seq.comp)
+  ol.gr = prepareOl(svs, svs, min.rol=min.rol, max.ins.dist=max.ins.dist,
+                    range.seq.comp=range.seq.comp, ins.seq.comp=ins.seq.comp)
   ol.gr = annotateOl(ol.gr, min.ol=min.rol, method='reciprocal')
   
   ## If nothing, return input variants

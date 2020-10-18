@@ -9,6 +9,7 @@
 ##' @param max.ins.dist maximum distance for insertions to be clustered. Default is 20.
 ##' @param min.ol the minimum overlap/coverage to be considered a match. Default is 0.5
 ##' @param min.del.rol minimum reciprocal overlap for deletions. Default is 0.1
+##' @param range.seq.comp compare sequence instead of only overlapping deletions/inversions/etc. Default is FALSE.
 ##' @param ins.seq.comp compare sequence instead of insertion sizes. Default is FALSE.
 ##' @param nb.cores number of processors to use. Default is 1.
 ##' @param sample.name the name of the sample to use if VCF files given as
@@ -22,7 +23,7 @@
 ##' @author Jean Monlong
 ##' @export
 findNocalls <- function(calls.gr, truth.gr, max.ins.dist=20, min.ol=.5,
-                        min.del.rol=.1, ins.seq.comp=FALSE, nb.cores=1,
+                        min.del.rol=.1, range.seq.comp=FALSE, ins.seq.comp=FALSE, nb.cores=1,
                         sample.name=NULL, check.inv=FALSE, method=c('coverage', 'bipartite')){
 
   ## to retrieve the first sample, use something like "" in readSVvcf (NULL means all variants)
@@ -32,6 +33,7 @@ findNocalls <- function(calls.gr, truth.gr, max.ins.dist=20, min.ol=.5,
   ## Read/keep no-calls variants from the call set
   if(is.character(calls.gr) & length(calls.gr)==1){
     calls.gr = readSVvcf(calls.gr, keep.ins.seq=ins.seq.comp,
+                         keep.ref.seq=range.seq.comp,
                          sample.name=sample.name,
                          check.inv=check.inv, nocalls=TRUE)
   }
@@ -44,6 +46,7 @@ findNocalls <- function(calls.gr, truth.gr, max.ins.dist=20, min.ol=.5,
   ## Truth set
   if(is.character(truth.gr) & length(truth.gr)==1){
     truth.gr = readSVvcf(truth.gr, keep.ins.seq=ins.seq.comp,
+                         keep.ref.seq=range.seq.comp,
                          sample.name=sample.name,
                          check.inv=check.inv, keep.ids=TRUE)
   }
@@ -54,6 +57,7 @@ findNocalls <- function(calls.gr, truth.gr, max.ins.dist=20, min.ol=.5,
   ## Prepare overlaps between no-calls and truth set
   ol.gr = prepareOl(truth.gr, calls.gr, min.rol=min.del.rol,
                    max.ins.dist=max.ins.dist,
+                   range.seq.comp=range.seq.comp,
                    ins.seq.comp=ins.seq.comp, nb.cores=nb.cores)
 
   ## Annotation overlaps

@@ -4,7 +4,13 @@
 \alias{mergeHets}
 \title{Merge heterozygous variants}
 \usage{
-mergeHets(svs, min.rol = 0.9, max.ins.dist = 1, ins.seq.comp = FALSE)
+mergeHets(
+  svs,
+  min.rol = 0.9,
+  max.ins.dist = 1,
+  range.seq.comp = FALSE,
+  ins.seq.comp = FALSE
+)
 }
 \arguments{
 \item{svs}{GRanges with SV information}
@@ -12,6 +18,8 @@ mergeHets(svs, min.rol = 0.9, max.ins.dist = 1, ins.seq.comp = FALSE)
 \item{min.rol}{minimum reciprocal overlap to match variants.}
 
 \item{max.ins.dist}{maximum distance for insertions to be clustered.}
+
+\item{range.seq.comp}{compare sequence instead of only overlapping deletions/inversion/etc. Default is FALSE.}
 
 \item{ins.seq.comp}{compare sequence instead of insertion sizes. Default is FALSE.}
 }

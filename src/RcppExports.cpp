@@ -5,6 +5,18 @@
 
 using namespace Rcpp;
 
+// aldist
+std::vector<int> aldist(std::vector<std::string> seq1, std::vector<std::string> seq2);
+RcppExport SEXP _sveval_aldist(SEXP seq1SEXP, SEXP seq2SEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< std::vector<std::string> >::type seq1(seq1SEXP);
+    Rcpp::traits::input_parameter< std::vector<std::string> >::type seq2(seq2SEXP);
+    rcpp_result_gen = Rcpp::wrap(aldist(seq1, seq2));
+    return rcpp_result_gen;
+END_RCPP
+}
 // read_vcf_cpp
 DataFrame read_vcf_cpp(std::string filename, bool use_gz, std::string sample_name, int min_sv_size, bool shorten_ref, bool shorten_alt, std::string gq_field, bool check_inv, bool keep_nocalls, std::string other_field);
 RcppExport SEXP _sveval_read_vcf_cpp(SEXP filenameSEXP, SEXP use_gzSEXP, SEXP sample_nameSEXP, SEXP min_sv_sizeSEXP, SEXP shorten_refSEXP, SEXP shorten_altSEXP, SEXP gq_fieldSEXP, SEXP check_invSEXP, SEXP keep_nocallsSEXP, SEXP other_fieldSEXP) {
@@ -43,6 +55,7 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_sveval_aldist", (DL_FUNC) &_sveval_aldist, 2},
     {"_sveval_read_vcf_cpp", (DL_FUNC) &_sveval_read_vcf_cpp, 10},
     {"_sveval_read_vcf_multisamps_cpp", (DL_FUNC) &_sveval_read_vcf_multisamps_cpp, 6},
     {NULL, NULL, 0}

@@ -4,9 +4,15 @@
 \alias{readSVvcf.multisamps}
 \title{Read SVs from a VCF file}
 \usage{
-readSVvcf.multisamps(vcf.file, keep.ins.seq = FALSE,
-  keep.ref.seq = FALSE, check.inv = FALSE, keep.ids = FALSE,
-  out.fmt = c("gr", "df"), min.sv.size = 10)
+readSVvcf.multisamps(
+  vcf.file,
+  keep.ins.seq = FALSE,
+  keep.ref.seq = FALSE,
+  check.inv = FALSE,
+  keep.ids = FALSE,
+  out.fmt = c("gr", "df"),
+  min.sv.size = 10
+)
 }
 \arguments{
 \item{vcf.file}{the path to the VCF file}

@@ -4,10 +4,21 @@
 \alias{freqAnnotate}
 \title{Annotate SVs with frequency in catalog}
 \usage{
-freqAnnotate(svs, cat, min.ol = 0.5, min.del.rol = 0.1,
-  max.ins.dist = 20, check.inv = FALSE, ins.seq.comp = FALSE,
-  out.vcf = NULL, freq.field = "AF", out.freq.field = "AFMAX",
-  method = c("reciprocal", "coverage", "bipartite"), nb.cores = 1)
+freqAnnotate(
+  svs,
+  cat,
+  min.ol = 0.5,
+  min.del.rol = 0.1,
+  max.ins.dist = 20,
+  check.inv = FALSE,
+  range.seq.comp = FALSE,
+  ins.seq.comp = FALSE,
+  out.vcf = NULL,
+  freq.field = "AF",
+  out.freq.field = "AFMAX",
+  method = c("reciprocal", "coverage", "bipartite"),
+  nb.cores = 1
+)
 }
 \arguments{
 \item{svs}{a VCF object with SVs to annotate.}
@@ -21,6 +32,8 @@ freqAnnotate(svs, cat, min.ol = 0.5, min.del.rol = 0.1,
 \item{max.ins.dist}{maximum distance for insertions to be clustered. Default is 20.}
 
 \item{check.inv}{should the sequence of MNV be compared to identify inversions.}
+
+\item{range.seq.comp}{compare sequence instead of only overlapping deletions/inversions/etc. Default is FALSE.}
 
 \item{ins.seq.comp}{compare sequence instead of insertion sizes. Default is FALSE.}
 

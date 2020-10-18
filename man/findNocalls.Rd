@@ -4,10 +4,19 @@
 \alias{findNocalls}
 \title{Find no-calls variants}
 \usage{
-findNocalls(calls.gr, truth.gr, max.ins.dist = 20, min.ol = 0.5,
-  min.del.rol = 0.1, ins.seq.comp = FALSE, nb.cores = 1,
-  sample.name = NULL, check.inv = FALSE, method = c("coverage",
-  "bipartite"))
+findNocalls(
+  calls.gr,
+  truth.gr,
+  max.ins.dist = 20,
+  min.ol = 0.5,
+  min.del.rol = 0.1,
+  range.seq.comp = FALSE,
+  ins.seq.comp = FALSE,
+  nb.cores = 1,
+  sample.name = NULL,
+  check.inv = FALSE,
+  method = c("coverage", "bipartite")
+)
 }
 \arguments{
 \item{calls.gr}{call set. A GRanges or the path to a VCF file.}
@@ -19,6 +28,8 @@ findNocalls(calls.gr, truth.gr, max.ins.dist = 20, min.ol = 0.5,
 \item{min.ol}{the minimum overlap/coverage to be considered a match. Default is 0.5}
 
 \item{min.del.rol}{minimum reciprocal overlap for deletions. Default is 0.1}
+
+\item{range.seq.comp}{compare sequence instead of only overlapping deletions/inversions/etc. Default is FALSE.}
 
 \item{ins.seq.comp}{compare sequence instead of insertion sizes. Default is FALSE.}
 

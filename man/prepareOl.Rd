@@ -4,8 +4,16 @@
 \alias{prepareOl}
 \title{Prepare SV overlaps before annotation}
 \usage{
-prepareOl(query, subject, min.rol = 0.1, max.ins.dist = 1,
-  ins.seq.comp = FALSE, nb.cores = 1, by.gt = FALSE)
+prepareOl(
+  query,
+  subject,
+  min.rol = 0.1,
+  max.ins.dist = 1,
+  range.seq.comp = FALSE,
+  ins.seq.comp = FALSE,
+  nb.cores = 1,
+  by.gt = FALSE
+)
 }
 \arguments{
 \item{query}{a query GRanges object}
@@ -15,6 +23,8 @@ prepareOl(query, subject, min.rol = 0.1, max.ins.dist = 1,
 \item{min.rol}{minimum reciprocal overlap for deletions and other "ranges" SVs. Default is 0.1}
 
 \item{max.ins.dist}{maximum distance for insertions to be clustered.}
+
+\item{range.seq.comp}{compare sequence instead of overlapping deletions/inversion/etc. Default is FALSE.}
 
 \item{ins.seq.comp}{compare sequence instead of insertion sizes. Default is FALSE.}
 

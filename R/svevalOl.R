@@ -20,6 +20,7 @@
 ##' @param max.ins.dist maximum distance for insertions to be clustered. Default is 20.
 ##' @param min.ol the minimum overlap/coverage to be considered a match. Default is 0.5
 ##' @param min.del.rol minimum reciprocal overlap for deletions. Default is 0.1
+##' @param range.seq.comp compare sequence instead of only overlapping deletions/inversion/etc. Default is FALSE.
 ##' @param ins.seq.comp compare sequence instead of insertion sizes. Default is FALSE.
 ##' @param nb.cores number of processors to use. Default is 1.
 ##' @param min.size the minimum SV size to be considered. Default 50.
@@ -71,7 +72,7 @@
 ##'                 stitch.hets=TRUE, method='bipartite')
 ##' }
 svevalOl <- function(calls.gr, truth.gr, max.ins.dist=20, min.ol=.5,
-                     min.del.rol=.1, ins.seq.comp=FALSE, nb.cores=1,
+                     min.del.rol=.1, range.seq.comp=FALSE, ins.seq.comp=FALSE, nb.cores=1,
                      min.size=50, max.size=Inf, bed.regions=NULL,
                      bed.regions.ol=.5, qual.field=c('GQ', 'QUAL'),
                      sample.name=NULL, outfile=NULL,
@@ -88,11 +89,13 @@ svevalOl <- function(calls.gr, truth.gr, max.ins.dist=20, min.ol=.5,
   }
   if(is.character(calls.gr) & length(calls.gr)==1){
     logging::loginfo(paste('Reading SVs from', calls.gr))
-    calls.gr = readSVvcf(calls.gr, keep.ins.seq=ins.seq.comp, qual.field=qual.field, sample.name=sample.name, check.inv=check.inv)
+    calls.gr = readSVvcf(calls.gr, keep.ref.seq=range.seq.comp, keep.ins.seq=ins.seq.comp,
+                         qual.field=qual.field, sample.name=sample.name, check.inv=check.inv)
   }
   if(is.character(truth.gr) & length(truth.gr)==1){
     logging::loginfo(paste('Reading SVs from', truth.gr))
-    truth.gr = readSVvcf(truth.gr, keep.ins.seq=ins.seq.comp, qual.field=qual.field, sample.name=sample.name, check.inv=check.inv)
+    truth.gr = readSVvcf(truth.gr, keep.ref.seq=range.seq.comp, keep.ins.seq=ins.seq.comp,
+                         qual.field=qual.field, sample.name=sample.name, check.inv=check.inv)
   }
   # keep only non-ref calls
   calls.gr = calls.gr[which(calls.gr$ac>0)]
@@ -113,16 +116,20 @@ svevalOl <- function(calls.gr, truth.gr, max.ins.dist=20, min.ol=.5,
   if(length(calls.gr)>0 & length(truth.gr)>0){
     if(geno.eval & (stitch.hets | merge.hets)){
       calls.gr = stitchMergeHets(calls.gr, do.stitch=stitch.hets, do.merge=merge.hets, min.rol=merge.rol,
-                                 max.ins.dist=max.ins.dist, ins.seq.comp=ins.seq.comp, stitch.dist=stitch.dist)
+                                 max.ins.dist=max.ins.dist,
+                                 range.seq.comp=range.seq.comp, ins.seq.comp=ins.seq.comp, stitch.dist=stitch.dist)
       truth.gr = stitchMergeHets(truth.gr, do.stitch=stitch.hets, do.merge=merge.hets, min.rol=merge.rol,
-                                 max.ins.dist=max.ins.dist, ins.seq.comp=ins.seq.comp, stitch.dist=stitch.dist)
+                                 max.ins.dist=max.ins.dist,
+                                 range.seq.comp=range.seq.comp, ins.seq.comp=ins.seq.comp,
+                                 stitch.dist=stitch.dist)
     } 
   }
 
   ## Prepare the overlaps, by SV type and eventually by genotype
   ol.gr = prepareOl(truth.gr, calls.gr, min.rol=min.del.rol,
                    max.ins.dist=max.ins.dist,
-                   ins.seq.comp=ins.seq.comp, nb.cores=nb.cores,
+                   range.seq.comp=range.seq.comp, ins.seq.comp=ins.seq.comp,
+                   nb.cores=nb.cores,
                    by.gt=geno.eval)
 
   ## Filter SVs out of the desired size range or regions
