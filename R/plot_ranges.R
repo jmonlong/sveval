@@ -44,7 +44,7 @@ plot_ranges <- function(gr.l, region.gr=NULL, pt.size=2, lab.size=4, maxgap=20, 
   df = do.call(rbind, df)
 
   ## order by start position and add IDs
-  df = df[order(df$set, df$size, df$ac, df$start),]
+  df = df[order(df$set, df$ac, df$size, df$start),]
   if(all(is.na(df$svid))){
     df$svid = 1:nrow(df)
   } else {
