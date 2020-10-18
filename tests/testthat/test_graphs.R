@@ -48,3 +48,15 @@ test_that("Ranges in a region in ggplot", {
   expect_true(file.remove('temp.pdf'))
 })
 
+test_that("Ranges in a region in ggplot with SV ids", {
+  ranges.l = list(
+    calls=readSVvcf('../calls.s0.vcf', keep.ids=TRUE),
+    truth=readSVvcf('../truth.refalt.vcf', keep.ids=TRUE)
+  )
+  reg.gr = ranges.l$calls[10]
+  pdf('temp.pdf')
+  print(plot_ranges(ranges.l, reg.gr))
+  dev.off()
+  expect_true(file.remove('temp.pdf'))
+})
+

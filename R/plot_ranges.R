@@ -9,10 +9,11 @@
 ##' @param lab.size the label size. Default is 4
 ##' @param maxgap the maximum gap allowed when filtering variants in regions. Default is 20.
 ##' @param scale.legend the size of the scale legend at the bottom. 0 to switch off. Default is 50 bp
+##' @param show.svids should the SV ids be shown on the y-axis. Default is TRUE
 ##' @return a ggplot2 object
 ##' @author Jean Monlong
 ##' @export
-plot_ranges <- function(gr.l, region.gr=NULL, pt.size=2, lab.size=4, maxgap=20, scale.legend=50){
+plot_ranges <- function(gr.l, region.gr=NULL, pt.size=2, lab.size=4, maxgap=20, scale.legend=50, show.svids=TRUE){
 
   ## add number as names if missing
   if(is.null(names(gr.l))){
@@ -35,36 +36,52 @@ plot_ranges <- function(gr.l, region.gr=NULL, pt.size=2, lab.size=4, maxgap=20, 
     if(!('ac' %in% colnames(dff))){
       dff$ac = NA
     }
-    dff[, c('seqnames', 'start', 'end', 'type', 'size', 'set', 'ac')]
+    if(!('svid' %in% colnames(dff))){
+      dff$svid = NA
+    }
+    dff[, c('seqnames', 'start', 'end', 'type', 'size', 'set', 'ac', 'svid')]
   })
   df = do.call(rbind, df)
 
   ## order by start position and add IDs
-  df = df[order(df$start),]
-  df$id = 1:nrow(df)
+  df = df[order(df$set, df$size, df$ac, df$start),]
+  if(all(is.na(df$svid))){
+    df$svid = 1:nrow(df)
+  } else {
+    df$svid = factor(df$svid, levels=unique(df$svid))
+  }
 
   ## label: "SIZE AC" or just "SIZE"
   if(any(!is.na(df$ac))){
-    df$label = paste(df$size, df$ac) 
+    df$label = paste0(df$size, 'bp ', df$ac) 
   } else{
-    df$label = df$size
+    df$label = paste0(df$size, 'bp')
   }
 
   ## graph
-  start = end = type = id = set = label = NULL
+  start = end = type = svid = set = label = size = NULL
   min.pos = min(df$start, na.rm=TRUE)
   max.pos = max(df$end, na.rm=TRUE)
   pad.pos = max((max.pos-min.pos) * .1, 30)
-  ggp = ggplot2::ggplot(df, ggplot2::aes(color=set)) +
-    ggplot2::geom_point(ggplot2::aes(x=start, y=id, shape=type), size=pt.size*2) +
-    ggplot2::geom_segment(ggplot2::aes(x=start, y=id, xend=end, yend=id), size=pt.size) +
-    ggplot2::geom_label(ggplot2::aes(x=end, y=id, label=label), size=lab.size,
-                        hjust=0, vjust=1, show.legend=FALSE) + 
-    ggplot2::theme_bw() + ggplot2::theme(axis.text.y=ggplot2::element_blank()) +
-    ggplot2::scale_x_continuous(lim=c(min.pos-pad.pos, max.pos+pad.pos)) + 
-    ggplot2::scale_y_continuous(lim=c(0, max(df$id)+1)) + 
+  ggp = ggplot2::ggplot(df, ggplot2::aes(color=set))
+  if(pt.size=='auto'){
+    ggp = ggp + ggplot2::geom_point(ggplot2::aes(x=start, y=svid, shape=type, size=2*size)) +
+      ggplot2::geom_segment(ggplot2::aes(x=start, y=svid, xend=end, yend=svid, size=size))
+  } else {
+    ggp = ggp + ggplot2::geom_point(ggplot2::aes(x=start, y=svid, shape=type), size=pt.size*2) +
+      ggplot2::geom_segment(ggplot2::aes(x=start, y=svid, xend=end, yend=svid), size=pt.size)
+  }
+  ggp = ggp + ggplot2::geom_label(ggplot2::aes(x=end, y=svid, label=label), size=lab.size,
+                                  hjust=0, vjust=1, show.legend=FALSE) + 
+    ggplot2::theme_bw() +
+    ggplot2::scale_x_continuous(lim=c(min.pos-pad.pos, max.pos+pad.pos)) +
+    ## ggplot2::scale_y_continuous(lim=c(0, max(df$svid)+1)) + 
     ggplot2::xlab('position (bp)') + ggplot2::ylab('variant')
 
+  if(!show.svids){
+    ggp = ggp + ggplot2::theme(axis.text.y=ggplot2::element_blank())
+  }
+  
   if(scale.legend>0){
     mid.pos = mean(c(min.pos, max.pos))
     ggp = ggp + ggplot2::annotate('text', x=mid.pos, y=0, label=paste(scale.legend, 'bp'), vjust=0) +
