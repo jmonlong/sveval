@@ -13,6 +13,7 @@ svOverlap(
   min.del.rol = 0.1,
   range.seq.comp = FALSE,
   ins.seq.comp = FALSE,
+  simprep = NULL,
   nb.cores = 1
 )
 }
@@ -34,6 +35,9 @@ matching of variants in the calls and truth sets.}
 \item{range.seq.comp}{compare sequence instead of overlapping deletions/inversions/etc. Default is FALSE.}
 
 \item{ins.seq.comp}{compare sequence instead of insertion sizes. Default is FALSE.}
+
+\item{simprep}{optional simple repeat annotation. Default is NULL. If non-NULL, GRanges to be used to
+extend variants when overlapping/clustering}
 
 \item{nb.cores}{number of processors to use. Default is 1.}
 }
@@ -73,6 +77,19 @@ With the "bipartite" approach, the variants are first matched using the reciproc
 overlap method (see "reciprocal"), and then matched one-to-one using bipartite clustering.
 This ensures that a variant in one set is only matched to one variant in the other set.
 Useful when comparing genotypes for example when redundancy should be penalized.
+
+Equivalent SVs are sometimes recorded as quite different variants because placed at
+different locations of a short tandem repeat. For example, imagine a large 100 bp
+tandem repeat in the reference genome. An expansion of 50 bp might be represented
+as a 50 bp insertion at the beginning of the repeat in the callset but at the end
+of the repeat in the truth set. Because they are distant by 100 bp they might not
+match. Instead of increasing the distance threshold too much, passing an annotation of
+known simple repeats in the \code{simprep=} parameter provides
+a more flexible way of matching variants by first extending them with nearby simple
+repeats. In this example, because we know of this tandem repeat, both insertions will
+be extended to span the full annotated reference repeat, hence ensuring that they are
+matched and compared (e.g. by reciprocal size or sequence alignment distance)
+short tandem repeat.
 }
 \author{
 Jean Monlong

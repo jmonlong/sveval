@@ -21,7 +21,19 @@
 ##' overlap method (see "reciprocal"), and then matched one-to-one using bipartite clustering.
 ##' This ensures that a variant in one set is only matched to one variant in the other set.
 ##' Useful when comparing genotypes for example when redundancy should be penalized.
-##' 
+##'
+##' Equivalent SVs are sometimes recorded as quite different variants because placed at
+##' different locations of a short tandem repeat. For example, imagine a large 100 bp
+##' tandem repeat in the reference genome. An expansion of 50 bp might be represented
+##' as a 50 bp insertion at the beginning of the repeat in the callset but at the end
+##' of the repeat in the truth set. Because they are distant by 100 bp they might not
+##' match. Instead of increasing the distance threshold too much, passing an annotation of
+##' known simple repeats in the \code{simprep=} parameter provides
+##' a more flexible way of matching variants by first extending them with nearby simple
+##' repeats. In this example, because we know of this tandem repeat, both insertions will
+##' be extended to span the full annotated reference repeat, hence ensuring that they are
+##' matched and compared (e.g. by reciprocal size or sequence alignment distance)
+##' short tandem repeat. 
 ##' @title Overlap SVs
 ##' @param query a GRanges object with SVs
 ##' @param subject another GRanges object with SVs
@@ -33,6 +45,8 @@
 ##' @param min.del.rol minimum reciprocal overlap for deletions. Default is 0.1
 ##' @param range.seq.comp compare sequence instead of overlapping deletions/inversions/etc. Default is FALSE.
 ##' @param ins.seq.comp compare sequence instead of insertion sizes. Default is FALSE.
+##' @param simprep optional simple repeat annotation. Default is NULL. If non-NULL, GRanges to be used to
+##' extend variants when overlapping/clustering
 ##' @param nb.cores number of processors to use. Default is 1.
 ##' @return a GRanges with information about pairs of SVs in query and subject that overlap
 ##' \item{GRange}{intersected ranges (informative for "ranges" SVs)}
@@ -48,7 +62,16 @@
 svOverlap <- function(query, subject, min.ol=.5,
                       method=c('reciprocal', 'coverage', 'bipartite'),
                       max.ins.dist=20, 
-                      min.del.rol=.1, range.seq.comp=FALSE, ins.seq.comp=FALSE, nb.cores=1){  
+                      min.del.rol=.1,
+                      range.seq.comp=FALSE, ins.seq.comp=FALSE,
+                      simprep=NULL,
+                      nb.cores=1){
+  ## optional: extend variants with simple repeat annotation
+  if(!is.null(simprep)){
+    query = extendSVwithSimpRep(query, simprep)
+    subject = extendSVwithSimpRep(subject, simprep)
+  }
+  
   ## Prepare overlap
   ol.gr = prepareOl(query, subject, min.rol=min.del.rol,
                    max.ins.dist=max.ins.dist,

@@ -1,4 +1,5 @@
 context('Overlap-based comparison')
+library(GenomicRanges)
 
 test_that("ALT/REF inputs and output in file", {
   res = svevalOl('../calls.s0.vcf', '../truth.refalt.vcf', outfile='temp.tsv', out.bed.prefix='tempfortest')
@@ -10,6 +11,7 @@ test_that("ALT/REF inputs and output in file", {
 })
 
 test_that("Input with symbolic VCF representation", {
+  simprep.gr = GRanges('x', IRanges(10, width=100))
   res = svevalOl('../calls.s0.vcf', '../truth.symb.vcf')
   expect_gt(nrow(res$eval), 0)
   expect_gt(sum(res$eval$TP>0), 2)

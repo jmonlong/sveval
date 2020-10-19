@@ -83,10 +83,12 @@ prepareOl <- function(query, subject, min.rol=.1, max.ins.dist=1,
       ## for "ranges" SVs, reciprocal overlap
       rol.df = GenomicRanges::findOverlaps(query.ss, subject.ss) %>%
         as.data.frame %>%
-        dplyr::mutate(querySize=GenomicRanges::width(query.ss)[.data$queryHits],
-                      subjectSize=GenomicRanges::width(subject.ss)[.data$subjectHits],
+        dplyr::mutate(querySize=query.ss$size[.data$queryHits],
+                      subjectSize=subject.ss$size[.data$subjectHits],
                       interSize=GenomicRanges::width(GenomicRanges::pintersect(query.ss[.data$queryHits],
-                                                                               subject.ss[.data$subjectHits]))) %>%
+                                                                               subject.ss[.data$subjectHits])),
+                      interSize=ifelse(.data$interSize>.data$querySize, .data$querySize, .data$interSize),
+                      interSize=ifelse(.data$interSize>.data$subjectSize, .data$subjectSize, .data$interSize)) %>%
         dplyr::filter(.data$interSize >= min.rol * .data$querySize,
                       .data$interSize >= min.rol * .data$subjectSize)
       if(nrow(rol.df)==0) return(NULL)

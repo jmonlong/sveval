@@ -31,6 +31,7 @@ svevalOl(
   merge.hets = FALSE,
   merge.rol = 0.8,
   method = c("coverage", "bipartite"),
+  simprep = NULL,
   log.level = c("CRITICAL", "WARNING", "INFO")
 )
 }
@@ -94,6 +95,9 @@ evaluation.}
 cumulative coverage (e.g. to deal with fragmented calls); or 'bipartite' for a 1-to-1
 matching of variants in the calls and truth sets.}
 
+\item{simprep}{optional simple repeat annotation. Default is NULL. If non-NULL, GRanges to be used to
+extend variants when overlapping/clustering}
+
 \item{log.level}{the level of information in the log. Default is "CRITICAL" (basically no log).}
 }
 \value{
@@ -120,6 +124,19 @@ The evaluation will be performed for different quality thresholds on the call-se
 a precision-recall curve. If the VCF are to be read it will look for the field specified in
 \code{qual.field} (GQ by default, and QUAL if not found). If you don't want the PR curve,
 the evaluation can be sped up by running with for example \code{qual.ths=0}.
+
+Equivalent SVs are sometimes recorded as quite different variants because placed at
+different locations of a short tandem repeat. For example, imagine a large 100 bp
+tandem repeat in the reference genome. An expansion of 50 bp might be represented
+as a 50 bp insertion at the beginning of the repeat in the callset but at the end
+of the repeat in the truth set. Because they are distant by 100 bp they might not
+match. Instead of increasing the distance threshold too much, passing an annotation of
+known simple repeats in the \code{simprep=} parameter provides
+a more flexible way of matching variants by first extending them with nearby simple
+repeats. In this example, because we know of this tandem repeat, both insertions will
+be extended to span the full annotated reference repeat, hence ensuring that they are
+matched and compared (e.g. by reciprocal size or sequence alignment distance)
+short tandem repeat.
 }
 \examples{
 \dontrun{

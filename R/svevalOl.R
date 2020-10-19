@@ -14,6 +14,18 @@
 ##' \code{qual.field} (GQ by default, and QUAL if not found). If you don't want the PR curve,
 ##' the evaluation can be sped up by running with for example \code{qual.ths=0}.
 ##' 
+##' Equivalent SVs are sometimes recorded as quite different variants because placed at
+##' different locations of a short tandem repeat. For example, imagine a large 100 bp
+##' tandem repeat in the reference genome. An expansion of 50 bp might be represented
+##' as a 50 bp insertion at the beginning of the repeat in the callset but at the end
+##' of the repeat in the truth set. Because they are distant by 100 bp they might not
+##' match. Instead of increasing the distance threshold too much, passing an annotation of
+##' known simple repeats in the \code{simprep=} parameter provides
+##' a more flexible way of matching variants by first extending them with nearby simple
+##' repeats. In this example, because we know of this tandem repeat, both insertions will
+##' be extended to span the full annotated reference repeat, hence ensuring that they are
+##' matched and compared (e.g. by reciprocal size or sequence alignment distance)
+##' short tandem repeat. 
 ##' @title SV evaluation based on overlap and variant size
 ##' @param calls.gr call set. A GRanges or the path to a VCF file.
 ##' @param truth.gr truth set. A GRanges or the path to a VCF file.
@@ -49,6 +61,8 @@
 ##' @param method the method to annotate the overlap. Either 'coverage' (default) for the
 ##' cumulative coverage (e.g. to deal with fragmented calls); or 'bipartite' for a 1-to-1
 ##' matching of variants in the calls and truth sets.
+##' @param simprep optional simple repeat annotation. Default is NULL. If non-NULL, GRanges to be used to
+##' extend variants when overlapping/clustering
 ##' @param log.level the level of information in the log. Default is "CRITICAL" (basically no log).
 ##' @return a list with
 ##' \item{eval}{a data.frame with TP, FP and FN for each SV type when including all variants}
@@ -81,6 +95,7 @@ svevalOl <- function(calls.gr, truth.gr, max.ins.dist=20, min.ol=.5,
                      qual.quantiles=seq(0,1,.1),
                      check.inv=FALSE, geno.eval=FALSE, stitch.hets=FALSE,
                      stitch.dist=20, merge.hets=FALSE, merge.rol=.8, method=c('coverage', 'bipartite'),
+                     simprep=NULL,
                      log.level=c('CRITICAL', 'WARNING', 'INFO')){
   logging::setLevel(log.level[1])
   ## to retrieve the first sample, use something like "" in readSVvcf (NULL means all variants)
@@ -112,6 +127,15 @@ svevalOl <- function(calls.gr, truth.gr, max.ins.dist=20, min.ol=.5,
     }
   }
 
+  ## optional: extend variants with simple repeat annotation
+  if(!is.null(simprep)){
+    logging::loginfo('Extend callset using simple repeat annotation')
+    calls.gr = extendSVwithSimpRep(calls.gr, simprep)
+    logging::loginfo('Extend truthset using simple repeat annotation')
+    truth.gr = extendSVwithSimpRep(truth.gr, simprep)
+  }
+
+  
   ## If evaluation per genotype, do we want to stitch and/or merge heterozygous variants?
   if(length(calls.gr)>0 & length(truth.gr)>0){
     if(geno.eval & (stitch.hets | merge.hets)){
