@@ -29,10 +29,13 @@ extendSVwithSimpRep <- function(svs.gr, simprep.gr, max.dist.sr.join=5, max.sv.d
     dplyr::mutate(sv.s=GenomicRanges::start(svs.gr)[.data$queryHits],
                   sr.s=GenomicRanges::start(simprep.gr)[.data$subjectHits],
                   sv.e=GenomicRanges::end(svs.gr)[.data$queryHits],
-                  sr.e=GenomicRanges::end(simprep.gr)[.data$subjectHits]) %>%
+                  sr.e=GenomicRanges::end(simprep.gr)[.data$subjectHits])
+  if(nrow(ol.df)>0){
+    ol.df = ol.df %>%
     dplyr::group_by(.data$queryHits) %>%
     dplyr::summarize(start=min(c(.data$sv.s, .data$sr.s)),
                      end=max(c(.data$sv.e, .data$sr.e)))
+  }
                   
   ## update coordinates
   GenomicRanges::start(svs.gr)[ol.df$queryHits] = ol.df$start

@@ -105,9 +105,9 @@ prepareOl <- function(query, subject, min.rol=.1, max.ins.dist=1,
         }
         query.seq = query.ss$ref[rol.df$queryHits]
         subject.seq = subject.ss$ref[rol.df$subjectHits]
-        rol.df$interSize = ifelse(rol.df$querySize > rol.df$subjectSize,
-                                  rol.df$querySize, rol.df$subjectSize)
-        rol.df$interSize = rol.df$interSize - aldist(query.seq, subject.seq)
+        ## rol.df$interSize = ifelse(rol.df$querySize > rol.df$subjectSize,
+        ##                           rol.df$querySize, rol.df$subjectSize)
+        rol.df$interSize = rol.df$querySize - aldist(query.seq, subject.seq)
       }
       ol.gr = GenomicRanges::pintersect(query.ss[rol.df$queryHits],
                                         subject.ss[rol.df$subjectHits])
@@ -116,12 +116,14 @@ prepareOl <- function(query, subject, min.rol=.1, max.ins.dist=1,
       ## for insertions, cluster and compare size/sequence
       ## Cluster insertions
       ol.ins = GenomicRanges::findOverlaps(query.ss, subject.ss,
-                                           maxgap=max.ins.dist)
-      ol.ins = as.data.frame(ol.ins)
+                                           maxgap=max.ins.dist) %>%
+        as.data.frame %>% 
+        dplyr::mutate(querySize=query.ss$size[.data$queryHits],
+                      subjectSize=subject.ss$size[.data$subjectHits],
+                      interSize=ifelse(.data$subjectSize>.data$querySize, .data$querySize, .data$subjectSize)) %>%
+        dplyr::filter(.data$interSize >= min.rol * .data$querySize,
+                      .data$interSize >= min.rol * .data$subjectSize)
       if(nrow(ol.ins)==0) return(NULL)
-      ## save the sizes of the insertions
-      ol.ins$querySize = query.ss$size[ol.ins$queryHits]
-      ol.ins$subjectSize = subject.ss$size[ol.ins$subjectHits]
       if(ins.seq.comp){
         ## Sequence comparison
         if(!('alt' %in% colnames(GenomicRanges::mcols(query.ss))) |
@@ -136,9 +138,9 @@ prepareOl <- function(query, subject, min.rol=.1, max.ins.dist=1,
         query.seq = query.ss$alt[ol.ins$queryHits]
         subject.seq = subject.ss$alt[ol.ins$subjectHits]
 
-        ol.ins$interSize = ifelse(ol.ins$querySize > ol.ins$subjectSize,
-                                  ol.ins$querySize, ol.ins$subjectSize)
-        ol.ins$interSize = ol.ins$interSize - aldist(query.seq, subject.seq)
+        ## ol.ins$interSize = ifelse(ol.ins$querySize > ol.ins$subjectSize,
+        ##                           ol.ins$querySize, ol.ins$subjectSize)
+        ol.ins$interSize = ol.ins$querySize - aldist(query.seq, subject.seq)
       } else {
         ## Size comparison, save the smallest size
         ol.ins$interSize = ifelse(ol.ins$querySize < ol.ins$subjectSize,
