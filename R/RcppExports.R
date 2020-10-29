@@ -12,6 +12,41 @@ aldist <- function(seq1, seq2) {
     .Call(`_sveval_aldist`, seq1, seq2)
 }
 
+#' Count allele at the SV site level. This function will use variant ids
+#' created by read_vcf_multisamps_cpp
+#' @title Count alleles in SV sites across samples
+#' @param filename the path to the VCF file (unzipped or gzipped).
+#' @param use_gz is the VCF file gzipped?
+#' @param sv_sites a list defining the variant ID for each sv site (element). 
+#' @return matrix with allele counts for each sv site (rows) and sample (columns)
+#' @author Jean Monlong
+#' @keywords internal
+merge_ac_svsites_cpp <- function(filename, use_gz, sv_sites) {
+    .Call(`_sveval_merge_ac_svsites_cpp`, filename, use_gz, sv_sites)
+}
+
+#' For each VCF record the information in the INFO field is used in priority. If
+#' missing, information is guessed from the REF/ALT sequences.
+#' If multiple alleles are defined in ALT, they are split and the allele count extracted
+#' from the GT field.
+#'
+#' Alleles are split and, for each, the allele count is computed across samples. 
+#' @title Read VCF using CPP reader
+#' @param filename the path to the VCF file (unzipped or gzipped).
+#' @param use_gz is the VCF file gzipped?
+#' @param min_sv_size minimum variant size to keep in bp. Variants shorter than this
+#' will be skipped. Default is 10. 
+#' @param shorten_ref should the REF sequence be shortened to the first 10 bp. Default is TRUE
+#' @param shorten_alt should the ALT sequence be shortened to the first 10 bp. Default is TRUE
+#' @param check_inv guess if a variant is an inversion by aligning REF with the
+#' reverse complement of ALT. If >80\% similar (and REF and ALT>10bp), variant is classified as INV.
+#' @return data.frame with variant and genotype information
+#' @author Jean Monlong
+#' @keywords internal
+read_vcf_multisamps_cpp <- function(filename, use_gz, min_sv_size = 10L, shorten_ref = TRUE, shorten_alt = TRUE, check_inv = FALSE) {
+    .Call(`_sveval_read_vcf_multisamps_cpp`, filename, use_gz, min_sv_size, shorten_ref, shorten_alt, check_inv)
+}
+
 #' For each VCF record the information in the INFO field is used in priority. If
 #' missing, information is guessed from the REF/ALT sequences.
 #' If multiple alleles are defined in ALT, they are split and the allele count extracted
@@ -43,27 +78,5 @@ aldist <- function(seq1, seq2) {
 #' @keywords internal
 read_vcf_cpp <- function(filename, use_gz, sample_name = "", min_sv_size = 10L, shorten_ref = TRUE, shorten_alt = TRUE, gq_field = "GQ", check_inv = FALSE, keep_nocalls = FALSE, other_field = "") {
     .Call(`_sveval_read_vcf_cpp`, filename, use_gz, sample_name, min_sv_size, shorten_ref, shorten_alt, gq_field, check_inv, keep_nocalls, other_field)
-}
-
-#' For each VCF record the information in the INFO field is used in priority. If
-#' missing, information is guessed from the REF/ALT sequences.
-#' If multiple alleles are defined in ALT, they are split and the allele count extracted
-#' from the GT field.
-#'
-#' Alleles are split and, for each, the allele count is computed across samples. 
-#' @title Read VCF using CPP reader
-#' @param filename the path to the VCF file (unzipped or gzipped).
-#' @param use_gz is the VCF file gzipped?
-#' @param min_sv_size minimum variant size to keep in bp. Variants shorter than this
-#' will be skipped. Default is 10. 
-#' @param shorten_ref should the REF sequence be shortened to the first 10 bp. Default is TRUE
-#' @param shorten_alt should the ALT sequence be shortened to the first 10 bp. Default is TRUE
-#' @param check_inv guess if a variant is an inversion by aligning REF with the
-#' reverse complement of ALT. If >80\% similar (and REF and ALT>10bp), variant is classified as INV.
-#' @return data.frame with variant and genotype information
-#' @author Jean Monlong
-#' @keywords internal
-read_vcf_multisamps_cpp <- function(filename, use_gz, min_sv_size = 10L, shorten_ref = TRUE, shorten_alt = TRUE, check_inv = FALSE) {
-    .Call(`_sveval_read_vcf_multisamps_cpp`, filename, use_gz, min_sv_size, shorten_ref, shorten_alt, check_inv)
 }
 

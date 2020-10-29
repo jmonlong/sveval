@@ -10,34 +10,22 @@ using namespace Rcpp;
 //' If multiple alleles are defined in ALT, they are split and the allele count extracted
 //' from the GT field.
 //'
-//' Alleles are split and, for each, column 'ac' reports the allele count. Notable cases incude
-//' 'ac=-1' for no/missing calls (e.g. './.'), and 'ac=0' on the first allele to report hom ref,
-//' variants. These cases are often filtered later with 'ac>0' to keep only non-ref calls. If
-//' the VCF contains no samples or if no sample selection if forced (sample_name='*'), 'ac' will
-//' contain '-1' for all variants in the VCF.
+//' Alleles are split and, for each, the allele count is computed across samples. 
 //' @title Read VCF using CPP reader
 //' @param filename the path to the VCF file (unzipped or gzipped).
 //' @param use_gz is the VCF file gzipped?
-//' @param sample_name which sample to process. If not found, uses first sample in VCF file.
-//' If "*", force no sample selection
 //' @param min_sv_size minimum variant size to keep in bp. Variants shorter than this
 //' will be skipped. Default is 10. 
 //' @param shorten_ref should the REF sequence be shortened to the first 10 bp. Default is TRUE
 //' @param shorten_alt should the ALT sequence be shortened to the first 10 bp. Default is TRUE
-//' @param gq_field which field from FORMAT should be used as genotype quality. Default is "GQ".
-//' If not found, QUAL will be used
 //' @param check_inv guess if a variant is an inversion by aligning REF with the
 //' reverse complement of ALT. If >80\% similar (and REF and ALT>10bp), variant is classified as INV.
-//' @param keep_nocalls should we keep variants/alleles with missing genotypes (e.g. "./.").
-//' Default is FALSE
-//' @param other_field name of another field from INFO to extract.
 //' @return data.frame with variant and genotype information
 //' @author Jean Monlong
 //' @keywords internal
 // [[Rcpp::export]]
-DataFrame read_vcf_cpp(std::string filename, bool use_gz, std::string sample_name="", int min_sv_size=10,
-                       bool shorten_ref=true, bool shorten_alt=true, std::string gq_field="GQ",
-                       bool check_inv=false, bool keep_nocalls=false, std::string other_field=""){
+DataFrame read_vcf_multisamps_cpp(std::string filename, bool use_gz, int min_sv_size=10,
+                                  bool shorten_ref=true, bool shorten_alt=true, bool check_inv=false){
   // info to extract. will be the columns of the output dataframe
   std::vector<std::string> seqnames;           // chromosome name
   std::vector<int> starts;                     // start position
@@ -47,10 +35,10 @@ DataFrame read_vcf_cpp(std::string filename, bool use_gz, std::string sample_nam
   std::vector<std::string> alts;               // alternate allele sequence
   std::vector<std::string> svtypes;            // SV type (INS, DEL, INV, ...)
   std::vector<int> sizes;                      // SV size (absolute value)
-  std::vector<int> acs;                        // allele counts (for a diploid genome: 1=heterozygous, 2=homozygous)
-  std::vector<double> quals;                   // genotype quality
-  std::vector<std::string> others;             // other column to extract
-  bool found_other=false; // was the additional found, aka should it be added to the output
+  std::vector<int> ac_tots;                    // total allele counts
+  std::vector<double> afs;                        // allele frequency
+  std::vector<int> nrefs;                      // nb hom refs samples
+  std::vector<int> ncalls;                       // nb of sample with any call (!=./.)
   // read file line by line
   std::ifstream in_file;
   igzstream in_file_gz;
@@ -66,7 +54,9 @@ DataFrame read_vcf_cpp(std::string filename, bool use_gz, std::string sample_nam
   } else {
     getmore = bool(std::getline(in_file, line));
   }
-  int sample_col=-1;
+  int sample_col_s = -1;
+  int sample_col_e = -1;
+  int line_id = 0;
 
   while (getmore) {
     Rcpp::checkUserInterrupt();
@@ -75,13 +65,9 @@ DataFrame read_vcf_cpp(std::string filename, bool use_gz, std::string sample_nam
       if(line[1] != '#'){
         // header line with column names including sample names
         std::vector<std::string> header_v = split_str(line);
-        if((header_v.size() >= 10) & (sample_name != "*")){ // samples in VCF
-          sample_col = 9; // default is first sample column
-          for(unsigned int ii=9; ii<header_v.size(); ii++){
-            if(header_v[ii] == sample_name){
-              sample_col = ii;
-            }
-          }
+        if((header_v.size() >= 10)){
+          sample_col_s = 9;
+          sample_col_e = header_v.size();
         }
       }
       if(use_gz){
@@ -108,13 +94,6 @@ DataFrame read_vcf_cpp(std::string filename, bool use_gz, std::string sample_nam
       }
     }
 
-    // extract additional info field if needed
-    std::string other = "";
-    if((other_field != "") & (infos.count(other_field) > 0)){
-      other = infos[other_field];
-      found_other = true;
-    }
-    
     // define START coordinate
     int start_rec = atoi(line_v[1].c_str());
 
@@ -141,13 +120,7 @@ DataFrame read_vcf_cpp(std::string filename, bool use_gz, std::string sample_nam
     if((size == -1) & (end_rec != -1)){ // size from start and end
       size = end_rec - start_rec;
     }
-    
-    // init quality with QUAL
-    double qual = -1;
-    if(line_v[5] != "."){
-      qual = atof(line_v[5].c_str());
-    }
-    
+        
     //
     // parse the alleles: split multi-ALT, extract quality and
     //    eventually compare REF/ALT sequences to define end/size/type
@@ -164,16 +137,16 @@ DataFrame read_vcf_cpp(std::string filename, bool use_gz, std::string sample_nam
 
     // decide which alleles to process
     std::map<int,int> als_count;
-    bool any_nonref = false; // any non-ref allele. if not, include hom ref in output
-    if(sample_col == -1){
-      // keep all alleles
-      for(unsigned int ii=0; ii < alt_seqs.size(); ii++){
-        als_count[ii] = -1;
-      }
-    } else {
+    int refs_count = 0;
+    int calls_count = 0;
+    std::vector<std::string> format_fields_v = split_str(line_v[8], ":");
+    for(int sample_col=sample_col_s; sample_col<sample_col_e; sample_col++){
+      // count allele in one sample
+      bool samp_called = false;
+      bool hom_ref_samp = true;
+      
       // parse field
       std::vector<std::string> gt_fields_v = split_str(line_v[sample_col], ":");
-      std::vector<std::string> format_fields_v = split_str(line_v[8], ":");
       std::map<std::string,std::string> gt_fields;
       for (unsigned int ii=0; ii<gt_fields_v.size(); ii++){
         gt_fields[format_fields_v[ii]] = gt_fields_v[ii];
@@ -182,7 +155,6 @@ DataFrame read_vcf_cpp(std::string filename, bool use_gz, std::string sample_nam
       // split GT
       if(gt_fields.find("GT") == gt_fields.end()){
         Rcout << "GT is missing from FORMAT and genotype field, exiting." << std::endl;
-        als_count[0] = -1;
       } else {
         std::string gt_value = gt_fields["GT"];
         std::vector<std::string> gt_s;
@@ -196,16 +168,12 @@ DataFrame read_vcf_cpp(std::string filename, bool use_gz, std::string sample_nam
         // count how many times each allele is present.
         // for diploid: 1=het, 2=hom (e.g. 1/1)
         for(unsigned int ii=0; ii<gt_s.size(); ii++){
-          if(gt_s[ii] == "."){
-            // if missing genotype, save the allele but don't add to allele count
-            if(als_count.count(0) == 0){
-              als_count[0] = -1;
-            }
-          } else {
-            // otherwise increment the allele count of the appropriate allele
+          if(gt_s[ii] != "."){
+            samp_called = true;
+            // increment the allele count of the appropriate allele
             int al_id = atoi(gt_s[ii].c_str()) - 1;
-            if(al_id > -1){
-              any_nonref = true;
+            if(al_id >= 0){
+              hom_ref_samp = false;
             }
             if(als_count.count(al_id) == 0){
               als_count[al_id] = 1;
@@ -215,20 +183,11 @@ DataFrame read_vcf_cpp(std::string filename, bool use_gz, std::string sample_nam
           }
         }
       }
-      
-      // find genotype quality from field gq_field
-      if(gt_fields.find(gq_field) != gt_fields.end()){
-        if(gt_fields[gq_field] == "."){
-          qual = -1;
-        } else {
-          qual = atof(gt_fields[gq_field].c_str());
-        }
-      } else if (infos.count(gq_field) > 0){
-        if(infos[gq_field] == "."){
-          qual = -1;
-        } else {
-          qual = atof(infos[gq_field].c_str());
-        }
+      if(samp_called){
+        calls_count++;
+      }
+      if(hom_ref_samp){
+        refs_count++;
       }
     }
     
@@ -236,8 +195,9 @@ DataFrame read_vcf_cpp(std::string filename, bool use_gz, std::string sample_nam
     for(std::map<int,int>::iterator iter=als_count.begin(); iter!=als_count.end(); iter++){
       int al_id = iter->first;
       int al_count = iter->second;
+      std::string svid = "sv_" + std::to_string(line_id) + "_" + std::to_string(al_id);
       if(al_id == -1){
-        if(any_nonref){
+        if(als_count.size() > 1){
           // skip ref allele because we found at least one alt allele
           continue;
         } else {
@@ -282,11 +242,6 @@ DataFrame read_vcf_cpp(std::string filename, bool use_gz, std::string sample_nam
       if(size_al < min_sv_size){
         continue;
       }
-      // skip if not called, e.g. './.'
-      // (except if we want to keep no-calls or we are not selecting for a specific sample)
-      if((al_count == -1) & !keep_nocalls & (sample_col > 0)){
-        continue;
-      }
       // update end if necessary
       int end_rec_al = end_rec;
       if(end_rec_al == -1){
@@ -302,12 +257,15 @@ DataFrame read_vcf_cpp(std::string filename, bool use_gz, std::string sample_nam
       seqnames.push_back(line_v[0]);
       starts.push_back(start_rec);
       ends.push_back(end_rec_al);
-      svids.push_back(line_v[2]);
-      acs.push_back(al_count);
+      svids.push_back(svid);
+      ac_tots.push_back(al_count);
+      nrefs.push_back(refs_count);
+      ncalls.push_back(calls_count);
+      // allele frequency as allele count divided by 2 times the samples with calls
+      double af = double(al_count) / (2 * calls_count);
+      afs.push_back(af);
       sizes.push_back(size_al);
       svtypes.push_back(svtype_al);
-      quals.push_back(qual);
-      others.push_back(other);
       // shorten REF is necessary
       std::string ref_seq = line_v[3];
       if(shorten_ref & (ref_seq.length() > 10)){
@@ -320,10 +278,11 @@ DataFrame read_vcf_cpp(std::string filename, bool use_gz, std::string sample_nam
         alt_seq = alt_seq.substr(0, 10).insert(10, "...");
       }
       alts.push_back(alt_seq);
-
+      
       Rcpp::checkUserInterrupt(); 
     }
 
+    line_id++;
     // get next line
     if(use_gz){
       getmore = bool(std::getline(in_file_gz, line));
@@ -335,34 +294,19 @@ DataFrame read_vcf_cpp(std::string filename, bool use_gz, std::string sample_nam
   in_file_gz.close();
   
   DataFrame res;
-  if(found_other){
-    res = DataFrame::create(
-                           _["seqnames"] = seqnames,
-                           _["start"] = starts,
-                           _["end"] = ends,
-                           _["svid"] = svids,
-                           _["type"] = svtypes,
-                           _["size"] = sizes,
-                           _["ac"] = acs,
-                           _["ref"] = refs,
-                           _["alt"] = alts,
-                           _["qual"] = quals,
-                           _[other_field] = others,
-                           _["stringsAsFactors"] = false);
-  } else {
-    res = DataFrame::create(
-                           _["seqnames"] = seqnames,
-                           _["start"] = starts,
-                           _["end"] = ends,
-                           _["svid"] = svids,
-                           _["type"] = svtypes,
-                           _["size"] = sizes,
-                           _["ac"] = acs,
-                           _["ref"] = refs,
-                           _["alt"] = alts,
-                           _["qual"] = quals,
-                           _["stringsAsFactors"] = false);
-
-  }
+  res = DataFrame::create(
+                          _["seqnames"] = seqnames,
+                          _["start"] = starts,
+                          _["end"] = ends,
+                          _["svid"] = svids,
+                          _["type"] = svtypes,
+                          _["size"] = sizes,
+                          _["af"] = afs,
+                          _["ac"] = ac_tots,
+                          _["nrefs"] = nrefs,
+                          _["ncalls"] = ncalls,
+                          _["ref"] = refs,
+                          _["alt"] = alts,
+                          _["stringsAsFactors"] = false);
   return res;
 }
