@@ -56,7 +56,7 @@ DataFrame read_vcf_multisamps_cpp(std::string filename, bool use_gz, int min_sv_
   }
   int sample_col_s = -1;
   int sample_col_e = -1;
-  int line_id = 0;
+  int line_id = 0; // for variant id (header line not counted)
 
   while (getmore) {
     Rcpp::checkUserInterrupt();

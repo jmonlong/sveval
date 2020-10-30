@@ -42,30 +42,30 @@ IntegerMatrix merge_ac_svsites_cpp(std::string filename, bool use_gz, List sv_si
   }
 
   // set up file reader
-  std::ifstream in_file;
-  igzstream in_file_gz;
-  std::string line;
+  std::ifstream inh_file;
+  igzstream inh_file_gz;
+  std::string lineh;
     
   // read beginning of VCF once to list/count samples
   std::vector<std::string> samps;
   if(use_gz){
-    in_file_gz.open(filename.c_str());
+    inh_file_gz.open(filename.c_str());
   } else {
-    in_file.open(filename);
+    inh_file.open(filename);
   }
   bool getmore = false;
   if(use_gz){
-    getmore = bool(std::getline(in_file_gz, line));
+    getmore = bool(std::getline(inh_file_gz, lineh));
   } else {
-    getmore = bool(std::getline(in_file, line));
+    getmore = bool(std::getline(inh_file, lineh));
   }
   while (getmore) {
     Rcpp::checkUserInterrupt();
     // skip if header lines
-    if(line[0] == '#'){
-      if(line[1] != '#'){
+    if(lineh[0] == '#'){
+      if(lineh[1] != '#'){
         // header line with column names including sample names
-        std::vector<std::string> header_v = split_str(line);
+        std::vector<std::string> header_v = split_str(lineh);
         if((header_v.size() >= 10)){
           for(unsigned int ss=9; ss<header_v.size(); ss++){
             samps.push_back(header_v[ss]);
@@ -76,13 +76,13 @@ IntegerMatrix merge_ac_svsites_cpp(std::string filename, bool use_gz, List sv_si
       }
     }
     if(use_gz){
-      getmore = bool(std::getline(in_file_gz, line));
+      getmore = bool(std::getline(inh_file_gz, lineh));
     } else {
-      getmore = bool(std::getline(in_file, line));
+      getmore = bool(std::getline(inh_file, lineh));
     }
   }
-  in_file.close();
-  in_file_gz.close();
+  inh_file.close();
+  inh_file_gz.close();
 
   // init output matrix
   IntegerMatrix ac_mat(site_ids.size(), samps.size());
@@ -90,6 +90,9 @@ IntegerMatrix merge_ac_svsites_cpp(std::string filename, bool use_gz, List sv_si
   rownames(ac_mat) = wrap(site_ids);
 
   // read the VCF entirely this time to update the matrix
+  std::ifstream in_file;
+  igzstream in_file_gz;
+  std::string line;
   if(use_gz){
     in_file_gz.open(filename.c_str());
   } else {
