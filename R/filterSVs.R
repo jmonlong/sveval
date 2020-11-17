@@ -28,7 +28,7 @@ filterSVs <- function(sv.gr, regions.gr=NULL, ol.prop=.5, min.size=0, max.size=I
                        GenomicRanges::pintersect(
                                         sv.gr[pass.idx[ol.df$queryHits]],
                                         regions.gr[ol.df$subjectHits])))
-    ol.df$qw = GenomicRanges::width(sv.gr[ol.df$queryHits])
+    ol.df$qw = GenomicRanges::width(sv.gr[pass.idx[ol.df$queryHits]])
     ## sv.gr = sv.gr[unique(ol.df$queryHits[which(ol.df$qsw >= ol.prop*ol.df$qw)])]
     pass.idx = pass.idx[unique(ol.df$queryHits[which(ol.df$qsw / ol.df$qw >= ol.prop)])]
   }
