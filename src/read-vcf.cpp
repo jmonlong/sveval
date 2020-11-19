@@ -138,7 +138,7 @@ DataFrame read_vcf_cpp(std::string filename, bool use_gz, std::string sample_nam
         end_rec = start_rec + size;
       }
     }
-    if((size == -1) & (end_rec != -1)){ // size from start and end
+    if((size == -1) & (end_rec != -1) & (svtype != "") & (svtype != "INS")){ // size from start and end
       size = end_rec - start_rec;
     }
     
