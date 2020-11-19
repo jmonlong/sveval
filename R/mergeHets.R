@@ -23,6 +23,7 @@ mergeHets <- function(svs, min.rol=.9, max.ins.dist=1, range.seq.comp=FALSE, ins
   ## overlap SVs
   ol.gr = prepareOl(svs, svs, min.rol=min.rol, max.ins.dist=max.ins.dist,
                     range.seq.comp=range.seq.comp, ins.seq.comp=ins.seq.comp)
+  ol.gr = ol.gr[which(ol.gr$queryHits != ol.gr$subjectHits)]
   ol.gr = annotateOl(ol.gr, min.ol=min.rol, method='reciprocal')
   
   ## If nothing, return input variants
