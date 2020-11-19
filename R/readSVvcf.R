@@ -69,6 +69,10 @@ readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, keep.ref.seq=FALSE, sample.n
 
   ## Add missing information
   svs$qual = ifelse(svs$qual==-1, NA, svs$qual)
+  if(all(is.na(svs$qual))){
+    ## needs to be "numeric" for the VCF object output...
+    svs$qual = as.numeric(rep(NA, length(svs$qual)))
+  }
 
   ## Eventually convert the additional column extracted
   if(other.field %in% colnames(svs)){
