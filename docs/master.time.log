@@ -1,0 +1,15 @@
+[1] "VCF reading"
+   user  system elapsed 
+ 39.457   0.140  39.615 
+   user  system elapsed 
+ 51.911   0.060  51.972 
+[1] "Calling evaluation"
+   user  system elapsed 
+  6.513   0.007   6.521 
+[1] "Genotype evaluation (coverage)"
+   user  system elapsed 
+ 12.022   0.004  12.027 
+[1] "Genotype evaluation (bipartite)"
+   user  system elapsed 
+ 94.488   0.000  94.491 
+[1] "VCF reading of SNV/indels/SV"

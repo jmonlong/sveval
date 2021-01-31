@@ -1,0 +1,28 @@
+  ─  installing *source* package ‘sveval’ ...
+     ** using staged installation
+     ** libs
+     g++ -std=gnu++11 -I"/usr/share/R/include" -DNDEBUG  -I"/home/jmonlong/R/x86_64-pc-linux-gnu-library/3.6/Rcpp/include"   -fpic  -g -O2 -fdebug-prefix-map=/build/r-base-V28x5H/r-base-3.6.3=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2 -g  -UNDEBUG -Wall -pedantic -g -O0 -c RcppExports.cpp -o RcppExports.o
+     g++ -std=gnu++11 -I"/usr/share/R/include" -DNDEBUG  -I"/home/jmonlong/R/x86_64-pc-linux-gnu-library/3.6/Rcpp/include"   -fpic  -g -O2 -fdebug-prefix-map=/build/r-base-V28x5H/r-base-3.6.3=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2 -g  -UNDEBUG -Wall -pedantic -g -O0 -c edlib.cpp -o edlib.o
+     g++ -std=gnu++11 -I"/usr/share/R/include" -DNDEBUG  -I"/home/jmonlong/R/x86_64-pc-linux-gnu-library/3.6/Rcpp/include"   -fpic  -g -O2 -fdebug-prefix-map=/build/r-base-V28x5H/r-base-3.6.3=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2 -g  -UNDEBUG -Wall -pedantic -g -O0 -c gzstream.cpp -o gzstream.o
+     g++ -std=gnu++11 -I"/usr/share/R/include" -DNDEBUG  -I"/home/jmonlong/R/x86_64-pc-linux-gnu-library/3.6/Rcpp/include"   -fpic  -g -O2 -fdebug-prefix-map=/build/r-base-V28x5H/r-base-3.6.3=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2 -g  -UNDEBUG -Wall -pedantic -g -O0 -c read-vcf.cpp -o read-vcf.o
+     g++ -std=gnu++11 -shared -L/usr/lib/R/lib -Wl,-Bsymbolic-functions -Wl,-z,relro -o sveval.so RcppExports.o edlib.o gzstream.o read-vcf.o -L/usr/lib/R/lib -lR
+     installing to /tmp/Rtmpl6PfIr/devtools_install_45026ded9e5c/00LOCK-sveval/00new/sveval/libs
+     ** checking absolute paths in shared objects and dynamic libraries
+  ─  DONE (sveval)
+[1] "VCF reading"
+   user  system elapsed 
+  1.240   0.016   1.257 
+   user  system elapsed 
+  1.013   0.004   1.017 
+[1] "Calling evaluation"
+   user  system elapsed 
+  8.180   0.124   8.306 
+[1] "Genotype evaluation (coverage)"
+   user  system elapsed 
+ 12.904   0.060  12.967 
+[1] "Genotype evaluation (bipartite)"
+   user  system elapsed 
+ 42.566   0.012  42.579 
+[1] "VCF reading of SNV/indels/SV"
+   user  system elapsed 
+ 78.717   0.012  78.728 
