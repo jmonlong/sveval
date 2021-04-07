@@ -18,7 +18,7 @@ IntegerMatrix merge_ac_svsites_cpp(std::string filename, bool use_gz, List sv_si
   // make hash to associate a variant id to a sv site
   std::map<std::string, int> sv_to_site_i;
   std::vector<std::string> site_ids = sv_sites.attr("names");
-  for(int ii=0; ii < sv_sites.size(); ii++){
+  for(unsigned int ii=0; ii < sv_sites.size(); ii++){
     std::string site_id = site_ids[ii];
     std::vector<std::string> svs = as<std::vector<std::string>>(sv_sites[ii]);
     for(unsigned int jj=0; jj < svs.size(); jj++){
@@ -199,7 +199,7 @@ IntegerMatrix merge_gq_svsites_cpp(std::string filename, bool use_gz, List sv_si
   // make hash to associate a variant id to a sv site
   std::map<std::string, int> sv_to_site_i;
   std::vector<std::string> site_ids = sv_sites.attr("names");
-  for(int ii=0; ii < sv_sites.size(); ii++){
+  for(unsigned int ii=0; ii < sv_sites.size(); ii++){
     std::string site_id = site_ids[ii];
     std::vector<std::string> svs = as<std::vector<std::string>>(sv_sites[ii]);
     for(unsigned int jj=0; jj < svs.size(); jj++){
@@ -251,13 +251,15 @@ IntegerMatrix merge_gq_svsites_cpp(std::string filename, bool use_gz, List sv_si
   inh_file_gz.close();
 
   // init output matrix
-  // int fill_init[site_ids.size()*samps.size()];
-  // for(int ii=0; ii<site_ids.size()*samps.size(); ii++){
-  //   fill_init[ii] = -1;
-  // }
   IntegerMatrix gq_mat(site_ids.size(), samps.size());
   colnames(gq_mat) = wrap(samps);
   rownames(gq_mat) = wrap(site_ids);
+  // init with -1
+  for(unsigned int ii=0; ii<site_ids.size(); ii++){
+    for(unsigned int jj=0; jj<samps.size(); jj++){
+      gq_mat(ii, jj) = -1;
+    }
+  }
 
   // read the VCF entirely this time to update the matrix
   std::ifstream in_file;
