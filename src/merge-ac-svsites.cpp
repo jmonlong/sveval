@@ -251,11 +251,11 @@ IntegerMatrix merge_gq_svsites_cpp(std::string filename, bool use_gz, List sv_si
   inh_file_gz.close();
 
   // init output matrix
-  int fill_init[site_ids.size()*samps.size()];
-  for(int ii=0; ii<site_ids.size()*samps.size(); ii++){
-    fill_init[ii] = -1;
-  }
-  IntegerMatrix gq_mat(site_ids.size(), samps.size(), fill_init);
+  // int fill_init[site_ids.size()*samps.size()];
+  // for(int ii=0; ii<site_ids.size()*samps.size(); ii++){
+  //   fill_init[ii] = -1;
+  // }
+  IntegerMatrix gq_mat(site_ids.size(), samps.size());
   colnames(gq_mat) = wrap(samps);
   rownames(gq_mat) = wrap(site_ids);
 
@@ -326,8 +326,8 @@ IntegerMatrix merge_gq_svsites_cpp(std::string filename, bool use_gz, List sv_si
           gt_fields[format_fields_v[ii]] = gt_fields_v[ii];
         }
         // genotype quality
-        if(gt_fields.find("GQ") == gt_fields.end()){
-          Rcout << "GQ is missing from FORMAT and genotype field, exiting." << std::endl;
+        if(gt_fields.find("GQ") == gt_fields.end() || gt_fields.find("GT") == gt_fields.end()){
+          Rcout << "GT or GQ is missing from FORMAT and genotype field, exiting." << std::endl;
         } else {
           std::string gt_value = gt_fields["GT"];
           int gq_value = atoi(gt_fields["GQ"].c_str());
