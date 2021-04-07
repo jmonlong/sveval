@@ -10,15 +10,19 @@ test_that("Multisamples with ALT/REF", {
   expect_true(any(vcf$af>0))
 })
 
-test_that("Multisamples with ALT/REF", {
-  df = readSVvcf.multisamps('../truth.refalt.vcf', out.fmt='df', keep.ids=TRUE, min.sv.size=100)
+test_that("Count alleles and genotype qualities", {
+  df = readSVvcf.multisamps('../ex.gq.vcf', out.fmt='df', keep.ids=TRUE, min.sv.size=100)
   sites = list(df$svid[1], df$svid[2], df$svid[3:10], df$svid[11:40])
-  ac = countAlleles('../truth.refalt.vcf', sv.sites=sites)
+  ac = countAlleles('../ex.gq.vcf', sv.sites=sites)
   ac.tot = sapply(sites, function(svids) sum(subset(df, svid%in% svids)$ac))
   expect_true(all(rowSums(ac)==ac.tot))
   expect_true(!is.null(colnames(ac)))
   expect_true(!is.null(rownames(ac)))
   expect_gt(sum(ac), 0)
+  gq = countAlleles('../ex.gq.vcf', sv.sites=sites, gq.instead=TRUE)
+  expect_true(!is.null(colnames(gq)))
+  expect_true(!is.null(rownames(gq)))
+  expect_gt(sum(gq>0), 0)  
 })
 
 test_that("Count alleles errors is arg problems", {

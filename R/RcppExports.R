@@ -25,6 +25,19 @@ merge_ac_svsites_cpp <- function(filename, use_gz, sv_sites) {
     .Call(`_sveval_merge_ac_svsites_cpp`, filename, use_gz, sv_sites)
 }
 
+#' Extract genotype quality at the SV site level. This function will use variant ids
+#' created by read_vcf_multisamps_cpp
+#' @title Genotype quality in SV sites across samples
+#' @param filename the path to the VCF file (unzipped or gzipped).
+#' @param use_gz is the VCF file gzipped?
+#' @param sv_sites a list defining the variant ID for each sv site (element). 
+#' @return matrix with genotype quality for each sv site (rows) and sample (columns)
+#' @author Jean Monlong
+#' @keywords internal
+merge_gq_svsites_cpp <- function(filename, use_gz, sv_sites) {
+    .Call(`_sveval_merge_gq_svsites_cpp`, filename, use_gz, sv_sites)
+}
+
 #' For each VCF record the information in the INFO field is used in priority. If
 #' missing, information is guessed from the REF/ALT sequences.
 #' If multiple alleles are defined in ALT, they are split and the allele count extracted

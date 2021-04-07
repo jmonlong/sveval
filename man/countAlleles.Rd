@@ -4,12 +4,15 @@
 \alias{countAlleles}
 \title{Count alleles in SV sites across samples}
 \usage{
-countAlleles(vcf.file, sv.sites)
+countAlleles(vcf.file, sv.sites, gq.instead = FALSE)
 }
 \arguments{
 \item{vcf.file}{the path to the VCF file}
 
 \item{sv.sites}{a list defining the SV sites (each element contains a vector with SV ids)}
+
+\item{gq.instead}{return a matrix with the minimum genotype quality for each site instead of the
+allele counts. Default is FALSE.}
 }
 \value{
 a matrix with allele counts for each site (rows) and samples (columns)

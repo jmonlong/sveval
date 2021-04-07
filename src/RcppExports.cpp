@@ -30,6 +30,19 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// merge_gq_svsites_cpp
+IntegerMatrix merge_gq_svsites_cpp(std::string filename, bool use_gz, List sv_sites);
+RcppExport SEXP _sveval_merge_gq_svsites_cpp(SEXP filenameSEXP, SEXP use_gzSEXP, SEXP sv_sitesSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< std::string >::type filename(filenameSEXP);
+    Rcpp::traits::input_parameter< bool >::type use_gz(use_gzSEXP);
+    Rcpp::traits::input_parameter< List >::type sv_sites(sv_sitesSEXP);
+    rcpp_result_gen = Rcpp::wrap(merge_gq_svsites_cpp(filename, use_gz, sv_sites));
+    return rcpp_result_gen;
+END_RCPP
+}
 // read_vcf_multisamps_cpp
 DataFrame read_vcf_multisamps_cpp(std::string filename, bool use_gz, int min_sv_size, bool shorten_ref, bool shorten_alt, bool check_inv);
 RcppExport SEXP _sveval_read_vcf_multisamps_cpp(SEXP filenameSEXP, SEXP use_gzSEXP, SEXP min_sv_sizeSEXP, SEXP shorten_refSEXP, SEXP shorten_altSEXP, SEXP check_invSEXP) {
@@ -70,6 +83,7 @@ END_RCPP
 static const R_CallMethodDef CallEntries[] = {
     {"_sveval_aldist", (DL_FUNC) &_sveval_aldist, 2},
     {"_sveval_merge_ac_svsites_cpp", (DL_FUNC) &_sveval_merge_ac_svsites_cpp, 3},
+    {"_sveval_merge_gq_svsites_cpp", (DL_FUNC) &_sveval_merge_gq_svsites_cpp, 3},
     {"_sveval_read_vcf_multisamps_cpp", (DL_FUNC) &_sveval_read_vcf_multisamps_cpp, 6},
     {"_sveval_read_vcf_cpp", (DL_FUNC) &_sveval_read_vcf_cpp, 10},
     {NULL, NULL, 0}
