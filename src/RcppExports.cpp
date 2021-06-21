@@ -60,8 +60,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // read_vcf_cpp
-DataFrame read_vcf_cpp(std::string filename, bool use_gz, std::string sample_name, int min_sv_size, bool shorten_ref, bool shorten_alt, std::string gq_field, bool check_inv, bool keep_nocalls, std::string other_field);
-RcppExport SEXP _sveval_read_vcf_cpp(SEXP filenameSEXP, SEXP use_gzSEXP, SEXP sample_nameSEXP, SEXP min_sv_sizeSEXP, SEXP shorten_refSEXP, SEXP shorten_altSEXP, SEXP gq_fieldSEXP, SEXP check_invSEXP, SEXP keep_nocallsSEXP, SEXP other_fieldSEXP) {
+DataFrame read_vcf_cpp(std::string filename, bool use_gz, std::string sample_name, int min_sv_size, bool shorten_ref, bool shorten_alt, std::string gq_field, bool check_inv, bool keep_nocalls, CharacterVector other_fields);
+RcppExport SEXP _sveval_read_vcf_cpp(SEXP filenameSEXP, SEXP use_gzSEXP, SEXP sample_nameSEXP, SEXP min_sv_sizeSEXP, SEXP shorten_refSEXP, SEXP shorten_altSEXP, SEXP gq_fieldSEXP, SEXP check_invSEXP, SEXP keep_nocallsSEXP, SEXP other_fieldsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -74,8 +74,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< std::string >::type gq_field(gq_fieldSEXP);
     Rcpp::traits::input_parameter< bool >::type check_inv(check_invSEXP);
     Rcpp::traits::input_parameter< bool >::type keep_nocalls(keep_nocallsSEXP);
-    Rcpp::traits::input_parameter< std::string >::type other_field(other_fieldSEXP);
-    rcpp_result_gen = Rcpp::wrap(read_vcf_cpp(filename, use_gz, sample_name, min_sv_size, shorten_ref, shorten_alt, gq_field, check_inv, keep_nocalls, other_field));
+    Rcpp::traits::input_parameter< CharacterVector >::type other_fields(other_fieldsSEXP);
+    rcpp_result_gen = Rcpp::wrap(read_vcf_cpp(filename, use_gz, sample_name, min_sv_size, shorten_ref, shorten_alt, gq_field, check_inv, keep_nocalls, other_fields));
     return rcpp_result_gen;
 END_RCPP
 }

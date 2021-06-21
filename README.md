@@ -23,6 +23,7 @@ It uses:
 1. [Methods](#methods)
 1. [Docker](#docker)
 1. [Interactive exploration of SVs in a variation graph](#interactive-exploration-of-svs-in-a-variation-graph)
+1. [Reading a VCF with SVs](#Reading-a-VCF-with-SVs)
 
 ## Installation
 
@@ -191,3 +192,27 @@ Using the `ivg_sv` function and a *xg* graph ([vg](https://github.com/vgteam/vg)
 The new version includes a linear representation of the variants in the region: 
 
 ![](docs/ivgsv_screenshot.jpg)
+
+## Reading a VCF with SVs
+
+Reading a VCF in R can consume a lot of memory if it contains millions of variants, large variants with explicit sequence information, and in general rich INFO fields. 
+Only a subset of this information is used by *sveval* in the end: all the SNV/indels are filtered, just the few typical SV INFO fields are used, and sometimes we don't want (or can't) use sequence information.
+To speed up the reading of large VCF, a C parser was implemented to only keep SVs and the relevant information. 
+
+The `readSVvcf.R` is a wrapper to this parser and can return either a data.frame, a GRanges, or a VCF object as define by the [VariantAnnotation package from Bioconductor](https://bioconductor.org/packages/release/bioc/html/VariantAnnotation.html).
+
+The main parameters specify what information to keep and which variants to filter out right away:
+
+- `keep.ref.seq`/`keep.ins.seq`: should we keep the full explicit sequence of the *REF*/*ALT* alleles? Default is *FALSE*.
+- `other.field`: which other (INFO) field(s) should be saved?
+- `min.sv.size`: what is the minimum size required to keep a variant? Default is *10* (bp)
+
+### BND and translocations
+
+There are different ways of representing translocations (or "junctions") in VCF. 
+The VCF parser here will recognize BND if the other genomic location is specified with either:
+
+- the *ALT* field following the [VCF specs (section 5.4)](https://samtools.github.io/hts-specs/VCFv4.2.pdf), for example as `T]y:2000]`
+- a *CHR2* INFO field (plus the *END* field which is also parsed for other SV types anyway). This is what [Sniffles](https://github.com/fritzsedlazeck/Sniffles/wiki/Output#info-field-description) produces for example for its *TRA* variants.
+
+SVs with a *SVTYPE* of *BND* or *TRA* won't be filtered by the size filter (`min.sv.size` parameter).

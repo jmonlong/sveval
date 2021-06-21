@@ -14,7 +14,7 @@ read_vcf_cpp(
   gq_field = "GQ",
   check_inv = FALSE,
   keep_nocalls = FALSE,
-  other_field = ""
+  other_fields = as.character(c())
 )
 }
 \arguments{
@@ -41,7 +41,7 @@ reverse complement of ALT. If >80\% similar (and REF and ALT>10bp), variant is c
 \item{keep_nocalls}{should we keep variants/alleles with missing genotypes (e.g. "./.").
 Default is FALSE}
 
-\item{other_field}{name of another field from INFO to extract.}
+\item{other_fields}{name of another field from INFO to extract.}
 }
 \value{
 data.frame with variant and genotype information

@@ -85,11 +85,11 @@ read_vcf_multisamps_cpp <- function(filename, use_gz, min_sv_size = 10L, shorten
 #' reverse complement of ALT. If >80\% similar (and REF and ALT>10bp), variant is classified as INV.
 #' @param keep_nocalls should we keep variants/alleles with missing genotypes (e.g. "./.").
 #' Default is FALSE
-#' @param other_field name of another field from INFO to extract.
+#' @param other_fields name of another field from INFO to extract.
 #' @return data.frame with variant and genotype information
 #' @author Jean Monlong
 #' @keywords internal
-read_vcf_cpp <- function(filename, use_gz, sample_name = "", min_sv_size = 10L, shorten_ref = TRUE, shorten_alt = TRUE, gq_field = "GQ", check_inv = FALSE, keep_nocalls = FALSE, other_field = "") {
-    .Call(`_sveval_read_vcf_cpp`, filename, use_gz, sample_name, min_sv_size, shorten_ref, shorten_alt, gq_field, check_inv, keep_nocalls, other_field)
+read_vcf_cpp <- function(filename, use_gz, sample_name = "", min_sv_size = 10L, shorten_ref = TRUE, shorten_alt = TRUE, gq_field = "GQ", check_inv = FALSE, keep_nocalls = FALSE, other_fields = as.character( c())) {
+    .Call(`_sveval_read_vcf_cpp`, filename, use_gz, sample_name, min_sv_size, shorten_ref, shorten_alt, gq_field, check_inv, keep_nocalls, other_fields)
 }
 
