@@ -144,7 +144,7 @@ readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, keep.ref.seq=FALSE, sample.n
                              SVTYPE=svs$type)
       
       ## other field
-      for(ofield in other.field){
+      for(ofield in c(other.field, 'CHR2', 'end2')){
         if(ofield != '' & ofield %in% colnames(svs)){
           info.n = rownames(info.h)
           info.h = rbind(info.h,

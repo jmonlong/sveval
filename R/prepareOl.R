@@ -46,6 +46,7 @@ prepareOl <- function(query, subject, min.rol=.1, max.ins.dist=1,
   } else {
     gts = 'called'
   }
+  logging::loginfo(paste('Preparing overlaps. Genotypes: ', gts))
 
   ## prepare overlas separately for SV types and genotypes
   ## pair SV type x genotype (to help potentially parallelize)
@@ -62,6 +63,7 @@ prepareOl <- function(query, subject, min.rol=.1, max.ins.dist=1,
   }
   ol.l = parallel::mclapply(1:length(svtypes.gts), function(ii){
     svtype = svtypes.gts[[ii]]$svtype
+    logging::loginfo(paste('Preparing overlaps. ', svtype))
     gt = svtypes.gts[[ii]]$gt
     ## save the indexes of the variants considered now (svtype + GT)
     if(gt == 'called'){
@@ -74,45 +76,14 @@ prepareOl <- function(query, subject, min.rol=.1, max.ins.dist=1,
     ## subset
     query.ss = query[query.ii]
     subject.ss = subject[subject.ii]
+    logging::loginfo(paste('Preparing overlaps. # query: ', length(query.ss),
+                           ', # subject: ', length(subject.ss)))
     ## stop if one of the set is empty
     if(length(query.ss)==0 | length(subject.ss)==0){
       return(NULL)
     }
-    ## otherwise, overlap
-    if(svtype != 'INS'){
-      ## for "ranges" SVs, reciprocal overlap
-      rol.df = GenomicRanges::findOverlaps(query.ss, subject.ss) %>%
-        as.data.frame %>%
-        dplyr::mutate(querySize=query.ss$size[.data$queryHits],
-                      subjectSize=subject.ss$size[.data$subjectHits],
-                      interSize=GenomicRanges::width(GenomicRanges::pintersect(query.ss[.data$queryHits],
-                                                                               subject.ss[.data$subjectHits])),
-                      interSize=ifelse(.data$interSize>.data$querySize, .data$querySize, .data$interSize),
-                      interSize=ifelse(.data$interSize>.data$subjectSize, .data$subjectSize, .data$interSize)) %>%
-        dplyr::filter(.data$interSize >= min.rol * .data$querySize,
-                      .data$interSize >= min.rol * .data$subjectSize)
-      if(nrow(rol.df)==0) return(NULL)
-      if(range.seq.comp){
-        ## Sequence comparison
-        if(!('ref' %in% colnames(GenomicRanges::mcols(query.ss))) |
-           !('ref' %in% colnames(GenomicRanges::mcols(subject.ss)))){
-          stop('Missing sequence information. Did you run use "keep.ref.seq" when reading the VCF?')
-        } else {
-          if(any(grepl('...',  query.ss$ref, fixed=TRUE)) |
-             any(grepl('...',  subject.ss$ref, fixed=TRUE))){
-            stop('Missing sequence information. Did you run use "keep.ref.seq" when reading the VCF?')
-          }
-        }
-        query.seq = query.ss$ref[rol.df$queryHits]
-        subject.seq = subject.ss$ref[rol.df$subjectHits]
-        ## rol.df$interSize = ifelse(rol.df$querySize > rol.df$subjectSize,
-        ##                           rol.df$querySize, rol.df$subjectSize)
-        rol.df$interSize = rol.df$querySize - aldist(query.seq, subject.seq)
-      }
-      ol.gr = GenomicRanges::pintersect(query.ss[rol.df$queryHits],
-                                        subject.ss[rol.df$subjectHits])
-      GenomicRanges::mcols(ol.gr) = rol.df
-    } else {
+    ## otherwise, overlap/compare
+    if(svtype == 'INS'){
       ## for insertions, cluster and compare size/sequence
       ## Cluster insertions
       ol.ins = GenomicRanges::findOverlaps(query.ss, subject.ss,
@@ -150,6 +121,68 @@ prepareOl <- function(query, subject, min.rol=.1, max.ins.dist=1,
       ## format GRanges
       ol.gr = query.ss[ol.ins$queryHits]
       GenomicRanges::mcols(ol.gr) = ol.ins
+    } else if(svtype == 'BND'){
+      ## make GRange record for each breakpoint
+      query.ss.bks = suppressWarnings(c(
+        GenomicRanges::GRanges(query.ss$CHR2, IRanges::IRanges(query.ss$end2, width=1), idx=1:length(query.ss)),
+        GenomicRanges::GRanges(GenomicRanges::seqnames(query.ss),
+                               IRanges::IRanges(GenomicRanges::start(query.ss),
+                                                GenomicRanges::end(query.ss)),
+                               idx=1:length(query.ss))))
+      subject.ss.bks = suppressWarnings(c(
+        GenomicRanges::GRanges(subject.ss$CHR2, IRanges::IRanges(subject.ss$end2, width=1),
+                               idx=1:length(subject.ss)),
+        GenomicRanges::GRanges(GenomicRanges::seqnames(subject.ss),
+                               IRanges::IRanges(GenomicRanges::start(subject.ss),
+                                                GenomicRanges::end(subject.ss)),
+                               idx=1:length(subject.ss))))
+      ## overlap breakpoints
+      ol.bk = GenomicRanges::findOverlaps(query.ss.bks, subject.ss.bks,
+                                          maxgap=max.ins.dist) %>%
+        as.data.frame %>% 
+        dplyr::mutate(queryHits=query.ss.bks$idx[.data$queryHits], subjectHits=subject.ss.bks$idx[.data$subjectHits]) %>%
+        dplyr::select(.data$queryHits, .data$subjectHits) %>% unique
+      if(nrow(ol.bk)==0) return(NULL)
+      logging::loginfo(paste('Preparing overlaps. # BND matches: ', nrow(ol.bk)))
+      ## format GRanges
+      ol.gr = query.ss[ol.bk$queryHits]
+      GenomicRanges::mcols(ol.gr) = NULL
+      ol.gr$queryHits = ol.bk$queryHits
+      ol.gr$subjectHits = ol.bk$subjectHits
+      ol.gr$querySize = ol.gr$subjectSize = ol.gr$interSize = 1
+    } else {
+      ## for "ranges" SVs, reciprocal overlap
+      rol.df = GenomicRanges::findOverlaps(query.ss, subject.ss) %>%
+        as.data.frame %>%
+        dplyr::mutate(querySize=query.ss$size[.data$queryHits],
+                      subjectSize=subject.ss$size[.data$subjectHits],
+                      interSize=GenomicRanges::width(GenomicRanges::pintersect(query.ss[.data$queryHits],
+                                                                               subject.ss[.data$subjectHits])),
+                      interSize=ifelse(.data$interSize>.data$querySize, .data$querySize, .data$interSize),
+                      interSize=ifelse(.data$interSize>.data$subjectSize, .data$subjectSize, .data$interSize)) %>%
+        dplyr::filter(.data$interSize >= min.rol * .data$querySize,
+                      .data$interSize >= min.rol * .data$subjectSize)
+      if(nrow(rol.df)==0) return(NULL)
+      if(range.seq.comp){
+        ## Sequence comparison
+        if(!('ref' %in% colnames(GenomicRanges::mcols(query.ss))) |
+           !('ref' %in% colnames(GenomicRanges::mcols(subject.ss)))){
+          stop('Missing sequence information. Did you run use "keep.ref.seq" when reading the VCF?')
+        } else {
+          if(any(grepl('...',  query.ss$ref, fixed=TRUE)) |
+             any(grepl('...',  subject.ss$ref, fixed=TRUE))){
+            stop('Missing sequence information. Did you run use "keep.ref.seq" when reading the VCF?')
+          }
+        }
+        query.seq = query.ss$ref[rol.df$queryHits]
+        subject.seq = subject.ss$ref[rol.df$subjectHits]
+        ## rol.df$interSize = ifelse(rol.df$querySize > rol.df$subjectSize,
+        ##                           rol.df$querySize, rol.df$subjectSize)
+        rol.df$interSize = rol.df$querySize - aldist(query.seq, subject.seq)
+      }
+      ol.gr = GenomicRanges::pintersect(query.ss[rol.df$queryHits],
+                                        subject.ss[rol.df$subjectHits])
+      GenomicRanges::mcols(ol.gr) = rol.df
     }
     
     ## convert the indexes back to those of the whole GRanges

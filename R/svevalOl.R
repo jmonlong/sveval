@@ -127,6 +127,13 @@ svevalOl <- function(calls.gr, truth.gr, max.ins.dist=20, min.ol=.5,
     }
   }
 
+  ## if BND and TRA, homogeneize the SV type
+  if(any(calls.gr$type %in% c('BND', 'TRA'))){
+    calls.gr$type = ifelse(calls.gr$type %in% c('BND', 'TRA'), 'BND', calls.gr$type)
+  }
+  if(any(truth.gr$type %in% c('BND', 'TRA'))){
+    truth.gr$type = ifelse(truth.gr$type %in% c('BND', 'TRA'), 'BND', truth.gr$type)
+  }
   ## optional: extend variants with simple repeat annotation
   if(!is.null(simprep)){
     logging::loginfo('Extend callset using simple repeat annotation')
@@ -134,7 +141,6 @@ svevalOl <- function(calls.gr, truth.gr, max.ins.dist=20, min.ol=.5,
     logging::loginfo('Extend truthset using simple repeat annotation')
     truth.gr = extendSVwithSimpRep(truth.gr, simprep)
   }
-
   
   ## If evaluation per genotype, do we want to stitch and/or merge heterozygous variants?
   if(length(calls.gr)>0 & length(truth.gr)>0){

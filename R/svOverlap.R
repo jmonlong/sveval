@@ -71,6 +71,14 @@ svOverlap <- function(query, subject, min.ol=.5,
     query = extendSVwithSimpRep(query, simprep)
     subject = extendSVwithSimpRep(subject, simprep)
   }
+
+  ## if BND and TRA, homogeneize the SV type
+  if(any(query$type %in% c('BND', 'TRA'))){
+    query$type = ifelse(query$type %in% c('BND', 'TRA'), 'BND', query$type)
+  }
+  if(any(subject$type %in% c('BND', 'TRA'))){
+    subject$type = ifelse(subject$type %in% c('BND', 'TRA'), 'BND', subject$type)
+  }
   
   ## Prepare overlap
   ol.gr = prepareOl(query, subject, min.rol=min.del.rol,

@@ -15,7 +15,8 @@ filterSVs <- function(sv.gr, regions.gr=NULL, ol.prop=.5, min.size=0, max.size=I
   if(length(sv.gr)==0) return(sv.gr)
   ## size selection
   if(min.size>0 | !is.infinite(max.size)){
-    pass.idx = which(sv.gr$size>=min.size & sv.gr$size<=max.size)
+    pass.idx = which((sv.gr$size>=min.size & sv.gr$size<=max.size) | (sv.gr$type %in% c('BND', 'TRA')))
+    ## don't filter based on size for translocation or BND variants
   } else {
     pass.idx = 1:length(sv.gr)
   }
