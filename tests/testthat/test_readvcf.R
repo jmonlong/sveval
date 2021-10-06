@@ -24,12 +24,14 @@ test_that("VCF gzipped", {
   vcf = readSVvcf('../delly.vcf.gz')
   expect_gt(length(vcf), 0)
   expect_gt(sum(vcf$qual), 0)
+  
 })
 
 test_that("VCF bgzipped", {
   vcf = readSVvcf('../delly.vcf.bgz')
   expect_gt(length(vcf), 0)
   expect_gt(sum(vcf$qual), 0)
+  expect_gt(sum(vcf$filter == 'PASS'), 0)
 })
 
 test_that("VCF with no QUAL but GQ field", {

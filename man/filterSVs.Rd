@@ -10,6 +10,7 @@ filterSVs(
   ol.prop = 0.5,
   min.size = 0,
   max.size = Inf,
+  accepted.filters = NULL,
   mark.pass = FALSE
 )
 }
@@ -24,6 +25,8 @@ Default is 0.5}
 \item{min.size}{the minimum SV size to be considered. Default 0.}
 
 \item{max.size}{the maximum SV size to be considered. Default is Inf.}
+
+\item{accepted.filters}{vector of the values of the FILTER field to keep. If NULL (default), all values are accepted}
 
 \item{mark.pass}{don't actually filter variants but mark the variants with a 'pass' columns. Default is FALSE.}
 }

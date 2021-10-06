@@ -43,6 +43,7 @@ DataFrame read_vcf_cpp(std::string filename, bool use_gz, std::string sample_nam
   std::vector<int> starts;                                // start position
   std::vector<int> ends;                                  // end position
   std::vector<std::string> svids;                         // variant ID
+  std::vector<std::string> filters;                       // FILTER values
   std::vector<std::string> refs;                          // reference allele sequence
   std::vector<std::string> alts;                          // alternate allele sequence
   std::vector<std::string> svtypes;                       // SV type (INS, DEL, INV, ...)
@@ -315,6 +316,7 @@ DataFrame read_vcf_cpp(std::string filename, bool use_gz, std::string sample_nam
       starts.push_back(start_rec);
       ends.push_back(end_rec_al);
       svids.push_back(line_v[2]);
+      filters.push_back(line_v[6]);
       acs.push_back(al_count);
       sizes.push_back(size_al);
       svtypes.push_back(svtype_al);
@@ -351,6 +353,7 @@ DataFrame read_vcf_cpp(std::string filename, bool use_gz, std::string sample_nam
 			  _["start"] = starts,
 			  _["end"] = ends,
 			  _["svid"] = svids,
+			  _["filter"] = filters,
 			  _["type"] = svtypes,
 			  _["size"] = sizes,
 			  _["ac"] = acs,
