@@ -25,7 +25,7 @@ subset_eval <- function(eval, regions.gr=NULL, accepted.filters=NULL, min.region
       svs = svs[[metric]]
       if(!is.null(regions.gr) | !is.null(accepted.filters)){
         ## don't filter with FILTER on the truth SVs
-        if(metric == 'TP.baseline'){
+        if(metric %in% c('TP.baseline', 'FN')){
           accepted.filters = NULL
         }
         svs = filterSVs(svs, regions.gr=regions.gr, ol.prop=min.region.ol, accepted.filters=accepted.filters)
@@ -42,14 +42,15 @@ subset_eval <- function(eval, regions.gr=NULL, accepted.filters=NULL, min.region
   eval.quals = lapply(names(svs.filt), function(svtype){
     svs = svs.filt[[svtype]]
     ## For each class of variant
-    df = lapply(c('TP', 'FP', 'FN'), function(metric){
-      svs = svs[[metric]]
-      df = parallel::mclapply(qual.ths, function(min.qual){
-        data.frame(type=svtype, metric=metric, n=sum(svs$qual>=min.qual), qual=min.qual,
-                   stringsAsFactors=FALSE)
-      }, mc.cores=nb.cores)
-      do.call(rbind, df)
-    })
+    df = parallel::mclapply(qual.ths, function(min.qual){
+      data.frame(type=svtype,
+                 metric=c('TP', 'FP', 'FN'),
+                 n=c(sum(svs$TP$qual>=min.qual),
+                     sum(svs$FP$qual>=min.qual),
+                     sum(svs$FN$qual>=min.qual) + sum(svs$TP$qual<min.qual)),
+                 qual=min.qual,
+                 stringsAsFactors=FALSE)
+    }, mc.cores=nb.cores)
     do.call(rbind, df)
   })
   eval.quals = do.call(rbind, eval.quals)
