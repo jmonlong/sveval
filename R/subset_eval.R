@@ -47,7 +47,7 @@ subset_eval <- function(eval, regions.gr=NULL, accepted.filters=NULL, min.region
                  metric=c('TP', 'FP', 'FN'),
                  n=c(sum(svs$TP$qual>=min.qual),
                      sum(svs$FP$qual>=min.qual),
-                     sum(svs$FN$qual>=min.qual) + sum(svs$TP$qual<min.qual)),
+                     length(svs$FN) + sum(svs$TP$qual<min.qual)),
                  qual=min.qual,
                  stringsAsFactors=FALSE)
     }, mc.cores=nb.cores)
