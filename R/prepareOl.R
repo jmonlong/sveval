@@ -124,23 +124,30 @@ prepareOl <- function(query, subject, min.rol=.1, max.ins.dist=1,
     } else if(svtype == 'BND'){
       ## make GRange record for each breakpoint
       query.ss.bks = suppressWarnings(c(
-        GenomicRanges::GRanges(query.ss$CHR2, IRanges::IRanges(query.ss$end2, width=1), idx=1:length(query.ss)),
+        GenomicRanges::GRanges(query.ss$CHR2, IRanges::IRanges(query.ss$end2, width=1), idx=1:length(query.ss), bk=1),
         GenomicRanges::GRanges(GenomicRanges::seqnames(query.ss),
                                IRanges::IRanges(GenomicRanges::start(query.ss),
                                                 GenomicRanges::end(query.ss)),
-                               idx=1:length(query.ss))))
+                               idx=1:length(query.ss), bk=2)))
       subject.ss.bks = suppressWarnings(c(
         GenomicRanges::GRanges(subject.ss$CHR2, IRanges::IRanges(subject.ss$end2, width=1),
-                               idx=1:length(subject.ss)),
+                               idx=1:length(subject.ss), bk=1),
         GenomicRanges::GRanges(GenomicRanges::seqnames(subject.ss),
                                IRanges::IRanges(GenomicRanges::start(subject.ss),
                                                 GenomicRanges::end(subject.ss)),
-                               idx=1:length(subject.ss))))
-      ## overlap breakpoints
+                               idx=1:length(subject.ss), bk=2)))
+      print(query.ss.bks)
+      print(subject.ss.bks)
+      print(max.ins.dist)
+      ## overlap breakpoints forcing more than one breakpoint pairs to match
       ol.bk = GenomicRanges::findOverlaps(query.ss.bks, subject.ss.bks,
                                           maxgap=max.ins.dist) %>%
         as.data.frame %>% 
-        dplyr::mutate(queryHits=query.ss.bks$idx[.data$queryHits], subjectHits=subject.ss.bks$idx[.data$subjectHits]) %>%
+        dplyr::mutate(bk=paste(query.ss.bks$bk[.data$queryHits], subject.ss.bks$bk[.data$subjectHits]),
+                      queryHits=query.ss.bks$idx[.data$queryHits], subjectHits=subject.ss.bks$idx[.data$subjectHits]) %>% 
+        dplyr::group_by(.data$queryHits, .data$subjectHits) %>%
+        dplyr::filter(length(unique(.data$bk))>1) %>%
+        dplyr::ungroup() %>%
         dplyr::select(.data$queryHits, .data$subjectHits) %>% unique
       if(nrow(ol.bk)==0) return(NULL)
       logging::loginfo(paste('Preparing overlaps. # BND matches: ', nrow(ol.bk)))

@@ -368,5 +368,6 @@ DataFrame read_vcf_cpp(std::string filename, bool use_gz, std::string sample_nam
       res.push_back(others[s], s);
     }
   }
+
   return res;
 }

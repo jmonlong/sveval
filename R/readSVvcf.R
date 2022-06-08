@@ -66,6 +66,13 @@ readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, keep.ref.seq=FALSE, sample.n
                      keep_nocalls=nocalls, other_fields=other.field,
                      min_sv_size=min.sv.size)
 
+  ## Convert factor columns
+  for(ofield in colnames(svs)){
+    if(is.factor(svs[, ofield])){
+      svs[, ofield] = utils::type.convert(svs[, ofield], as.is=TRUE)
+    }
+  }
+  
   ## Add missing information
   svs$qual = ifelse(svs$qual==-1, NA, svs$qual)
   if(all(is.na(svs$qual))){
@@ -90,11 +97,7 @@ readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, keep.ref.seq=FALSE, sample.n
       svs$end2[bnd.idx[bnd.alt]] = gsub('.*[\\]\\[].*:(.*)[\\]\\[].*', '\\1',
                                         svs$alt[bnd.idx[bnd.alt]], perl=TRUE)
     }
-  }
-  
-  ## Eventually convert the additional column extracted
-  for(ofield in c(other.field, 'CHR2', 'end2')){
-    if(ofield %in% colnames(svs)){
+    for(ofield in c('CHR2', 'end2')){
       svs[, ofield] = utils::type.convert(svs[, ofield], as.is=TRUE)
     }
   }
