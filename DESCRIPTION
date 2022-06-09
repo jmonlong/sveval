@@ -29,4 +29,5 @@ Imports:
 	DT,
     igraph,
     Rcpp,
-    logging
+    logging,
+    Matrix

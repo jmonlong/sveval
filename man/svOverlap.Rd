@@ -14,7 +14,8 @@ svOverlap(
   range.seq.comp = FALSE,
   ins.seq.comp = FALSE,
   simprep = NULL,
-  nb.cores = 1
+  nb.cores = 1,
+  log.level = c("CRITICAL", "WARNING", "INFO")
 )
 }
 \arguments{
@@ -40,6 +41,8 @@ matching of variants in the calls and truth sets.}
 extend variants when overlapping/clustering}
 
 \item{nb.cores}{number of processors to use. Default is 1.}
+
+\item{log.level}{the level of information in the log. Default is "CRITICAL" (basically no log).}
 }
 \value{
 a GRanges with information about pairs of SVs in query and subject that overlap

@@ -48,6 +48,7 @@
 ##' @param simprep optional simple repeat annotation. Default is NULL. If non-NULL, GRanges to be used to
 ##' extend variants when overlapping/clustering
 ##' @param nb.cores number of processors to use. Default is 1.
+##' @param log.level the level of information in the log. Default is "CRITICAL" (basically no log).
 ##' @return a GRanges with information about pairs of SVs in query and subject that overlap
 ##' \item{GRange}{intersected ranges (informative for "ranges" SVs)}
 ##' \item{queryHits}{the id of the input query}
@@ -65,7 +66,9 @@ svOverlap <- function(query, subject, min.ol=.5,
                       min.del.rol=.1,
                       range.seq.comp=FALSE, ins.seq.comp=FALSE,
                       simprep=NULL,
-                      nb.cores=1){
+                      nb.cores=1,
+                      log.level=c('CRITICAL', 'WARNING', 'INFO')){
+  logging::setLevel(log.level[1])
   ## optional: extend variants with simple repeat annotation
   if(!is.null(simprep)){
     query = extendSVwithSimpRep(query, simprep)

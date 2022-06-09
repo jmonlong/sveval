@@ -136,9 +136,6 @@ prepareOl <- function(query, subject, min.rol=.1, max.ins.dist=1,
                                IRanges::IRanges(GenomicRanges::start(subject.ss),
                                                 GenomicRanges::end(subject.ss)),
                                idx=1:length(subject.ss), bk=2)))
-      print(query.ss.bks)
-      print(subject.ss.bks)
-      print(max.ins.dist)
       ## overlap breakpoints forcing more than one breakpoint pairs to match
       ol.bk = GenomicRanges::findOverlaps(query.ss.bks, subject.ss.bks,
                                           maxgap=max.ins.dist) %>%
