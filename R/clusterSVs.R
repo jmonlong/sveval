@@ -14,7 +14,7 @@
 ##' @param ins.seq.comp compare sequence instead of insertion sizes. Default is FALSE.
 ##' @param nb.cores number of processors to use. Default is 1.
 ##' @param simprep optional simple repeat annotation. Default is NULL. If non-NULL, GRanges to be used to
-##' @param batch.maxsize batch size to aim. To reduce memory usage, see Details. Default is 500.
+##' @param batch.maxsize batch size to aim. To reduce memory usage, see Details. Default is 5000.
 ##' @param log.level the level of information in the log. Default is "CRITICAL" (basically no log).
 ##' @return the svs.gr object annotated with two new columns:
 ##' \item{svsite}{the ID of the cluster (or SV site)}
@@ -32,7 +32,7 @@
 ##' }
 clusterSVs <- function(svs.gr, min.rol=.8, max.ins.dist=20,
                        range.seq.comp=FALSE, ins.seq.comp=FALSE, simprep=NULL,
-                       nb.cores=1, batch.maxsize = 500,
+                       nb.cores=1, batch.maxsize = 5000,
                        log.level=c('CRITICAL', 'WARNING', 'INFO')){
   logging::setLevel(log.level[1])
 
@@ -94,9 +94,10 @@ clusterSVs <- function(svs.gr, min.rol=.8, max.ins.dist=20,
   cl.gr = cl.gr[order(cl.gr$n)]
   cl.gr$batch = cumsum(cl.gr$n) %>% cut(seq(0,sum(cl.gr$n)+batch.maxsize, batch.maxsize))
   svs.per.batch = unlist(tapply(cl.gr$n, cl.gr$batch, sum))
-  logging::loginfo(paste('SV clustering. Number of batches: ', length(svs.per.batch)))
-  logging::loginfo(paste('SV clustering. Average number of SVs per batch: ', mean(svs.per.batch)))
-  logging::loginfo(paste('SV clustering. Maximum number of SVs per batch: ', max(svs.per.batch)))
+  svs.per.batch = svs.per.batch[which(!is.na(svs.per.batch))]
+  logging::loginfo(paste('SV clustering. Number of batches:', length(svs.per.batch)))
+  logging::loginfo(paste('SV clustering. Average number of SVs per batch:', mean(svs.per.batch)))
+  logging::loginfo(paste('SV clustering. Maximum number of SVs per batch:', max(svs.per.batch)))
 
   ## merge each batch of large SV cluster
   svs.m = parallel::mclapply(unique(cl.gr$batch), function(bb){
