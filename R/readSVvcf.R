@@ -97,7 +97,7 @@ readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, keep.ref.seq=FALSE, sample.n
       svs$end2[bnd.idx[bnd.alt]] = gsub('.*[\\]\\[].*:(.*)[\\]\\[].*', '\\1',
                                         svs$alt[bnd.idx[bnd.alt]], perl=TRUE)
     }
-    for(ofield in c('CHR2', 'end2')){
+    for(ofield in intersect(colnames(svs), c('CHR2', 'end2'))){
       svs[, ofield] = utils::type.convert(svs[, ofield], as.is=TRUE)
     }
   }
