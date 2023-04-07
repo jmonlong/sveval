@@ -23,7 +23,9 @@ It uses:
 1. [Methods](#methods)
 1. [Docker](#docker)
 1. [Interactive exploration of SVs in a variation graph](#interactive-exploration-of-svs-in-a-variation-graph)
-1. [Reading a VCF with SVs](#Reading-a-VCF-with-SVs)
+1. [Reading a VCF with SVs](#reading-a-vcf-with-svs)
+1. [BND and translocations](#bnd-and-translocations)
+
 
 ## Installation
 
@@ -31,13 +33,6 @@ Install using Bioconductor installer:
 
 ```r
 BiocManager::install('jmonlong/sveval')
-```
-
-Or the "old way":
-
-```r
-source('http://bioconductor.org/biocLite.R')
-biocLite('jmonlong/sveval')
 ```
 
 You might need to install *devtools* and *BiocManager* first:
@@ -199,12 +194,12 @@ Reading a VCF in R can consume a lot of memory if it contains millions of varian
 Only a subset of this information is used by *sveval* in the end: all the SNV/indels are filtered, just the few typical SV INFO fields are used, and sometimes we don't want (or can't) use sequence information.
 To speed up the reading of large VCF, a C parser was implemented to only keep SVs and the relevant information. 
 
-The `readSVvcf.R` is a wrapper to this parser and can return either a data.frame, a GRanges, or a VCF object as define by the [VariantAnnotation package from Bioconductor](https://bioconductor.org/packages/release/bioc/html/VariantAnnotation.html).
+The `readSVvcf` function is a wrapper to this parser and can return either a data.frame, a GRanges, or a VCF object as define by the [VariantAnnotation package from Bioconductor](https://bioconductor.org/packages/release/bioc/html/VariantAnnotation.html).
 
 The main parameters specify what information to keep and which variants to filter out right away:
 
 - `keep.ref.seq`/`keep.ins.seq`: should we keep the full explicit sequence of the *REF*/*ALT* alleles? Default is *FALSE*.
-- `other.field`: which other (INFO) field(s) should be saved?
+- `other.fields`: which other (INFO) field(s) should be saved?
 - `min.sv.size`: what is the minimum size required to keep a variant? Default is *10* (bp)
 
 ### BND and translocations
