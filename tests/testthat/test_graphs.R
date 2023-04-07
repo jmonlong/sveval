@@ -60,3 +60,19 @@ test_that("Ranges in a region in ggplot with SV ids", {
   expect_true(file.remove('temp.pdf'))
 })
 
+test_that("Subsect evaluation results by region", {
+  bed = data.frame(chr='x', start=c(1e6), end=c(1.49e6))
+  reg = GenomicRanges::makeGRangesFromDataFrame(bed)
+  eval = subset_eval(res, regions.gr=reg)
+  expect_gt(nrow(eval$eval), 0)
+  expect_true(any(eval$eval$TP>0))
+  expect_true(sum(eval$curve$TP>0)>0)  
+})
+
+test_that("Subsect evaluation results by filter", {
+  eval = subset_eval(res, accepted.filters='PASS')
+  expect_gt(nrow(eval$eval), 0)
+  expect_true(any(eval$eval$TP>0))
+  expect_true(sum(eval$curve$TP>0)>0)  
+})
+

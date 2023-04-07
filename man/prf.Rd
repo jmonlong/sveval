@@ -4,10 +4,12 @@
 \alias{prf}
 \title{Compute precision, recall and F1 score}
 \usage{
-prf(eval.df)
+prf(eval.df, use.calls.tp.everywhere = TRUE)
 }
 \arguments{
 \item{eval.df}{a data.frame with columns TP, TP.baseline, FP, and FN.}
+
+\item{use.calls.tp.everywhere}{use the TP count as number of calls matched even for the recall computation}
 }
 \value{
 the input data.frame with 3 new columns precision, recall and F1.

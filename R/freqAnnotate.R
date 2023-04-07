@@ -19,6 +19,7 @@
 ##' @param out.freq.field the new field's name. Default is 'AFMAX'
 ##' @param method the method to annotate the overlap. Recommended is 'reciprocal' (default). See details.
 ##' @param nb.cores number of processors to use. Default is 1.
+##' @param log.level the level of information in the log. Default is "CRITICAL" (basically no log).
 ##' @return a GRanges object.
 ##' @author Jean Monlong
 ##' @importFrom magrittr %>%
@@ -37,7 +38,9 @@
 freqAnnotate <- function(svs, cat, min.ol=.5, min.del.rol=.1, max.ins.dist=20, check.inv=FALSE,
                          range.seq.comp=FALSE, ins.seq.comp=FALSE, out.vcf=NULL, freq.field='AF',
                          out.freq.field='AFMAX', method=c('reciprocal', 'coverage', 'bipartite'),
-                         nb.cores=1){
+                         nb.cores=1,
+                         log.level=c('CRITICAL', 'WARNING', 'INFO')){
+  logging::setLevel(log.level[1])
 
   if(is.character(svs) && length(svs) == 1){
     svs = readSVvcf(svs, out.fmt='vcf', check.inv=check.inv)
@@ -50,10 +53,14 @@ freqAnnotate <- function(svs, cat, min.ol=.5, min.del.rol=.1, max.ins.dist=20, c
   svs.gr = DelayedArray::rowRanges(svs)
   svs.gr$size = VariantAnnotation::info(svs)$SVLEN
   svs.gr$type = VariantAnnotation::info(svs)$SVTYPE
+  svs.gr$CHR2 = VariantAnnotation::info(svs)$CHR2
+  svs.gr$end2 = VariantAnnotation::info(svs)$end2
   GenomicRanges::end(svs.gr) = VariantAnnotation::info(svs)$END
   cat.gr = DelayedArray::rowRanges(cat)
   cat.gr$size = VariantAnnotation::info(cat)$SVLEN
   cat.gr$type = VariantAnnotation::info(cat)$SVTYPE
+  cat.gr$CHR2 = VariantAnnotation::info(cat)$CHR2
+  cat.gr$end2 = VariantAnnotation::info(cat)$end2
 
   desc = VariantAnnotation::info(VariantAnnotation::header(cat))
   if(!(freq.field %in% rownames(desc))){
@@ -96,7 +103,7 @@ freqAnnotate <- function(svs, cat, min.ol=.5, min.del.rol=.1, max.ins.dist=20, c
   VariantAnnotation::info(svs)[[out.freq.field]] = freqs
   
   if(!is.null(out.vcf)){
-    VariantAnnotation::writeVcf(svs, file=out.vcf)
+    suppressWarnings(VariantAnnotation::writeVcf(svs, file=out.vcf))
     return(out.vcf)
   } else {
     return(svs)

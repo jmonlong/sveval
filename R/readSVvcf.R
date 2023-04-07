@@ -21,7 +21,7 @@
 ##' select the first sample. If NULL, don't select particular sample.
 ##' @param qual.field field to use as quality. Can be in INFO (e.g. default GQ) or
 ##' FORMAT (e.g. DP). If not found in INFO/FORMAT, QUAL field is used.
-##' @param other.field name of another field to extract from the INFO (e.g. AF). Default is NULL
+##' @param other.field name of other fields to extract from the INFO (e.g. AF). Default is NULL
 ##' @param check.inv should the sequence of MNV be compared to identify inversions. 
 ##' @param keep.ids keep variant ids? Default is FALSE.
 ##' @param nocalls if TRUE returns no-calls only (genotype ./.). Default FALSE.
@@ -58,15 +58,21 @@ readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, keep.ref.seq=FALSE, sample.n
     ## if NULL, read the entire VCF, encoded with a * in the cpp function
     sample.name = '*'
   }
-  if(is.null(other.field)){
-    other.field = ''
-  }
+  ## init other field to potentially parse BND/TRA information
+  other.field = unique(c(other.field, 'CHR2'))
   svs = read_vcf_cpp(vcf.file, use_gz, sample_name=sample.name,
                      shorten_ref=!keep.ref.seq, shorten_alt=!keep.ins.seq,
                      check_inv=check.inv, gq_field=qual.field[1],
-                     keep_nocalls=nocalls, other_field=other.field,
+                     keep_nocalls=nocalls, other_fields=other.field,
                      min_sv_size=min.sv.size)
 
+  ## Convert factor columns or "other" specified fields
+  for(ofield in colnames(svs)){
+    if(is.factor(svs[, ofield]) | ofield %in% other.field){
+      svs[, ofield] = utils::type.convert(svs[, ofield], as.is=TRUE)
+    }
+  }
+  
   ## Add missing information
   svs$qual = ifelse(svs$qual==-1, NA, svs$qual)
   if(all(is.na(svs$qual))){
@@ -74,16 +80,33 @@ readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, keep.ref.seq=FALSE, sample.n
     svs$qual = as.numeric(rep(NA, length(svs$qual)))
   }
 
-  ## Eventually convert the additional column extracted
-  if(other.field %in% colnames(svs)){
-    svs[, other.field] = utils::type.convert(svs[, other.field], as.is=TRUE)
+  ## NA size for BND and TRA
+  if(length((bnd.idx = which(svs$type %in% c('BND', 'TRA'))))>0){
+    svs$size[bnd.idx] = NA
+    svs$end2 = NA
+    svs$end2[bnd.idx] = svs$end[bnd.idx]
+    svs$end[bnd.idx] = svs$start[bnd.idx]
+    ## check if follows VCF specs where ALT=N[X:P[
+    bnd.alt = grep('.*[\\]\\[].*:.*[\\]\\[].*', svs$alt[bnd.idx], perl=TRUE)
+    if(length(bnd.alt)>0){
+      if(!('CHR2' %in% colnames(svs))){
+        svs$CHR2 = NA
+      }
+      svs$CHR2[bnd.idx[bnd.alt]] = gsub('.*[\\]\\[](.*):.*[\\]\\[].*', '\\1',
+                                        svs$alt[bnd.idx[bnd.alt]], perl=TRUE)
+      svs$end2[bnd.idx[bnd.alt]] = gsub('.*[\\]\\[].*:(.*)[\\]\\[].*', '\\1',
+                                        svs$alt[bnd.idx[bnd.alt]], perl=TRUE)
+    }
+    for(ofield in intersect(colnames(svs), c('CHR2', 'end2'))){
+      svs[, ofield] = utils::type.convert(svs[, ofield], as.is=TRUE)
+    }
   }
-
+  
   ## Remove ids if we don't want them
   if(!keep.ids){
     svs$svid = NULL
   }
-  
+
   ## Convert to GRanges or VCF object
   if(out.fmt[1] == 'gr'){
     if(nrow(svs)==0){
@@ -124,17 +147,18 @@ readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, keep.ref.seq=FALSE, sample.n
                              SVTYPE=svs$type)
       
       ## other field
-      if(other.field != '' & other.field %in% colnames(svs)){
-        info.n = rownames(info.h)
-        info.h = rbind(info.h,
-                       x=S4Vectors::DataFrame(Number='1',
-                                              Type=ifelse(is.numeric(svs[,other.field]), 'Float', 'String'),
-                                              Description=''))
-        rownames(info.h) = c(info.n, other.field)
-        info.df = cbind(info.df, S4Vectors::DataFrame(OTHER=svs[,other.field]))
-        colnames(info.df)[ncol(info.df)] = other.field
-      }
-      
+      for(ofield in c(other.field, 'CHR2', 'end2')){
+        if(ofield != '' & ofield %in% colnames(svs)){
+          info.n = rownames(info.h)
+          info.h = rbind(info.h,
+                         x=S4Vectors::DataFrame(Number='1',
+                                                Type=ifelse(is.numeric(svs[,ofield]), 'Float', 'String'),
+                                                Description=''))
+          rownames(info.h) = c(info.n, ofield)
+          info.df = cbind(info.df, S4Vectors::DataFrame(OTHER=svs[,ofield]))
+          colnames(info.df)[ncol(info.df)] = ofield
+        }
+      }      
       VariantAnnotation::info(VariantAnnotation::header(vcf.o)) = info.h
       VariantAnnotation::info(vcf.o) = info.df
       names(vcf.o) = svs$svid

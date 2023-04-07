@@ -8,12 +8,12 @@
 ##' @param pt.size the point (and line) sizes. Default is 2.
 ##' @param lab.size the label size. Default is 4
 ##' @param maxgap the maximum gap allowed when filtering variants in regions. Default is 20.
-##' @param scale.legend the size of the scale legend at the bottom. 0 to switch off. Default is 50 bp
+##' @param scale.legend the size of the scale legend at the bottom. 0 to switch off. Default is 'auto'.
 ##' @param show.svids should the SV ids be shown on the y-axis. Default is TRUE
 ##' @return a ggplot2 object
 ##' @author Jean Monlong
 ##' @export
-plot_ranges <- function(gr.l, region.gr=NULL, pt.size=2, lab.size=4, maxgap=20, scale.legend=50, show.svids=TRUE){
+plot_ranges <- function(gr.l, region.gr=NULL, pt.size=2, lab.size=4, maxgap=20, scale.legend='auto', show.svids=TRUE){
 
   ## add number as names if missing
   if(is.null(names(gr.l))){
@@ -44,7 +44,7 @@ plot_ranges <- function(gr.l, region.gr=NULL, pt.size=2, lab.size=4, maxgap=20, 
   df = do.call(rbind, df)
 
   ## order by start position and add IDs
-  df = df[order(df$set, df$ac, df$size, df$start),]
+  df = df[order(df$set, df$ac, df$start, df$size),]
   if(all(is.na(df$svid))){
     df$svid = 1:nrow(df)
   } else {
@@ -53,9 +53,9 @@ plot_ranges <- function(gr.l, region.gr=NULL, pt.size=2, lab.size=4, maxgap=20, 
 
   ## label: "SIZE AC" or just "SIZE"
   if(any(!is.na(df$ac))){
-    df$label = paste0(df$size, 'bp ', df$ac) 
+    df$label = paste0(format(df$size, big.mark=','), 'bp ', df$ac) 
   } else{
-    df$label = paste0(df$size, 'bp')
+    df$label = paste0(format(df$size, big.mark=','), 'bp')
   }
 
   ## graph
@@ -76,10 +76,20 @@ plot_ranges <- function(gr.l, region.gr=NULL, pt.size=2, lab.size=4, maxgap=20, 
     ggplot2::theme_bw() +
     ggplot2::scale_x_continuous(lim=c(min.pos-pad.pos, max.pos+pad.pos)) +
     ## ggplot2::scale_y_continuous(lim=c(0, max(df$svid)+1)) + 
-    ggplot2::xlab('position (bp)') + ggplot2::ylab('variant')
+    ggplot2::xlab(paste('position on', df$seqnames[1], '(bp)')) +
+    ggplot2::ylab('variant')
 
   if(!show.svids){
     ggp = ggp + ggplot2::theme(axis.text.y=ggplot2::element_blank())
+  }
+
+  if(scale.legend=='auto'){
+    scale.legend=50
+    for(xx in c(100, 1e3, 1e4, 1e5, 1e6)){
+      if(max.pos-min.pos > xx*10){
+        scale.legend = xx
+      }
+    }
   }
   
   if(scale.legend>0){

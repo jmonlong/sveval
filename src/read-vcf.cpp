@@ -30,27 +30,36 @@ using namespace Rcpp;
 //' reverse complement of ALT. If >80\% similar (and REF and ALT>10bp), variant is classified as INV.
 //' @param keep_nocalls should we keep variants/alleles with missing genotypes (e.g. "./.").
 //' Default is FALSE
-//' @param other_field name of another field from INFO to extract.
+//' @param other_fields name of another field from INFO to extract.
 //' @return data.frame with variant and genotype information
 //' @author Jean Monlong
 //' @keywords internal
 // [[Rcpp::export]]
 DataFrame read_vcf_cpp(std::string filename, bool use_gz, std::string sample_name="", int min_sv_size=10,
                        bool shorten_ref=true, bool shorten_alt=true, std::string gq_field="GQ",
-                       bool check_inv=false, bool keep_nocalls=false, std::string other_field=""){
+                       bool check_inv=false, bool keep_nocalls=false, CharacterVector other_fields=CharacterVector::create()){
   // info to extract. will be the columns of the output dataframe
-  std::vector<std::string> seqnames;           // chromosome name
-  std::vector<int> starts;                     // start position
-  std::vector<int> ends;                       // end position
-  std::vector<std::string> svids;              // variant ID
-  std::vector<std::string> refs;               // reference allele sequence
-  std::vector<std::string> alts;               // alternate allele sequence
-  std::vector<std::string> svtypes;            // SV type (INS, DEL, INV, ...)
-  std::vector<int> sizes;                      // SV size (absolute value)
-  std::vector<int> acs;                        // allele counts (for a diploid genome: 1=heterozygous, 2=homozygous)
-  std::vector<double> quals;                   // genotype quality
-  std::vector<std::string> others;             // other column to extract
+  std::vector<std::string> seqnames;                      // chromosome name
+  std::vector<int> starts;                                // start position
+  std::vector<int> ends;                                  // end position
+  std::vector<std::string> svids;                         // variant ID
+  std::vector<std::string> filters;                       // FILTER values
+  std::vector<std::string> refs;                          // reference allele sequence
+  std::vector<std::string> alts;                          // alternate allele sequence
+  std::vector<std::string> svtypes;                       // SV type (INS, DEL, INV, ...)
+  std::vector<int> sizes;                                 // SV size (absolute value)
+  std::vector<int> acs;                                   // allele counts (for a diploid genome: 1=heterozygous, 2=homozygous)
+  std::vector<double> quals;                              // genotype quality
+
+  // init object for potential other fields to save
   bool found_other=false; // was the additional found, aka should it be added to the output
+  std::map<std::string,std::vector<std::string>> others;  // other columns to extract
+  for(CharacterVector::iterator it=other_fields.begin(); it != other_fields.end(); it++){
+    String s = *it; // then use s.get_cstring()
+    std::vector<std::string> newcol;
+    others[s] = newcol;
+  }
+  
   // read file line by line
   std::ifstream in_file;
   igzstream in_file_gz;
@@ -106,13 +115,6 @@ DataFrame read_vcf_cpp(std::string filename, bool use_gz, std::string sample_nam
       } else {
         infos[infos_v[ii]] = "";
       }
-    }
-
-    // extract additional info field if needed
-    std::string other = "";
-    if((other_field != "") & (infos.count(other_field) > 0)){
-      other = infos[other_field];
-      found_other = true;
     }
     
     // define START coordinate
@@ -278,8 +280,8 @@ DataFrame read_vcf_cpp(std::string filename, bool use_gz, std::string sample_nam
           }
         }
       }
-      // skip if too small
-      if(size_al < min_sv_size){
+      // skip if too small but keep NBD and translocations
+      if((size_al < min_sv_size) & (svtype_al != "BND") & (svtype_al != "TRA")){
         continue;
       }
       // skip if not called, e.g. './.'
@@ -297,17 +299,28 @@ DataFrame read_vcf_cpp(std::string filename, bool use_gz, std::string sample_nam
           end_rec_al = start_rec + size_al;
         }
       }
-      
+
+      // extract additional info field if needed
+      for(CharacterVector::iterator it=other_fields.begin(); it != other_fields.end(); it++){
+	String other_field = *it;
+	if(infos.count(other_field) > 0){
+	  others[other_field].push_back(infos[other_field]);
+	  found_other = true;
+	} else {
+	  others[other_field].push_back("");
+	}
+      }
+
       // update vectors
       seqnames.push_back(line_v[0]);
       starts.push_back(start_rec);
       ends.push_back(end_rec_al);
       svids.push_back(line_v[2]);
+      filters.push_back(line_v[6]);
       acs.push_back(al_count);
       sizes.push_back(size_al);
       svtypes.push_back(svtype_al);
       quals.push_back(qual);
-      others.push_back(other);
       // shorten REF is necessary
       std::string ref_seq = line_v[3];
       if(shorten_ref & (ref_seq.length() > 10)){
@@ -335,34 +348,26 @@ DataFrame read_vcf_cpp(std::string filename, bool use_gz, std::string sample_nam
   in_file_gz.close();
   
   DataFrame res;
-  if(found_other){
-    res = DataFrame::create(
-                           _["seqnames"] = seqnames,
-                           _["start"] = starts,
-                           _["end"] = ends,
-                           _["svid"] = svids,
-                           _["type"] = svtypes,
-                           _["size"] = sizes,
-                           _["ac"] = acs,
-                           _["ref"] = refs,
-                           _["alt"] = alts,
-                           _["qual"] = quals,
-                           _[other_field] = others,
-                           _["stringsAsFactors"] = false);
-  } else {
-    res = DataFrame::create(
-                           _["seqnames"] = seqnames,
-                           _["start"] = starts,
-                           _["end"] = ends,
-                           _["svid"] = svids,
-                           _["type"] = svtypes,
-                           _["size"] = sizes,
-                           _["ac"] = acs,
-                           _["ref"] = refs,
-                           _["alt"] = alts,
-                           _["qual"] = quals,
-                           _["stringsAsFactors"] = false);
+  res = DataFrame::create(
+			  _["seqnames"] = seqnames,
+			  _["start"] = starts,
+			  _["end"] = ends,
+			  _["svid"] = svids,
+			  _["filter"] = filters,
+			  _["type"] = svtypes,
+			  _["size"] = sizes,
+			  _["ac"] = acs,
+			  _["ref"] = refs,
+			  _["alt"] = alts,
+			  _["qual"] = quals,
+			  _["stringsAsFactors"] = false);
 
+  if(found_other){
+    for(CharacterVector::iterator it=other_fields.begin(); it != other_fields.end(); it++){
+      String s = *it; // then use s.get_cstring()
+      res.push_back(others[s], s);
+    }
   }
+
   return res;
 }

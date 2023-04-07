@@ -31,7 +31,7 @@ select the first sample. If NULL, don't select particular sample.}
 \item{qual.field}{field to use as quality. Can be in INFO (e.g. default GQ) or
 FORMAT (e.g. DP). If not found in INFO/FORMAT, QUAL field is used.}
 
-\item{other.field}{name of another field to extract from the INFO (e.g. AF). Default is NULL}
+\item{other.field}{name of other fields to extract from the INFO (e.g. AF). Default is NULL}
 
 \item{check.inv}{should the sequence of MNV be compared to identify inversions.}
 

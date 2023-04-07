@@ -24,12 +24,14 @@ test_that("VCF gzipped", {
   vcf = readSVvcf('../delly.vcf.gz')
   expect_gt(length(vcf), 0)
   expect_gt(sum(vcf$qual), 0)
+  
 })
 
 test_that("VCF bgzipped", {
   vcf = readSVvcf('../delly.vcf.bgz')
   expect_gt(length(vcf), 0)
   expect_gt(sum(vcf$qual), 0)
+  expect_gt(sum(vcf$filter == 'PASS'), 0)
 })
 
 test_that("VCF with no QUAL but GQ field", {
@@ -65,9 +67,17 @@ test_that("ALT/REF VCF with data.frame output", {
   expect_gt(length(vcf), 0)
 })
 
-test_that("VCF with symbolic SVs with data.frame output", {
-  vcf = readSVvcf('../truth.symb.vcf', out.fmt='df')
+test_that("BND and TRA types are retrieved", {
+  vcf = readSVvcf('../truth.symb.vcf', out.fmt='df', other.field='CHR2')
   expect_gt(length(vcf), 0)
+  expect_true(any(vcf$type=='BND'))
+  expect_true(any(vcf$type=='TRA'))
+  expect_true(any(!is.na(vcf$CHR2)))
+  expect_true(any(!is.na(vcf$end2)))
 })
 
+test_that("Saving specified INFO field", {
+  vcf = readSVvcf('../truth.symb.vcf', out.fmt='df', other.field=c('AC','FREQ'))
+  expect_gt(length(vcf), 0)
+})
 

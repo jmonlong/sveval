@@ -12,9 +12,10 @@ test_that("ALT/REF inputs and output in file", {
 
 test_that("Input with symbolic VCF representation", {
   simprep.gr = GRanges('x', IRanges(10, width=100))
-  res = svevalOl('../calls.s0.vcf', '../truth.symb.vcf')
+  res = svevalOl('../calls.s0.vcf', '../truth.symb.vcf', simprep=simprep.gr)
   expect_gt(nrow(res$eval), 0)
   expect_gt(sum(res$eval$TP>0), 2)
+  expect_gt(sum(res$eval$TP.baseline>0), 2)
   expect_gt(sum(res$eval$TP.baseline>0), 2)
 })
 

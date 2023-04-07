@@ -17,7 +17,8 @@ freqAnnotate(
   freq.field = "AF",
   out.freq.field = "AFMAX",
   method = c("reciprocal", "coverage", "bipartite"),
-  nb.cores = 1
+  nb.cores = 1,
+  log.level = c("CRITICAL", "WARNING", "INFO")
 )
 }
 \arguments{
@@ -46,6 +47,8 @@ freqAnnotate(
 \item{method}{the method to annotate the overlap. Recommended is 'reciprocal' (default). See details.}
 
 \item{nb.cores}{number of processors to use. Default is 1.}
+
+\item{log.level}{the level of information in the log. Default is "CRITICAL" (basically no log).}
 }
 \value{
 a GRanges object.
