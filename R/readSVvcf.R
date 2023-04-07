@@ -66,9 +66,9 @@ readSVvcf <- function(vcf.file, keep.ins.seq=FALSE, keep.ref.seq=FALSE, sample.n
                      keep_nocalls=nocalls, other_fields=other.field,
                      min_sv_size=min.sv.size)
 
-  ## Convert factor columns
+  ## Convert factor columns or "other" specified fields
   for(ofield in colnames(svs)){
-    if(is.factor(svs[, ofield])){
+    if(is.factor(svs[, ofield]) | ofield %in% other.field){
       svs[, ofield] = utils::type.convert(svs[, ofield], as.is=TRUE)
     }
   }

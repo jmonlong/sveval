@@ -4,7 +4,7 @@
 #' Package: \tab sveval\cr
 #' Type: \tab Package\cr
 #' Version: \tab 2.2.0\cr
-#' Date: \tab 2019-09-16\cr
+#' Date: \tab 2023-04-07\cr
 #' License: \tab MIT\cr
 #' }
 #' @docType package

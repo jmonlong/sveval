@@ -10,7 +10,7 @@ plot_ranges(
   pt.size = 2,
   lab.size = 4,
   maxgap = 20,
-  scale.legend = 50,
+  scale.legend = "auto",
   show.svids = TRUE
 )
 }
@@ -25,7 +25,7 @@ plot_ranges(
 
 \item{maxgap}{the maximum gap allowed when filtering variants in regions. Default is 20.}
 
-\item{scale.legend}{the size of the scale legend at the bottom. 0 to switch off. Default is 50 bp}
+\item{scale.legend}{the size of the scale legend at the bottom. 0 to switch off. Default is 'auto'.}
 
 \item{show.svids}{should the SV ids be shown on the y-axis. Default is TRUE}
 }
