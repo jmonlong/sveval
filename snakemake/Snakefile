@@ -55,8 +55,8 @@ def evalinputs(wildcards):
     ins['vcf'] = 'vcf/{}-{}-{}.norm.vcf.gz'.format(wildcards.exp, wildcards.method,
                                                    wildcards.sample)
     ins['truth'] = 'vcf/{}-truth-baseline.norm.vcf.gz'.format(wildcards.exp)
-    if wildcards.region == 'nonrep':
-        ins['bed'] = config['nonrep_bed']
+    if wildcards.region in config:
+        ins['bed'] = config[wildcards.region]        
     return ins
 
 # run sveval on inputs. Creates a R object in 'rdata' folder
@@ -66,8 +66,8 @@ rule sveval:
     output:
         "rdata/sveval-{exp}-{method}-{sample}-{region}-{eval}.RData"
     run:
-        BED = "NA"
-        if wildcards.region != 'all':
+        BED = 'NA'
+        if 'bed' in input:
             BED = input.bed
         GENO = wildcards.eval == 'geno'
         SAMP = wildcards.sample

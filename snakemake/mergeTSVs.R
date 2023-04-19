@@ -48,7 +48,15 @@ library(dplyr)
 library(RColorBrewer)
 
 ## Relabels columns and set orders
-relabel <- function(df, nonrep=c('nonrep', 'hc')){
+##   reg.labels contains labels to associate with region names,
+##     also defining the order to show in the graphs
+relabel <- function(df, reg.labels=c(all='all',
+                                     rep='repeat',
+                                     nonrep='non-repeat',
+                                     hc='high-confidence',
+                                     called='called in SMRT-SV v2',
+                                     nocalls='not called in SMRT-SV v2',
+                                     conf='high-confidence')){
   if('method' %in% colnames(df)){
     df$method = factor(df$method, levels=unique(df$method))
   }
@@ -58,15 +66,7 @@ relabel <- function(df, nonrep=c('nonrep', 'hc')){
   }
   ## Region
   if('region' %in% colnames(df)){
-    reg.l = c('all','repeat', 'non-repeat', 'called in SMRT-SV v2',
-              'not called in SMRT-SV v2')
-    if(nonrep[1] == 'nonrep'){
-      reg.l[3] = 'non-repeat'
-    } else if(nonrep[1] == 'hc'){
-      reg.l[3] = 'high-confidence'
-    }
-    df$region = factor(df$region, levels=c('all','rep', 'nonrep', 'called', 'nocalls'),
-                       labels=reg.l)
+    df$region = factor(df$region, levels=names(reg.labels), labels=reg.labels)
   }
   ## Evaluation metric
   if('eval' %in% colnames(df)){
@@ -96,12 +96,12 @@ if(!any(pr.df$type=='INV' & !is.na(pr.df$F1))) {
 }
 
 ## Sum the TP/FP/FN across samples and recompute precision/recall/F1
-pr.df = pr.df %>% group_by(exp, exp, type, qual, method, region, eval) %>%
+pr.df = pr.df %>% group_by(exp, type, qual, method, region, eval) %>%
   select(TP, TP.baseline, FN, FP) %>% summarize_all(sum)
 pr.df = prf(pr.df)
 
 ## est F1 for each method. for the bar plots
-eval.f1 = pr.df %>% group_by(exp, exp, method, type, region, eval) %>%
+eval.f1 = pr.df %>% group_by(exp, method, type, region, eval) %>%
   arrange(desc(F1)) %>% do(head(., 1))
 
 ggp = list()

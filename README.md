@@ -151,7 +151,12 @@ freqAnnotate('calls.vcf', 'gnomad.vcf', out.vcf='calls.withFreq.vcf')
 
 ### Snakemake pipeline
 
-To streamline the process of evaluating multiple methods/VCFs, we use [Snakemake](https://snakemake.readthedocs.io/en/stable/index.html): more information in the [`snakemake` folder](snakemake).
+In practice, VCF should be normalized beforehand (e.g. using bcftools), and we might want to evaluate multiple methods, across different regions set (e.g. whole-genome, confident regions, non-repeat regions), and for both calling and genotyping performance. 
+To streamline this process, we use a [Snakemake](https://snakemake.readthedocs.io/en/stable/index.html) pipeline.
+This pipeline will perform the normalization, run all the evaluation, and summarize the results in TSV files and graphs.
+We show an example on how to evaluate calls against the GIAB SV truthset.
+
+See the [`snakemake` folder](snakemake).
 
 ## Methods
 

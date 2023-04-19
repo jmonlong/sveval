@@ -7,7 +7,7 @@
 ## 5: regions of interest (NA means whole genome)
 ## 6: genotype evaluation?
 ## 7: output Rdata file
-## 8: minimum coverage to match variants (optional, default:0.5)
+## 8: minimum overlap to match variants (optional, default:0.5)
 args = commandArgs(TRUE)
 
 ## If specified, the minimum coverage/reciprocal overlap to match variants
@@ -26,7 +26,7 @@ if(args[5] != 'NA'){
 ## evaluation
 eval.o = svevalOl(args[1], args[2], sample.name=args[3], check.inv=as.logical(args[4]),
                   max.ins.dist=100,
-                  bed.regions=bed, min.cov=as.numeric(args[8]), 
+                  bed.regions=bed, min.ol=as.numeric(args[8]), 
                   geno.eval=as.logical(args[6]), stitch.hets=as.logical(args[6]),
                   merge.hets=as.logical(args[6]), min.size=50)
 

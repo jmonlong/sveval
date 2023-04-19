@@ -1,12 +1,12 @@
 # reference files
-ref_fa: "hg38.fa"
-nonrep: "bed/hg38_non_repeats.bed"
+ref_fa: "hs37d5.fa"
+conf: "bed/conf.bed"
 # vcfs to analyze
-exp: 'hgsvc'
-samples: 'HG00514 NA19240'
-methods: 'vg bayestyper'
+exp: 'giab'
+samples: 'HG002'
+methods: 'vg'
 # output PDF with all the graphs
-out_pdf: 'hgsvc-vg-bayestyper.pdf'
+out_pdf: 'giab-vg-HG002.pdf'
 # which type of evaluation?
 #   - 'call' is SV presence/absence
 #   - 'geno' compares actual genotypes
@@ -14,7 +14,7 @@ eval: 'call geno'
 # which SVs to consider?
 #   - 'all' means all genome (i.e. no filtering)
 #   - 'nonrep' means only SVs overlapping non-repeat regions (as defined by *nonrep_bed* above).
-regions: 'all nonrep'
+regions: 'all conf'
 # should we look for inversions by comparing the sequence of the REF and ALT alleles?
 check_inv: False
 # minimum coverage/reciprocal overlap to match variants from the call-set and truth-set

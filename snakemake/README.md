@@ -1,8 +1,10 @@
 To streamline the process of evaluating multiple methods/VCFs, we use [Snakemake](https://snakemake.readthedocs.io/en/stable/index.html).
-The *sveval* docker image that we provide through [DockerHub](https://hub.docker.com/r/jmonlong/sveval/) contains all dependencies necessary to run the snakemake workflow (R+sveval, snakemake, bcftools, bgzip/tabix).
+The *sveval* docker image that we provide in [quay.io/jmonlong/sveval](https://quay.io/repository/jmonlong/sveval) contains all dependencies necessary to run the snakemake workflow (R+sveval, snakemake, bcftools, bgzip/tabix).
+For example, use `quay.io/jmonlong/sveval:v2.2.0` (see [example below](#start-the-docker-container).
 
 It's a snakemake workflow so it should be as simple as naming the input correctly and running the `snakemake` command.
-The following instructions explain how to name the input file and set up the `config.yaml` file.
+
+The following instructions explain how to name the input files and set up the `config.yaml` file.
 
 The VCFs to analyze are placed in a `vcf` folder. 
 They must be named following the template: `{exp}-{method}-{sample}.vcf.gz` where:
@@ -61,3 +63,72 @@ In addition to [Snakemake](https://snakemake.readthedocs.io/en/stable/index.html
     - the **ggplot2** package
     - the **dplyr** package
 - [bcftools](https://samtools.github.io/bcftools/bcftools.html)
+
+As mentioned above, a docker container with all the dependencies is available at [quay.io/jmonlong/sveval](https://quay.io/repository/jmonlong/sveval) (e.g. `quay.io/jmonlong/sveval:v2.2.0`). 
+See [example below](#start-the-docker-container).
+
+
+### Example: evaluating SVs on GRCh37 agains the GIAB SV truthset
+
+Here are the commands one could use to evaluate a VCF file against the GIAB truthset from scratch.
+
+#### Clone the repo and move to the snakemake pipeline directory
+
+```sh
+git clone https://github.com/jmonlong/sveval.git
+cd sveval/snakemake
+```
+
+#### Download (or copy) the reference FASTA
+
+```sh
+wget -O hs37d5.fa.gz ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/technical/reference/phase2_reference_assembly_sequence/hs37d5.fa.gz
+gunzip hs37d5.fa.gz
+```
+
+#### Place VCFs in a 'vcf' directory
+
+```sh
+mkdir vcf
+```
+
+Download VCF with the truthset from GIAB:
+
+```sh
+wget -O vcf/giab-truth-baseline.vcf.gz ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/AshkenazimTrio/analysis/NIST_SVs_Integration_v0.6/HG002_SVs_Tier1_v0.6.vcf.gz
+```
+
+Place the VCFs with the calls in the vcf folder.
+In this example, SV calls using vg on HG002 and GRCh37:
+
+```sh
+wget -O vcf/giab-vg-HG002.vcf.gz https://s3-us-west-2.amazonaws.com/human-pangenomics/publications/vgsv2019/vcfs/giab5-vg-HG002.vcf.gz
+```
+
+#### Download the BED file defining confident regions for this truth set
+
+```sh
+mkdir bed
+wget -O bed/conf.bed ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/AshkenazimTrio/analysis/NIST_SVs_Integration_v0.6/HG002_SVs_Tier1_v0.6.bed
+```
+
+#### Edit config.yaml to match the files/experiment
+
+In this example, we evaluate only the 'vg' method, on the 'HG002' sample, and for the 'giab' experiment/truthset.
+We also have a different reference fasta, regions BED
+See [`config.example.yaml`](config.example.yaml).
+
+#### Start the docker container
+
+- `-v`/`-w` to bind the current directory to a /app working directory in the container
+- `-u` to make sure files are created with permissions matching the user (and not created by 'root') 
+
+```sh
+docker run -it --rm -v `pwd`:/app -w /app -u `id -u $USER` quay.io/jmonlong/sveval:v2.2.0
+```
+
+#### Run the snakemake pipeline within the container
+
+```sh
+snakemake --configfile config.example.yaml --cores 4
+```
