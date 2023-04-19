@@ -1,6 +1,6 @@
 To streamline the process of evaluating multiple methods/VCFs, we use [Snakemake](https://snakemake.readthedocs.io/en/stable/index.html).
 The *sveval* docker image that we provide in [quay.io/jmonlong/sveval](https://quay.io/repository/jmonlong/sveval) contains all dependencies necessary to run the snakemake workflow (R+sveval, snakemake, bcftools, bgzip/tabix).
-For example, use `quay.io/jmonlong/sveval:v2.2.0` (see [example below](#start-the-docker-container).
+For example, use `quay.io/jmonlong/sveval:v2.2.0` (see [example below](#start-the-docker-container)).
 
 It's a snakemake workflow so it should be as simple as naming the input correctly and running the `snakemake` command.
 
