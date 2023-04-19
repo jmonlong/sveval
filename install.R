@@ -1,9 +1,11 @@
+install.packages('BiocManager')
+
 pkgs = c('VariantAnnotation',
          'GenomicRanges',
-         'magrittr',
          'dplyr',
-         'devtools',
-         'Biostrings')
+         'remotes',
+         'ggplot2',
+         'tidyr')
 
 ap.db <- available.packages(contrib.url(BiocManager::repositories()))
 ap <- rownames(ap.db)
