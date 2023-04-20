@@ -1,5 +1,8 @@
 ## Reference Fasta file
 REF = config['ref_fa']
+## if file ends with .gz, remove the suffix (which will trigger unzipping the fasta)
+if REF.endswith('.gz'):
+    REF = REF[:-3]
 
 #### Enumerate all the output TSV files
 EVALOUT = ['prcurve', 'persize']
@@ -33,6 +36,12 @@ rule clean:
     shell:
         'rm -rf {params.tsv} {params.rdata}'
 
+# unzip reference fasta
+rule unzip_reference:
+    input: '{ref}.fa{sta}.gz'
+    output: '{ref}.fa{sta, (sta)?}'
+    shell: "gunzip -c {input} > {output}"
+
 # bgzip a VCF file
 rule bgzip:
     input: '{vcf}.vcf'
@@ -44,10 +53,11 @@ rule bgzip:
 rule vcfnorm:
     input:
         vcf="vcf/{exp}-{method}-{sample}.vcf.gz",
+        ref=REF
     output:
         "vcf/{exp}-{method}-{sample}.norm.vcf.gz"
     shell:
-        'bcftools view {input.vcf} --exclude \'GT="0" || GT="." || GT="1"\' | bcftools norm - --fasta-ref {REF} --multiallelic -both | bcftools norm - --fasta-ref {REF} --multiallelic +both | bgzip > {output}'
+        'bcftools view {input.vcf} --exclude \'GT="0" || GT="." || GT="1"\' | bcftools norm - --fasta-ref {input.ref} --multiallelic -both | bcftools norm - --fasta-ref {input.ref} --multiallelic +both | bgzip > {output}'
 
 # function to eventually define more complex file inputs (e.g. to analyze different datasets with different reference versions)
 def evalinputs(wildcards):
