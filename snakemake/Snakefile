@@ -1,7 +1,5 @@
-## Reference Fasta file
+## prepare arguments based on the config file
 REF = config['ref_fa']
-
-#### Enumerate all the output TSV files
 EVALOUT = ['prcurve', 'persize']
 REGS = config['regions'].split()
 EVAL = config['eval'].split()
@@ -37,6 +35,8 @@ rule clean:
 rule bgzip:
     input: '{vcf}.vcf'
     output: '{vcf}.vcf.gz'
+    envmodules:
+        config['envm']['bgzip']
     shell:
         'bgzip -c {input} > {output}'
 
@@ -46,8 +46,12 @@ rule vcfnorm:
         vcf="vcf/{exp}-{method}-{sample}.vcf.gz",
     output:
         "vcf/{exp}-{method}-{sample}.norm.vcf.gz"
+    envmodules:
+        config['envm']['bgzip'], config['envm']['bcftools']
     shell:
-        'bcftools view {input.vcf} --exclude \'GT="0" || GT="." || GT="1"\' | bcftools norm - --fasta-ref {REF} --multiallelic -both | bcftools norm - --fasta-ref {REF} --multiallelic +both | bgzip > {output}'
+        """
+        bcftools view {input.vcf} --exclude \'GT="0" || GT="." || GT="1"\' | bcftools norm - --fasta-ref {REF} --multiallelic -both | bcftools norm - --fasta-ref {REF} --multiallelic +both | bgzip > {output}
+        """
 
 # function to eventually define more complex file inputs (e.g. to analyze different datasets with different reference versions)
 def evalinputs(wildcards):
@@ -65,15 +69,15 @@ rule sveval:
         unpack(evalinputs)
     output:
         "rdata/sveval-{exp}-{method}-{sample}-{region}-{eval}.RData"
-    run:
-        BED = 'NA'
-        if 'bed' in input:
-            BED = input.bed
-        GENO = wildcards.eval == 'geno'
-        SAMP = wildcards.sample
-        if wildcards.sample == 'chmpd':
-            SAMP = 'PSEUDOSET'
-        shell('Rscript sveval.R {input.vcf} {input.truth} {SAMP} {INV} {BED} {GENO} {output} {MIN_COV}')
+    params:
+        bed=lambda wildcards, input: 'NA' if wildcards.region not in config else input['bed']
+    resources:
+        mem_mb=8000,
+        runtime=30
+    envmodules:
+        config['envm']['sveval']
+    shell:
+        'Rscript sveval.R {input.vcf} {input.truth} {wildcards.sample} {INV} {params.bed} {wildcards.eval} {output} {MIN_COV}'
 
 # extract some information and write TSVs in the 'tsv' folder
 rule parseeval:
@@ -82,5 +86,7 @@ rule parseeval:
     output:
         pr="tsv/{exp}-{method}-{sample}-{region}-{eval}-prcurve.tsv",
         ps="tsv/{exp}-{method}-{sample}-{region}-{eval}-persize.tsv"
+    envmodules:
+        config['envm']['sveval']
     shell:
         "Rscript parseeval.R {input} {output}"
