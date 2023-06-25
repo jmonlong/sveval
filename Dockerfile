@@ -58,6 +58,6 @@ RUN apt-get update \
 
 ## Install snakemake
 RUN pip3 install --upgrade pip
-RUN pip3 install --no-cache-dir snakemake==5.8.2
+RUN pip3 install --no-cache-dir snakemake==7.29.0
 
 WORKDIR /home
