@@ -15,6 +15,12 @@ INV = config['check_inv']
 PDF =  config['out_pdf']
 MIN_COV=config['min_cov']
 
+## Simple repeat track?
+if 'simprep_bed' in config:
+    SR_BED = config['simprep_bed']
+else:
+    SR_BED = 'NA'
+
 ## Rules
 rule all:
     input:
@@ -61,13 +67,9 @@ rule vcfnorm:
     envmodules:
         config['envm']['bgzip'], config['envm']['bcftools']
     shell:
-<<<<<<< HEAD
-        'bcftools view {input.vcf} --exclude \'GT="0" || GT="." || GT="1"\' | bcftools norm - --fasta-ref {input.ref} --multiallelic -both | bcftools norm - --fasta-ref {input.ref} --multiallelic +both | bgzip > {output}'
-=======
         """
-        bcftools view {input.vcf} --exclude \'GT="0" || GT="." || GT="1"\' | bcftools norm - --fasta-ref {REF} --multiallelic -both | bcftools norm - --fasta-ref {REF} --multiallelic +both | bgzip > {output}
+        bcftools view {input.vcf} --exclude \'GT="0" || GT="." || GT="1"\' | bcftools norm - --fasta-ref {input.ref} --multiallelic -both | bcftools norm - --fasta-ref {input.ref} --multiallelic +both | bgzip > {output}
         """
->>>>>>> master
 
 # function to eventually define more complex file inputs (e.g. to analyze different datasets with different reference versions)
 def evalinputs(wildcards):
@@ -93,7 +95,7 @@ rule sveval:
     envmodules:
         config['envm']['sveval']
     shell:
-        'Rscript sveval.R {input.vcf} {input.truth} {wildcards.sample} {INV} {params.bed} {wildcards.eval} {output} {MIN_COV}'
+        'Rscript sveval.R {input.vcf} {input.truth} {wildcards.sample} {INV} {params.bed} {SR_BED} {wildcards.eval} {output} {MIN_COV}'
 
 # extract some information and write TSVs in the 'tsv' folder
 rule parseeval:

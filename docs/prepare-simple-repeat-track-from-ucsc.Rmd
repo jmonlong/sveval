@@ -1,0 +1,72 @@
+---
+output:
+  md_document:
+    variant: gfm
+---
+
+```{r include=FALSE}
+knitr::opts_chunk$set(echo=TRUE, message=FALSE, warning=FALSE, fig.width=10, tidy=TRUE)
+```
+
+# Prepare simple repeat track
+
+```{r load}
+library(GenomicRanges)
+library(dplyr)
+```
+
+## Download simple repeat track from the UCSC Genome Browser FTP
+
+This annotation originally came from TRF.
+
+```{r dwl, tidy=FALSE}
+GENOME = 'GRCh38'
+## url of the file on the UCSC Genome Browser repository
+sr.url = NULL
+if(GENOME=='GRCh38'){
+  sr.url = 'https://hgdownload.soe.ucsc.edu/goldenPath/hg38/database/simpleRepeat.txt.gz'
+} else if (GENOME=='GRCh37') {
+  sr.url = 'https://hgdownload.soe.ucsc.edu/goldenPath/hg19/database/simpleRepeat.txt.gz'
+}
+
+if(!file.exists(paste0('simpleRepeat_', GENOME, '.txt.gz'))){
+  download.file(sr.url, paste0('simpleRepeat_', GENOME, '.txt.gz'))
+}
+```
+
+## Read and keep coordinate columns only
+
+```{r read}
+sr = read.table(paste0('simpleRepeat_', GENOME, '.txt.gz'), as.is=TRUE, sep='\t')
+sr = with(sr, GRanges(V2, IRanges(V3, V4)))
+sr
+```
+
+Total of annotated regions: `r round(sum(width(sr)/1e6), 2)`Mbp.
+However, we can see that some annotated regions overlap significantly.
+
+## Reduce overlapping repeats
+
+As shown above in the first annotated regions, the same region might be annotated multiple times. 
+We "merge" them to get larger annotated regions. 
+Larger regions mean that sveval will be able to move SVs more in those regions when attempting to match them.
+
+```{r reduce}
+sr = reduce(sr)
+sr
+```
+
+Total of annotated regions: `r round(sum(width(sr)/1e6), 2)`Mbp.
+
+## Write gzipped bed
+
+Keep only primary sequences (no `_` in the sequence name).
+
+```{r write}
+outbed = gzfile(paste0('simpleRepeat_', GENOME, '.bed.gz'), 'w')
+sr %>% as.data.frame %>% select(seqnames, start, end) %>%
+  filter(!grepl('_', seqnames)) %>%
+  mutate(seqnames=ifelse(GENOME=='hg19', gsub('chr', '', seqnames), seqnames)) %>% 
+  write.table(file=outbed, col.names=FALSE, quote=FALSE, row.names=FALSE, sep='\t')
+close(outbed)
+```

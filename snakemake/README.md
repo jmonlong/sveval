@@ -45,7 +45,23 @@ The path to the reference file must be specified using the config parameter *ref
 We usually evaluate the SVs both across the whole-genome and in non-repeat regions only.
 The non-repeat regions are defined in a BED file whose path must be specified in the config parameter *nonrep_bed* (see [`config.yaml` file](config.yaml)).
 
-For GRCh38 we use this file [hg38_non_repeats.bed.gz](https://github.com/vgteam/sv-genotyping-paper/blob/master/human/sveval/hg38_non_repeats.bed.gz).
+For GRCh38 we use this file: [hg38_non_repeats.bed.gz](https://github.com/vgteam/sv-genotyping-paper/blob/master/human/sveval/hg38_non_repeats.bed.gz).
+
+### Simple repeat track
+
+To help match SVs within simple repeats, we can provide a BED file of the simple repeat annotation.
+sveval will allow more wiggle room, i.e. for a SV to "move" along a simple repeat segment.
+It helps matching similar simple repeat variants that are just positioned differently.
+For example, a similar deletion might be called at the beginning of the annotated repeat but positioned at the end in the truthset.
+And because simple repeats are not perfect and the SVs exactly the same, left-aligning might not handle these cases.
+
+In the config file, the BED file with the simple repeat annotation is specified with the *simprep_bed* parameter (see [`config.yaml` file](config.yaml)).
+Comment that line out to disable this feature (although it is highly recommended to use it).
+
+Any BED file would work, but we've also prepared some for GRCh38 and GRCh37: [../docs/simpleRepeat_GRCh38.bed.gz](../docs/simpleRepeat_GRCh38.bed.gz) and [../docs/simpleRepeat_GRCh37.bed.gz](../docs/simpleRepeat_GRCh37.bed.gz).
+To match the config in [`config.yaml` file](config.yaml)/[`config.example.yaml`](config.example.yaml), those files would be placed in a *bed* folder.
+Of note, they've been prepared with by downloading the TRF annotation from the UCSC Genome Browser and trimming/merging information (see [this notebook](../docs/prepare-simple-repeat-track-from-ucsc.md)).
+
 
 ### Output files
 
@@ -112,10 +128,16 @@ mkdir bed
 wget -O bed/conf.bed ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/AshkenazimTrio/analysis/NIST_SVs_Integration_v0.6/HG002_SVs_Tier1_v0.6.bed
 ```
 
+#### Download the BED file defining simple repeats
+
+```sh
+wget -O bed/simpleRepeat_GRCh37.bed.gz https://raw.githubusercontent.com/jmonlong/sveval/master/docs/simpleRepeat_GRCh37.bed.gz
+```
+
 #### Edit config.yaml to match the files/experiment
 
 In this example, we evaluate only the 'vg' method, on the 'HG002' sample, and for the 'giab' experiment/truthset.
-We also have a different reference fasta, regions BED
+We also have a different reference fasta, regions BED, and simple repeat BED.
 See [`config.example.yaml`](config.example.yaml).
 
 #### Start the docker container

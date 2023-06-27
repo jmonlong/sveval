@@ -17,6 +17,7 @@ It uses:
     1. [Quickstart](#quickstart)
     1. [Genotype evaluation](#genotype-evaluation)
     1. [Evaluation per size or per region](#evaluation-per-size-or-per-region)
+    1. [Wiggle room in simple repeats](#wiggle-room-in-simple-repeats)
     1. [Precision-recall curve comparing multiple methods](#precision-recall-curve-comparing-multiple-methods)
     1. [Frequency annotation](#frequency-annotation)
     1. [Snakemake pipeline](#snakemake-pipeline)
@@ -120,6 +121,19 @@ plot_perregion(eval.o, regs)
 Both functions return a list of ggplot2 graphs.
 If using `plot=FALSE` they will return a data.frame.
 
+### Wiggle room in simple repeats
+
+To help match SVs within simple repeats, we can provide information about annotated simple repeats in the genome.
+sveval will allow more wiggle room, i.e. for a SV to "move" along a simple repeat segment.
+It helps matching similar simple repeat variants that are just positioned differently.
+For example, a similar deletion might be called at the beginning of the annotated repeat but positioned at the end in the truthset.
+And because simple repeats are not perfect and the SVs exactly the same, left-aligning might not handle these cases.
+
+A GRanges object can be provided to `svevalOl` with `simprep=`.
+
+We've prepared BED files for GRCh38 and GRCh37, see [docs](docs) for more details.
+
+
 ### Precision-recall curve comparing multiple methods
 
 ```r
@@ -181,7 +195,8 @@ Similarly, if two heterozygous variants are extremely similar, they can be merge
 
 ## Docker
 
-A docker image of R with this package installed is available [here](https://hub.docker.com/r/jmonlong/sveval/).
+A docker image of R with this package installed is available at [quay.io/jmonlong/sveval](https://quay.io/repository/jmonlong/sveval) (e.g. `quay.io/jmonlong/sveval:v2.2.0`). 
+More information about starting the container and using sveval or the snakemake pipeline at [snakemake/README.md#start-the-docker-container](snakemake/README.md#start-the-docker-container).
 
 ## Interactive exploration of SVs in a variation graph
 

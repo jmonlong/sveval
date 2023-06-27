@@ -1,6 +1,9 @@
 # reference files
 ref_fa: "hs37d5.fa"
+# BED file with a set of region to restrict the evaluation. Multiple allowed but must match names in 'regions' below. 
 conf: "bed/conf.bed"
+## simple repeat annotation (recommended but optional. Comment next line to disable)
+simprep_bed: "bed/simpleRepeat_GRCh37.bed.gz"
 # vcfs to analyze
 exp: 'giab'
 samples: 'HG002'
