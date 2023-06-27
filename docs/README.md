@@ -13,6 +13,4 @@ For example, a similar deletion might be called at the beginning of the annotate
 And because simple repeats are not perfect and the SVs exactly the same, left-aligning might not handle these cases.
 
 We've prepared simple repeats regions for GRCh38 and GRCh37: [simpleRepeat_GRCh38.bed.gz](simpleRepeat_GRCh38.bed.gz) and [simpleRepeat_GRCh37.bed.gz](simpleRepeat_GRCh37.bed.gz).
-Of note, they've been prepared with by downloading the TRF annotation from the UCSC Genome Browser and trimming/merging information (see [this notebook](../docs/prepare-simple-repeat-track-from-ucsc.md)).
-
-See the [*prepare-simple-repeat-track-from-ucsc.md* markdown report](prepare-simple-repeat-track-from-ucsc.md).
+More details on this in [*prepare-simple-repeat-track-from-ucsc.md* markdown report](prepare-simple-repeat-track-from-ucsc.md).
