@@ -60,4 +60,6 @@ RUN apt-get update \
 RUN pip3 install --upgrade pip
 RUN pip3 install --no-cache-dir snakemake==7.29.0
 
+RUN mkdir /.cache; chmod a+rwX /.cache
+
 WORKDIR /home
