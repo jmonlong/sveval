@@ -27,8 +27,8 @@ if(args[5] != 'NA'){
 eval.o = svevalOl(args[1], args[2], sample.name=args[3], check.inv=as.logical(args[4]),
                   max.ins.dist=100,
                   bed.regions=bed, min.ol=as.numeric(args[8]), 
-                  geno.eval=as.logical(args[6]), stitch.hets=as.logical(args[6]),
-                  merge.hets=as.logical(args[6]), min.size=50)
+                  geno.eval=as.logical(args[6]=='geno'), stitch.hets=as.logical(args[6]=='geno'),
+                  merge.hets=as.logical(args[6]=='geno'), min.size=50)
 
 ## save RData object
 save(eval.o, file=args[7])

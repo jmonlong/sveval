@@ -19,3 +19,8 @@ regions: 'all conf'
 check_inv: False
 # minimum coverage/reciprocal overlap to match variants from the call-set and truth-set
 min_cov: 0.5
+# ENV modules
+envm:
+  bgzip: "bioinfo/samtools/1.14"
+  bcftools: "bioinfo/Bcftools/1.17"
+  sveval: "statistics/R/4.3.0"
