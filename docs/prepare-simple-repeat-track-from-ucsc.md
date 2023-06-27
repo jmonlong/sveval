@@ -83,6 +83,14 @@ sr
 
 Total of annotated regions: 152.1Mbp.
 
+## Change sequence names if necessary
+
+``` r
+if (GENOME == "GRCh37") {
+    seqlevels(sr) = gsub("chr", "", seqlevels(sr))
+}
+```
+
 ## Write gzipped bed
 
 Keep only primary sequences (no `_` in the sequence name).
@@ -93,7 +101,6 @@ sr %>%
     as.data.frame %>%
     select(seqnames, start, end) %>%
     filter(!grepl("_", seqnames)) %>%
-    mutate(seqnames = ifelse(GENOME == "hg19", gsub("chr", "", seqnames), seqnames)) %>%
     write.table(file = outbed, col.names = FALSE, quote = FALSE, row.names = FALSE,
         sep = "\t")
 close(outbed)
