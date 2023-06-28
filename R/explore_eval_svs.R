@@ -32,10 +32,20 @@ explore_eval_svs <- function(eval.o, ucsc.genome='hg38'){
                     coord=paste0(.data$chr,':',.data$start,'-',.data$end)) %>%
       dplyr::arrange(.data$chr, .data$start) %>% 
       dplyr::select(.data$coord, .data$type, .data$size) %>%
-      dplyr::mutate(type=factor(.data$type))
+      dplyr::mutate(type=factor(.data$type)) %>%
+      dplyr::sample_frac(1)
   })
   names(svs.dfl) = names(svs.grl)
 
+  ## color palette
+  col.v = c(FP="#e41a1c", FN="#984ea3", TP="#377eb8", TP.baseline="#4daf4a")
+  ## shapes for each SV type
+  shape.v = c(DEL=15, INS=17, DUP=18, INV=16, BND=4)
+  if(!all(names(eval.o$svs) %in% names(shape.v))){
+    shape.v = seq(1, length(eval.o$svs))
+    names(shape.v) = names(eval.o$svs)
+  }
+  
   ## app interface
   ui <- shiny::fluidPage(
                  shiny::titlePanel("Eval output exploration"),
@@ -70,7 +80,8 @@ explore_eval_svs <- function(eval.o, ucsc.genome='hg38'){
         gr = GenomicRanges::GRanges(sv.sel$coord[1])
         ggp = plot_ranges(svs.grl, gr, maxgap=input$flank, pt.size=3, lab.size=6) +
           ggplot2::theme(text=ggplot2::element_text(size=18)) +
-          ggplot2::scale_colour_brewer(palette='Set1')
+          ggplot2::scale_colour_manual(values=col.v) + 
+          ggplot2::scale_shape_manual(values=shape.v)
       }
       return(ggp)
     })
