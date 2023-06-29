@@ -60,6 +60,18 @@ test_that("Ranges in a region in ggplot with SV ids", {
   expect_true(file.remove('temp.pdf'))
 })
 
+test_that("Ranges in a region in ggplot with two runs", {
+  ranges.l = list(
+    calls=readSVvcf('../calls.s0.vcf', keep.ids=TRUE),
+    truth=readSVvcf('../truth.refalt.vcf', keep.ids=TRUE)
+  )
+  reg.gr = ranges.l$calls[10]
+  pdf('temp.pdf')
+  print(plot_ranges(ranges.l, reg.gr, gr.l.2=ranges.l, run.names=c('a','b')))
+  dev.off()
+  expect_true(file.remove('temp.pdf'))
+})
+
 test_that("Subsect evaluation results by region", {
   bed = data.frame(chr='x', start=c(1e6), end=c(1.49e6))
   reg = GenomicRanges::makeGRangesFromDataFrame(bed)

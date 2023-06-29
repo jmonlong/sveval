@@ -11,11 +11,13 @@ plot_ranges(
   lab.size = 4,
   maxgap = 20,
   scale.legend = "auto",
-  show.svids = TRUE
+  show.svids = TRUE,
+  gr.l.2 = NULL,
+  run.names = c("run1", "run2")
 )
 }
 \arguments{
-\item{gr.l}{a list of GRanges. If named, the names are used to name the graph's panel.}
+\item{gr.l}{a list of GRanges. If named, the names are used as colors in the graph.}
 
 \item{region.gr}{the region of interest. If NULL (default), all variants are displayed.}
 
@@ -28,6 +30,10 @@ plot_ranges(
 \item{scale.legend}{the size of the scale legend at the bottom. 0 to switch off. Default is 'auto'.}
 
 \item{show.svids}{should the SV ids be shown on the y-axis. Default is TRUE}
+
+\item{gr.l.2}{(Optional) a second list of GRanges, like gr.l but from another run for example. If provided the graph will show a second panel for this run (change names with \code{run.names=}.}
+
+\item{run.names}{names to use for the panels when a second input, \code{gr.l.2}, is provided. Vector of two characters.}
 }
 \value{
 a ggplot2 object

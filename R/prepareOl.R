@@ -24,6 +24,11 @@ prepareOl <- function(query, subject, min.rol=.1, max.ins.dist=1,
                       range.seq.comp=FALSE,
                       ins.seq.comp=FALSE, nb.cores=1, by.gt=FALSE){
 
+  ## no overlap possible for empty inputs
+  if(length(query==0) | length(subject)==0){
+    return(NULL)
+  }
+  
   svtypes = intersect(unique(query$type), unique(subject$type))
 
   ## if no allele count info, assume all SVs should be considered together
@@ -48,7 +53,7 @@ prepareOl <- function(query, subject, min.rol=.1, max.ins.dist=1,
   }
   logging::loginfo(paste('Preparing overlaps. Genotypes: ', gts))
 
-  ## prepare overlas separately for SV types and genotypes
+  ## prepare overlaps separately for SV types and genotypes
   ## pair SV type x genotype (to help potentially parallelize)
   svtypes.gts = lapply(svtypes, function(svtype){
     res = lapply(gts, function(gt){
