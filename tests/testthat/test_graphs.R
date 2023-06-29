@@ -72,6 +72,35 @@ test_that("Ranges in a region in ggplot with two runs", {
   expect_true(file.remove('temp.pdf'))
 })
 
+test_that("Ranges in a region in ggplot with two runs but second run has no calls", {
+  ranges.l = list(
+    calls=readSVvcf('../calls.s0.vcf', keep.ids=TRUE),
+    truth=readSVvcf('../truth.refalt.vcf', keep.ids=TRUE)
+  )
+  reg.gr = ranges.l$calls[10]
+  ranges.l.2 = ranges.l
+  ranges.l.2$calls = ranges.l.2$calls[1]
+  ranges.l.2$truth = ranges.l.2$truth[1]
+  pdf('temp.pdf')
+  print(plot_ranges(ranges.l, reg.gr, gr.l.2=ranges.l.2, run.names=c('a','b')))
+  dev.off()
+  expect_true(file.remove('temp.pdf'))
+})
+
+test_that("Warning if no variants to plot", {
+  ranges.l = list(
+    calls=readSVvcf('../calls.s0.vcf', keep.ids=TRUE),
+    truth=readSVvcf('../truth.refalt.vcf', keep.ids=TRUE)
+  )
+  reg.gr = ranges.l$calls[10]
+  ranges.l$calls = ranges.l$calls[1]
+  ranges.l$truth = ranges.l$truth[1]
+  pdf('temp.pdf')
+  expect_warning(print(plot_ranges(ranges.l, reg.gr)), 'No variants')
+  dev.off()
+  expect_true(file.remove('temp.pdf'))
+})
+
 test_that("Subsect evaluation results by region", {
   bed = data.frame(chr='x', start=c(1e6), end=c(1.49e6))
   reg = GenomicRanges::makeGRangesFromDataFrame(bed)

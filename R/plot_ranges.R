@@ -43,24 +43,12 @@ plot_ranges <- function(gr.l, region.gr=NULL, pt.size=2, lab.size=4, maxgap=20, 
   }
   
   ## make a data.frame
-  df = lapply(1:length(gr.l), function(ii){
-    dff = GenomicRanges::as.data.frame(gr.l[[ii]])
-    dff$set=names(gr.l)[ii]
-    if(!('ac' %in% colnames(dff))){
-      dff$ac = NA
-    }
-    if(!('svid' %in% colnames(dff))){
-      dff$svid = NA
-    }
-    dff[, c('seqnames', 'start', 'end', 'type', 'size', 'set', 'ac', 'svid')]
-  })
-  df = do.call(rbind, df)
-
-  ## if necessary, do the same for the second set
-  if(!is.null(gr.l.2)){
-    df2 = lapply(1:length(gr.l.2), function(ii){
-      dff = GenomicRanges::as.data.frame(gr.l.2[[ii]])
-      dff$set=names(gr.l.2)[ii]
+  if(length(gr.l) == 0){
+    df = NULL
+  } else {
+    df = lapply(1:length(gr.l), function(ii){
+      dff = GenomicRanges::as.data.frame(gr.l[[ii]])
+      dff$set=names(gr.l)[ii]
       if(!('ac' %in% colnames(dff))){
         dff$ac = NA
       }
@@ -69,27 +57,58 @@ plot_ranges <- function(gr.l, region.gr=NULL, pt.size=2, lab.size=4, maxgap=20, 
       }
       dff[, c('seqnames', 'start', 'end', 'type', 'size', 'set', 'ac', 'svid')]
     })
-    df2 = do.call(rbind, df2)
-    df$run = run.names[1]
-    df2$run = run.names[2]
-    df = rbind(df, df2)
+    df = do.call(rbind, df)
   }
   
-  ## order by start position and add IDs
-  df = df[order(df$set, df$ac, df$start, df$size),]
-  if(all(is.na(df$svid))){
-    df$svid = 1:nrow(df)
+  ## if necessary, do the same for the second set
+  if(!is.null(gr.l.2)){
+    if(length(gr.l.2) == 0){
+      df2 = NULL
+    } else {
+      df2 = lapply(1:length(gr.l.2), function(ii){
+        dff = GenomicRanges::as.data.frame(gr.l.2[[ii]])
+        dff$set=names(gr.l.2)[ii]
+        if(!('ac' %in% colnames(dff))){
+          dff$ac = NA
+        }
+        if(!('svid' %in% colnames(dff))){
+          dff$svid = NA
+        }
+        dff[, c('seqnames', 'start', 'end', 'type', 'size', 'set', 'ac', 'svid')]
+      })
+      df2 = do.call(rbind, df2)
+      df2$run = run.names[2]
+    }
+    if(!is.null(df)){
+      df$run = run.names[1]
+      df = rbind(df, df2)
+    }
+  }
+  
+  if(!is.null(df)){
+    ## order by start position and add IDs
+    if('run' %in% colnames(df)){
+      df = df[order(df$run, df$set, df$ac, df$start, df$size),]
+    } else {
+      df = df[order(df$set, df$ac, df$start, df$size),]
+    }
+    if(all(is.na(df$svid))){
+      df$svid = 1:nrow(df)
+    } else {
+      df$svid = factor(df$svid, levels=unique(df$svid))
+    }
+
+    ## label: "SIZE AC" or just "SIZE"
+    if(any(!is.na(df$ac))){
+      df$label = paste0(format(df$size, big.mark=','), 'bp ', df$ac) 
+    } else{
+      df$label = paste0(format(df$size, big.mark=','), 'bp')
+    }
   } else {
-    df$svid = factor(df$svid, levels=unique(df$svid))
+    warning("No variants to show here.")
+    return(NULL)
   }
-
-  ## label: "SIZE AC" or just "SIZE"
-  if(any(!is.na(df$ac))){
-    df$label = paste0(format(df$size, big.mark=','), 'bp ', df$ac) 
-  } else{
-    df$label = paste0(format(df$size, big.mark=','), 'bp')
-  }
-
+  
   ## graph
   start = end = type = svid = set = label = size = NULL
   min.pos = min(df$start, na.rm=TRUE)
