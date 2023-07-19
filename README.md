@@ -19,7 +19,7 @@ It uses:
     1. [Wiggle room in simple repeats](#wiggle-room-in-simple-repeats)
     1. [Evaluation per size or per region](#evaluation-per-size-or-per-region)
     1. [Precision-recall curve comparing multiple methods](#precision-recall-curve-comparing-multiple-methods)
-    1. [Frequency annotation](#frequency-annotation)
+    1. [Misc functions](#miscellaneous-functions) for frequency annotation, SV clustering, VCF parsing, repeat annotation in R.
     1. [Snakemake pipeline](#snakemake-pipeline)
 1. [Methods](#methods)
 1. [Docker](#docker)
@@ -150,7 +150,10 @@ Or if the results were written in files:
 plot_prcurve(c('methods1-prcurve.tsv', 'methods2-prcurve.tsv'), labels=c('method1', 'method2'))
 ```
 
-### Frequency annotation
+
+### Miscellaneous functions
+
+#### Frequency annotation
 
 Assuming that we have a SV catalog with a field with frequency estimates, we can overlap called SVs and annotate them with the maximum frequency of overlapping SVs in the catalog.
 
@@ -159,6 +162,44 @@ For example:
 ```r
 freqAnnotate('calls.vcf', 'gnomad.vcf', out.vcf='calls.withFreq.vcf')
 ```
+
+#### Variant clustering
+
+SVs can be clustered (and merged) into *sites* using the same matching logic as when comparing a callset to a truthset.
+In practice, SV sites might be easier to analyze when comparing SVs across multiple samples. 
+For example, we might want to know that multiple samples carry an insertion, even if the insertions are slightly different due to internal SNVs.
+
+The relevant function in the *sveval* package is `clusterSVs`. 
+See the [manual](docs/sveval-manual.pdf) for more details on the arguments, and the example below on how to read, cluster and count alleles in SV sites.
+
+
+#### VCF parsing
+
+The *sveval* package has some functions to efficiently read SVs from a (potentially large) VCF. 
+Rather than reading the whole VCF with existing packages and filtering/parsing SVs, it does it while reading the file which helpe keeping the memory/time low.
+See the [manual](docs/sveval-manual.pdf) for the following functions:
+
+- `readSVvcf` to read SVs for one sample and extract only specified fields.
+- `readSVvcf.multisamps` to read a VCF file that contains SVs for multiple samples and create a GRanges with population estimates.
+- `countAlleles` to read a VCF file and count alleles for SVs grouped by SV site (to be used after running `readSVvcf.multisamps` and clustering SVs, for example).
+
+For example, starting from a VCF with SVs for multiple samples:
+
+```R
+## read VCF
+svs.gr = readSVvcf.multisamps("input.vcf.gz")
+
+## cluster similar SVs into SV sites
+sv.sites = clusterSVs(svs.gr)
+
+## make matrix of allele counts for each sample and each SV site
+ac.mat = countAlleles("input.vcf.gz", sv.sites)
+```
+
+#### Repeat masker annotation
+
+`rmskAnnotate` is a helper function to run RepeatMasker on the REF/ALT sequences from a VCF.
+See the [manual](docs/sveval-manual.pdf) for more details.
 
 ### Wrapper command-line
 
@@ -192,7 +233,7 @@ Evaluate SV calls against a truthset
 
 Of note the Snakemake pipeline also uses the `mergetsvs` subcommand to merge evaluations from different runs (e.g. tools, call/genotype, regions). 
 Run `Rscript -e  "sveval::wrapper(mergetsvs)"` for more information.
-
+    
 ### Snakemake pipeline
 
 In practice, VCF should be normalized beforehand (e.g. using bcftools), and we might want to evaluate multiple methods, across different regions set (e.g. whole-genome, confident regions, non-repeat regions), and for both calling and genotyping performance. 
