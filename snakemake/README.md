@@ -65,10 +65,11 @@ Of note, they've been prepared with by downloading the TRF annotation from the U
 
 ### Output files
 
-The output of this pipeline includes:
+The output files are prefixed by the *out_prefix* defined in  [`config.yaml` file](config.yaml), and include:
 
-- a PDF with bar graph and precision-recall curves in *out_pdf* (defined in  [`config.yaml` file](config.yaml))
-- a merged TSV with number of FP/FN/TP and F1, precision, recall scores, in the `tsv` folder.
+- a PDF with bar graph and precision-recall curves in `<out_prefix>.pdf`.
+- a merged TSV with number of FP/FN/TP and F1, precision, recall scores, for each quality threshold, in `<out_prefix>-prcurve.tsv`. See the first rows for the metrics when all calls are used.
+- a merged TSV as above but where SVs are grouped into a few size classes, in `<out_prefix>-persize.tsv`.
 
 ### Dependencies
 

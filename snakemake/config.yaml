@@ -9,7 +9,7 @@ exp: 'hgsvc'
 samples: 'HG00514 NA19240'
 methods: 'vg bayestyper'
 # output PDF with all the graphs
-out_pdf: 'hgsvc-vg-bayestyper.pdf'
+out_prefix: 'hgsvc-vg-bayestyper'
 # which type of evaluation?
 #   - 'call' is SV presence/absence
 #   - 'geno' compares actual genotypes
