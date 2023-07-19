@@ -3,56 +3,60 @@
 [![Build Status](https://travis-ci.com/jmonlong/sveval.svg?branch=master)](https://travis-ci.com/jmonlong/sveval)
 [![codecov](https://codecov.io/gh/jmonlong/sveval/branch/master/graph/badge.svg)](https://codecov.io/gh/jmonlong/sveval)
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/jmonlong/sveval)](https://github.com/jmonlong/sveval/releases/latest)
-[![Docker Image Version (latest by date)](https://img.shields.io/docker/v/jmonlong/sveval?label=docker%20hub)](https://hub.docker.com/r/jmonlong/sveval)
+[![Docker Repository on Quay](https://quay.io/repository/jmonlong/sveval/status "Docker Repository on Quay")](https://quay.io/repository/jmonlong/sveval)
 
 Functions to compare a SV call sets against a truth set.
 This package uses mostly overlap-based metrics, although for insertions it can align the inserted sequences to match variants.
 It uses:
 
-- coverage-based metrics to evaluate SV *calling* without being affected by fragmented calls.
+- coverage-based metrics to evaluate SV *calling* (absence/presence) without being affected by fragmented calls.
 - bipartite clustering to evaluate SV *genotyping*, combined with some tricks to minimize the effect of fragmented calls.
 
 1. [Installation](#installation)
 1. [Usage](#usage)
     1. [Quickstart](#quickstart)
     1. [Genotype evaluation](#genotype-evaluation)
+    1. [Wiggle room in simple repeats](#wiggle-room-in-simple-repeats)
     1. [Evaluation per size or per region](#evaluation-per-size-or-per-region)
     1. [Precision-recall curve comparing multiple methods](#precision-recall-curve-comparing-multiple-methods)
-    1. [Frequency annotation](#frequency-annotation)
+    1. [Misc functions](#miscellaneous-functions) for frequency annotation, SV clustering, VCF parsing, repeat annotation in R.
     1. [Snakemake pipeline](#snakemake-pipeline)
 1. [Methods](#methods)
 1. [Docker](#docker)
-1. [Interactive exploration of SVs in a variation graph](#interactive-exploration-of-svs-in-a-variation-graph)
+1. [Interactive exploration of the results](#interactive-exploration-of-the-results)
+    1. [Interactive exploration of FPs/FNs/TPs](#interactive-exploration-of-fpsfnstps)
+    1. [Interactive exploration of SVs in a variation graph](#interactive-exploration-of-svs-in-a-variation-graph)
 1. [Reading a VCF with SVs](#reading-a-vcf-with-svs)
 1. [BND and translocations](#bnd-and-translocations)
 
 
 ## Installation
 
-Install using Bioconductor installer:
+Install using the Bioconductor installer:
 
 ```r
 BiocManager::install('jmonlong/sveval')
 ```
 
-You might need to install *devtools* and *BiocManager* first:
+You might need to install *devtools*, *remotes* and *BiocManager* first:
 
 ```r
-install.packages(c('devtools', 'BiocManager'))
-```
-
----
-
-To install locally (e.g. in a HPC without root permission), one solution is to specify the path of a library folder in your home.
-
-```r
-.libPaths('~/R/library/')
-## Install as above
+install.packages(c('devtools', 'remotes', 'BiocManager'))
 ```
 
 ## Usage
 
 ### Quickstart
+
+A "command line" option is to run the wrapper function used by the [Snakemake pipeline section](#snakemake-pipeline). For example:
+
+```sh
+Rscript -e  "sveval::wrapper('sveval')" -calls calls.vcf.gz -truth truth.vcf.gz -sample SAMPNAME -region conf.bed -simprep simpleRepeat.bed.gz -output sveval_out
+```
+
+More information in the [wrapper command-line section](#Wrapper-command-line).
+
+Otherwise, run interactively in R (or in a script):
 
 ```r
 library(sveval)
@@ -82,7 +86,7 @@ See full list of parameters in the [manual](docs/sveval-manual.pdf) or by typing
 
 By default sveval doesn't take the genotype into account, it's more a "calling" evaluation than a "genotyping" evaluation.
 To compare genotype, the evaluation can be performed separately for heterozygous and homozygous variants.
-Before doing that it sometimes help to merge very similar hets into homs.
+Before doing that it sometimes helps to merge very similar hets into homs.
 To a lower extent, it also helps to stitch fragmented hets before trying to merge them into homs.
 When comparing genotypes we'd rather match variants 1-to-1 instead of using the cumulative coverage metrics.
 It's not about testing if a SV was called in the region but to make sure the actual genotype in the region is correct.
@@ -101,6 +105,18 @@ Hence, the **recommended command for genotype evaluation**:
 ```r
 eval.o = svevalOl('calls.vcf', 'truth.vcf', geno.eval=TRUE, method="bipartite", stitch.hets=TRUE, merge.hets=TRUE)
 ```
+
+### Wiggle room in simple repeats
+
+To help match SVs within simple repeats, we can provide information about annotated simple repeats in the genome.
+sveval will allow more wiggle room, i.e. for a SV to "move" along a simple repeat segment.
+It helps matching similar simple repeat variants that are just positioned differently.
+For example, a similar deletion might be called at the beginning of the annotated repeat but positioned at the end in the truthset.
+And because simple repeats are not perfect and the SVs exactly the same, left-aligning might not handle these cases.
+
+A GRanges object can be provided to `svevalOl` with `simprep=`.
+
+We've prepared BED files for GRCh38 and GRCh37, see [docs](docs) for more details.
 
 ### Evaluation per size or per region
 
@@ -134,7 +150,10 @@ Or if the results were written in files:
 plot_prcurve(c('methods1-prcurve.tsv', 'methods2-prcurve.tsv'), labels=c('method1', 'method2'))
 ```
 
-### Frequency annotation
+
+### Miscellaneous functions
+
+#### Frequency annotation
 
 Assuming that we have a SV catalog with a field with frequency estimates, we can overlap called SVs and annotate them with the maximum frequency of overlapping SVs in the catalog.
 
@@ -144,6 +163,77 @@ For example:
 freqAnnotate('calls.vcf', 'gnomad.vcf', out.vcf='calls.withFreq.vcf')
 ```
 
+#### Variant clustering
+
+SVs can be clustered (and merged) into *sites* using the same matching logic as when comparing a callset to a truthset.
+In practice, SV sites might be easier to analyze when comparing SVs across multiple samples. 
+For example, we might want to know that multiple samples carry an insertion, even if the insertions are slightly different due to internal SNVs.
+
+The relevant function in the *sveval* package is `clusterSVs`. 
+See the [manual](docs/sveval-manual.pdf) for more details on the arguments, and the example below on how to read, cluster and count alleles in SV sites.
+
+
+#### VCF parsing
+
+The *sveval* package has some functions to efficiently read SVs from a (potentially large) VCF. 
+Rather than reading the whole VCF with existing packages and filtering/parsing SVs, it does it while reading the file which helpe keeping the memory/time low.
+See the [manual](docs/sveval-manual.pdf) for the following functions:
+
+- `readSVvcf` to read SVs for one sample and extract only specified fields.
+- `readSVvcf.multisamps` to read a VCF file that contains SVs for multiple samples and create a GRanges with population estimates.
+- `countAlleles` to read a VCF file and count alleles for SVs grouped by SV site (to be used after running `readSVvcf.multisamps` and clustering SVs, for example).
+
+For example, starting from a VCF with SVs for multiple samples:
+
+```R
+## read VCF
+svs.gr = readSVvcf.multisamps("input.vcf.gz")
+
+## cluster similar SVs into SV sites
+sv.sites = clusterSVs(svs.gr)
+
+## make matrix of allele counts for each sample and each SV site
+ac.mat = countAlleles("input.vcf.gz", sv.sites)
+```
+
+#### Repeat masker annotation
+
+`rmskAnnotate` is a helper function to run RepeatMasker on the REF/ALT sequences from a VCF.
+See the [manual](docs/sveval-manual.pdf) for more details.
+
+### Wrapper command-line
+
+To use sveval as a command line and avoid interactive usage of R, see the wrapper function used by the Snakemake pipeline documented below.
+Briefly, to compare a call set to a truthset, run something like:
+
+```sh
+Rscript -e  "sveval::wrapper('sveval')" -calls calls.vcf.gz -truth truth.vcf.gz -sample SAMPNAME -region conf.bed -simprep simpleRepeat.bed.gz -output sveval_out
+```
+
+This command will output three files:
+
+1. A `sveval_out-prcurve.tsv` TSV file with the evaluation metrics for each quality threshold. Useful to plot a precision-recall curve. The first rows (*qual=0*) correspond to using no quality threshold, i.e. the metrics when using all SV calls.
+1. A `sveval_out-persize.tsv` TSV file with the evaluation metrics for SVs grouped into a few size classes.
+1. A `sveval_out-sveval.RData` file with the results as a R object that can be loaded in R, for example to make graphs or [explore the results interactively](#interactive-exploration-of-svs-in-a-variation-graph).
+
+The arguments are detailed by running `Rscript -e  "sveval::wrapper('sveval')"`:
+
+```sh
+Evaluate SV calls against a truthset
+	-c, -calls	input VCF with the SV calls
+	-t, -truth	input VCF with the truth SVs
+	-s, -sample	sample name
+	-o, -output	output prefix for Rdata and TSV files
+	-e, -eval	Optional. evaluation type: 'call' for absence/presence, 'geno' if genotypes have to match. Default: call
+	-r, -region	Optional. regions of interest. NA means whole genome. Default: NA
+	-p, -simprep	Optional. simple repeat track. NA means disabled. Default: NA
+	-i, -inversion	Optional. look for inversions? Default: FALSE
+	-m, -minol	Optional. minimum overlap to match variants. Default:0.5
+```
+
+Of note the Snakemake pipeline also uses the `mergetsvs` subcommand to merge evaluations from different runs (e.g. tools, call/genotype, regions). 
+Run `Rscript -e  "sveval::wrapper(mergetsvs)"` for more information.
+    
 ### Snakemake pipeline
 
 In practice, VCF should be normalized beforehand (e.g. using bcftools), and we might want to evaluate multiple methods, across different regions set (e.g. whole-genome, confident regions, non-repeat regions), and for both calling and genotyping performance. 
@@ -157,8 +247,8 @@ See the [`snakemake` folder](snakemake).
 
 ### SV presence
 
-To evaluate the *calling* performance, i.e. if the presence of a SV is correctly predicted disregarding the exact genotype, we use a coverage-based approach.
-In brief we ask how much a variant is "covered" by variants in the other set. 
+To evaluate the *calling* performance, i.e. that the presence of a SV is correctly predicted no matter the exact genotype, we use a coverage-based approach.
+In brief we ask how much of a variant is "covered" by variants in the other set. 
 In contrast to a simple reciprocal overlap, this approach is robust to call fragmentation.
 
 The default criteria implemented are:
@@ -171,8 +261,8 @@ The default criteria implemented are:
 
 ### SV genotype
 
-When evaluating exact genotypes, heterozygous and homozygous variants are overlapped separately (with the same criteria described above).
-For each genotype, the overlaps are then used to build a bipartite graph. 
+When evaluating exact genotypes, heterozygous and homozygous variants are overlapped separately (with the same criteria as described above).
+For each genotype, the overlap relationship is then used to build a bipartite graph. 
 Each *call* variant is matched with a *truth* variant using bipartite clustering. 
 All variants matched are considered true positives, and the rest errors.
 
@@ -181,9 +271,21 @@ Similarly, if two heterozygous variants are extremely similar, they can be merge
 
 ## Docker
 
-A docker image of R with this package installed is available [here](https://hub.docker.com/r/jmonlong/sveval/).
+A docker image of R with this package installed is available at [quay.io/jmonlong/sveval](https://quay.io/repository/jmonlong/sveval) (e.g. `quay.io/jmonlong/sveval:v2.3.0`). 
+More information about starting the container and using sveval or the snakemake pipeline at [snakemake/README.md#start-the-docker-container](snakemake/README.md#start-the-docker-container).
 
-## Interactive exploration of SVs in a variation graph
+## Interactive exploration of the results
+
+### Interactive exploration of FPs/FNs/TPs
+
+Using the `explore_eval_svs` function, an app starts in the web browser. 
+False positives (FPs), false negatives (FNs), or true positives (TPs), can be quickly displayed together with the other SVs nearby.
+This is useful to double-check that SVs were matched properly and that FPs/FNs are really FPs/FNs.
+There is also a link to open the current region on the UCSC Genome Browser to help get a feel for the genomic regions, esp. its repeat content.
+
+![](docs/explore_eval_svs.gif)
+
+### Interactive exploration of SVs in a variation graph
 
 Using the `ivg_sv` function and a *xg* graph ([vg](https://github.com/vgteam/vg) must be installed):
 

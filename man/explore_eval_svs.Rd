@@ -4,12 +4,24 @@
 \alias{explore_eval_svs}
 \title{Interactive exploration of FP/FN/TP SVs}
 \usage{
-explore_eval_svs(eval.o, ucsc.genome = "hg38")
+explore_eval_svs(
+  eval.o,
+  ucsc.genome = "hg38",
+  graph.height = 400,
+  eval.o.2 = NULL,
+  run.names = c("run1", "run2")
+)
 }
 \arguments{
 \item{eval.o}{output from svevalOl.R}
 
 \item{ucsc.genome}{the genome version for the UCSC Genome Browser automated link.}
+
+\item{graph.height}{height of the graph in the shiny app, in pixel. Default is 400}
+
+\item{eval.o.2}{(optional) output from another run. If provided the graph will show a second panel for this run (change names with \code{run.names=}.}
+
+\item{run.names}{names to use for the panels when a second input, \code{gr.l.2}, is provided. Vector of two characters.}
 }
 \value{
 Starts a Shiny app in a web browser.

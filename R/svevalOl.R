@@ -118,7 +118,10 @@ svevalOl <- function(calls.gr, truth.gr, max.ins.dist=20, min.ol=.5,
   if(length(truth.gr) == 0){
     stop("Truth set has no SVs.")
   }
-  if(length(calls.gr)>0 & length(truth.gr)>0 & !is.null(bed.regions)){
+  if(length(calls.gr) == 0){
+    warning("Call set has no SVs.")
+  }
+  if(!is.null(bed.regions)){
     if(is.character(bed.regions) & length(bed.regions) == 1){
       logging::loginfo(paste('Reading regions from', bed.regions))
       bed.regions = utils::read.table(bed.regions, sep='\t', as.is=TRUE)

@@ -1,13 +1,11 @@
 ---
 output:
-  html_document:
-    default
   md_document:
-    variant: markdown_github
+    variant: gfm
 ---
 
 ```{r include=FALSE}
-knitr::opts_chunk$set(echo=FALSE, message=FALSE, warning=FALSE, fig.width=10, tidy=TRUE)
+knitr::opts_chunk$set(echo=TRUE, message=FALSE, warning=FALSE, fig.width=10, tidy=TRUE)
 ```
 
 ```{r load}
@@ -17,6 +15,8 @@ library(RColorBrewer)
 library(GenomicRanges)
 library(igraph)
 ```
+
+*Disclaimer: old quick-and-dirty tests for an experimental approach to match genotypes. Never implement but might be interesting to revisit. The basic idea was to use bipartite clustering to match single-copy subregions. Homozygous variants are split into two single-copy variants to handle cases where on hom must be matched with two hets. Regions are split in smaller fragment, guided by the overlap, in order to handle fragmentation, i.e. cases where, for example, two smaller variants should be matched to one larger variant.*
 
 # Unit tests for deletions
 

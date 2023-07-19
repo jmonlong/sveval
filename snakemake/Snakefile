@@ -1,5 +1,10 @@
 ## prepare arguments based on the config file
 REF = config['ref_fa']
+## if file ends with .gz, remove the suffix (which will trigger unzipping the fasta)
+if REF.endswith('.gz'):
+    REF = REF[:-3]
+
+#### Enumerate all the output TSV files
 EVALOUT = ['prcurve', 'persize']
 REGS = config['regions'].split()
 EVAL = config['eval'].split()
@@ -7,29 +12,50 @@ EXPS  = config['exp'].split()
 METHODS  = config['methods'].split()
 SAMPLES = config['samples'].split()
 INV = config['check_inv']
-PDF =  config['out_pdf']
+OUT_PREFIX =  config['out_prefix']
 MIN_COV=config['min_cov']
+
+## Simple repeat track?
+if 'simprep_bed' in config:
+    SR_BED = config['simprep_bed']
+else:
+    SR_BED = 'NA'
 
 ## Rules
 rule all:
     input:
-        expand('tsv/{exp}-{method}-{sample}-{region}-{eval}-{evalout}.tsv', exp=EXPS,
+        expand('out/{exp}-{method}-{sample}-{region}-{eval}-{evalout}.tsv', exp=EXPS,
                method=METHODS, sample=SAMPLES, region=REGS, eval=EVAL, evalout=EVALOUT)
-    output: PDF
+    output:
+        pdf=OUT_PREFIX + ".pdf",
+        pr=OUT_PREFIX + "-persize.tsv",
+        size=OUT_PREFIX + "-prcurve.tsv"
+    params:
+        filelist=OUT_PREFIX + ".filelist.txt"
     shell:
-        'Rscript mergeTSVs.R {PDF} "{input}"'
+        """
+        echo {input} | sed 's/ /\\n/g' > {params.filelist}
+        Rscript -e "sveval::wrapper('mergetsvs')" -output {OUT_PREFIX} -tsvs {params.filelist}
+        rm {params.filelist}
+        """
 
 # Clean all the TSV and RData for the specified configuration. E.g. to rerun everything with a new sveval version.
 rule clean:
     params:
-        tsv=expand('tsv/{exp}-{method}-{sample}-{region}-{eval}-{evalout}.tsv',
+        tsv=expand('out/{exp}-{method}-{sample}-{region}-{eval}-{evalout}.tsv',
                    exp=EXPS, method=METHODS,
                    sample=SAMPLES, region=REGS, eval=EVAL, evalout=EVALOUT),
-        rdata=expand('rdata/sveval-{exp}-{method}-{sample}-{region}-{eval}.RData',
+        rdata=expand('out/sveval-{exp}-{method}-{sample}-{region}-{eval}.RData',
                      exp=EXPS, method=METHODS,
                      sample=SAMPLES, region=REGS, eval=EVAL)
     shell:
-        'rm -rf {params.tsv} {params.rdata}'
+        'rm -rf {params.tsv} {params.rdata} {OUT_PREFIX}.pdf {OUT_PREFIX}-prcurve.tsv {OUT_PREFIX}-persize.tsv'
+
+# unzip reference fasta
+rule unzip_reference:
+    input: '{ref}.fa{sta}.gz'
+    output: '{ref}.fa{sta, (sta)?}'
+    shell: "gunzip -c {input} > {output}"
 
 # bgzip a VCF file
 rule bgzip:
@@ -44,13 +70,14 @@ rule bgzip:
 rule vcfnorm:
     input:
         vcf="vcf/{exp}-{method}-{sample}.vcf.gz",
+        ref=REF
     output:
         "vcf/{exp}-{method}-{sample}.norm.vcf.gz"
     envmodules:
         config['envm']['bgzip'], config['envm']['bcftools']
     shell:
         """
-        bcftools view {input.vcf} --exclude \'GT="0" || GT="." || GT="1"\' | bcftools norm - --fasta-ref {REF} --multiallelic -both | bcftools norm - --fasta-ref {REF} --multiallelic +both | bgzip > {output}
+        bcftools view {input.vcf} --exclude \'GT="0" || GT="." || GT="1"\' | bcftools norm - --fasta-ref {input.ref} --multiallelic -both | bcftools norm - --fasta-ref {input.ref} --multiallelic +both | bgzip > {output}
         """
 
 # function to eventually define more complex file inputs (e.g. to analyze different datasets with different reference versions)
@@ -68,8 +95,11 @@ rule sveval:
     input:
         unpack(evalinputs)
     output:
-        "rdata/sveval-{exp}-{method}-{sample}-{region}-{eval}.RData"
+        rdata= "out/{exp}-{method}-{sample}-{region}-{eval}-sveval.RData",
+        pr="out/{exp}-{method}-{sample}-{region}-{eval}-prcurve.tsv",
+        ps="out/{exp}-{method}-{sample}-{region}-{eval}-persize.tsv"
     params:
+        outprefix="out/{exp}-{method}-{sample}-{region}-{eval}",
         bed=lambda wildcards, input: 'NA' if wildcards.region not in config else input['bed']
     resources:
         mem_mb=8000,
@@ -77,16 +107,6 @@ rule sveval:
     envmodules:
         config['envm']['sveval']
     shell:
-        'Rscript sveval.R {input.vcf} {input.truth} {wildcards.sample} {INV} {params.bed} {wildcards.eval} {output} {MIN_COV}'
-
-# extract some information and write TSVs in the 'tsv' folder
-rule parseeval:
-    input:
-        "rdata/sveval-{exp}-{method}-{sample}-{region}-{eval}.RData"
-    output:
-        pr="tsv/{exp}-{method}-{sample}-{region}-{eval}-prcurve.tsv",
-        ps="tsv/{exp}-{method}-{sample}-{region}-{eval}-persize.tsv"
-    envmodules:
-        config['envm']['sveval']
-    shell:
-        "Rscript parseeval.R {input} {output}"
+        """
+        Rscript -e  "sveval::wrapper('sveval')" -calls {input.vcf} -truth {input.truth} -sample {wildcards.sample} -inversion {INV} -region {params.bed} -simprep {SR_BED} -eval {wildcards.eval} -output {params.outprefix} -minol {MIN_COV}
+        """

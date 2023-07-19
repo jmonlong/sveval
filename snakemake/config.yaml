@@ -1,12 +1,15 @@
 # reference files
 ref_fa: "hg38.fa"
+# BED file with a set of region to restrict the evaluation. Multiple allowed but must match names in 'regions' below. 
 nonrep: "bed/hg38_non_repeats.bed"
+## simple repeat annotation (recommended but optional. Comment next line to disable)
+simprep_bed: "bed/simpleRepeat_GRCh38.bed.gz"
 # vcfs to analyze
 exp: 'hgsvc'
 samples: 'HG00514 NA19240'
 methods: 'vg bayestyper'
 # output PDF with all the graphs
-out_pdf: 'hgsvc-vg-bayestyper.pdf'
+out_prefix: 'hgsvc-vg-bayestyper'
 # which type of evaluation?
 #   - 'call' is SV presence/absence
 #   - 'geno' compares actual genotypes

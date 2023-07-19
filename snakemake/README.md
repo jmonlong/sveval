@@ -1,6 +1,6 @@
 To streamline the process of evaluating multiple methods/VCFs, we use [Snakemake](https://snakemake.readthedocs.io/en/stable/index.html).
 The *sveval* docker image that we provide in [quay.io/jmonlong/sveval](https://quay.io/repository/jmonlong/sveval) contains all dependencies necessary to run the snakemake workflow (R+sveval, snakemake, bcftools, bgzip/tabix).
-For example, use `quay.io/jmonlong/sveval:v2.2.0` (see [example below](#start-the-docker-container)).
+For example, use `quay.io/jmonlong/sveval:v2.3.0` (see [example below](#start-the-docker-container)).
 
 It's a snakemake workflow so it should be as simple as naming the input correctly and running the `snakemake` command.
 
@@ -45,14 +45,31 @@ The path to the reference file must be specified using the config parameter *ref
 We usually evaluate the SVs both across the whole-genome and in non-repeat regions only.
 The non-repeat regions are defined in a BED file whose path must be specified in the config parameter *nonrep_bed* (see [`config.yaml` file](config.yaml)).
 
-For GRCh38 we use this file [hg38_non_repeats.bed.gz](https://github.com/vgteam/sv-genotyping-paper/blob/master/human/sveval/hg38_non_repeats.bed.gz).
+For GRCh38 we use this file: [hg38_non_repeats.bed.gz](https://github.com/vgteam/sv-genotyping-paper/blob/master/human/sveval/hg38_non_repeats.bed.gz).
+
+### Simple repeat track
+
+To help match SVs within simple repeats, we can provide a BED file of the simple repeat annotation.
+sveval will allow more wiggle room, i.e. for a SV to "move" along a simple repeat segment.
+It helps matching similar simple repeat variants that are just positioned differently.
+For example, a similar deletion might be called at the beginning of the annotated repeat but positioned at the end in the truthset.
+And because simple repeats are not perfect and the SVs exactly the same, left-aligning might not handle these cases.
+
+In the config file, the BED file with the simple repeat annotation is specified with the *simprep_bed* parameter (see [`config.yaml` file](config.yaml)).
+Comment that line out to disable this feature (although it is highly recommended to use it).
+
+Any BED file would work, but we've also prepared some for GRCh38 and GRCh37: [../docs/simpleRepeat_GRCh38.bed.gz](../docs/simpleRepeat_GRCh38.bed.gz) and [../docs/simpleRepeat_GRCh37.bed.gz](../docs/simpleRepeat_GRCh37.bed.gz).
+To match the config in [`config.yaml` file](config.yaml)/[`config.example.yaml`](config.example.yaml), those files would be placed in a *bed* folder.
+Of note, they've been prepared with by downloading the TRF annotation from the UCSC Genome Browser and trimming/merging information (see [this notebook](../docs/prepare-simple-repeat-track-from-ucsc.md)).
+
 
 ### Output files
 
-The output of this pipeline includes:
+The output files are prefixed by the *out_prefix* defined in  [`config.yaml` file](config.yaml), and include:
 
-- a PDF with bar graph and precision-recall curves in *out_pdf* (defined in  [`config.yaml` file](config.yaml))
-- a merged TSV with number of FP/FN/TP and F1, precision, recall scores, in the `tsv` folder.
+- a PDF with bar graph and precision-recall curves in `<out_prefix>.pdf`.
+- a merged TSV with number of FP/FN/TP and F1, precision, recall scores, for each quality threshold, in `<out_prefix>-prcurve.tsv`. See the first rows for the metrics when all calls are used.
+- a merged TSV as above but where SVs are grouped into a few size classes, in `<out_prefix>-persize.tsv`.
 
 ### Dependencies
 
@@ -64,7 +81,7 @@ In addition to [Snakemake](https://snakemake.readthedocs.io/en/stable/index.html
     - the **dplyr** package
 - [bcftools](https://samtools.github.io/bcftools/bcftools.html)
 
-As mentioned above, a docker container with all the dependencies is available at [quay.io/jmonlong/sveval](https://quay.io/repository/jmonlong/sveval) (e.g. `quay.io/jmonlong/sveval:v2.2.0`). 
+As mentioned above, a docker container with all the dependencies is available at [quay.io/jmonlong/sveval](https://quay.io/repository/jmonlong/sveval) (e.g. `quay.io/jmonlong/sveval:v2.3.0`). 
 See [example below](#start-the-docker-container).
 
 
@@ -112,10 +129,16 @@ mkdir bed
 wget -O bed/conf.bed ftp://ftp-trace.ncbi.nlm.nih.gov/giab/ftp/data/AshkenazimTrio/analysis/NIST_SVs_Integration_v0.6/HG002_SVs_Tier1_v0.6.bed
 ```
 
+#### Download the BED file defining simple repeats
+
+```sh
+wget -O bed/simpleRepeat_GRCh37.bed.gz https://raw.githubusercontent.com/jmonlong/sveval/master/docs/simpleRepeat_GRCh37.bed.gz
+```
+
 #### Edit config.yaml to match the files/experiment
 
 In this example, we evaluate only the 'vg' method, on the 'HG002' sample, and for the 'giab' experiment/truthset.
-We also have a different reference fasta, regions BED
+We also have a different reference fasta, regions BED, and simple repeat BED.
 See [`config.example.yaml`](config.example.yaml).
 
 #### Start the docker container
@@ -124,7 +147,7 @@ See [`config.example.yaml`](config.example.yaml).
 - `-u` to make sure files are created with permissions matching the user (and not created by 'root') 
 
 ```sh
-docker run -it --rm -v `pwd`:/app -w /app -u `id -u $USER` quay.io/jmonlong/sveval:v2.2.0
+docker run -it --rm -v `pwd`:/app -w /app -u `id -u $USER` quay.io/jmonlong/sveval:v2.3.0
 ```
 
 #### Run the snakemake pipeline within the container
