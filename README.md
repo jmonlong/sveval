@@ -100,7 +100,7 @@ The relevant parameters in `svevalOl` are:
 - `merge.hets=TRUE` merge hets into hom before comparison.
 - `merge.rol` the minimum reciprocal overlap between two hets to be merged. Default is 0.8.
 
-Hence, the **recommendeded command for genotype evaluation**:
+Hence, the **recommended command for genotype evaluation**:
 
 ```r
 eval.o = svevalOl('calls.vcf', 'truth.vcf', geno.eval=TRUE, method="bipartite", stitch.hets=TRUE, merge.hets=TRUE)
