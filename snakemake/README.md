@@ -1,6 +1,6 @@
 To streamline the process of evaluating multiple methods/VCFs, we use [Snakemake](https://snakemake.readthedocs.io/en/stable/index.html).
 The *sveval* docker image that we provide in [quay.io/jmonlong/sveval](https://quay.io/repository/jmonlong/sveval) contains all dependencies necessary to run the snakemake workflow (R+sveval, snakemake, bcftools, bgzip/tabix).
-For example, use `quay.io/jmonlong/sveval:v2.2.0` (see [example below](#start-the-docker-container)).
+For example, use `quay.io/jmonlong/sveval:v2.3.0` (see [example below](#start-the-docker-container)).
 
 It's a snakemake workflow so it should be as simple as naming the input correctly and running the `snakemake` command.
 
@@ -81,7 +81,7 @@ In addition to [Snakemake](https://snakemake.readthedocs.io/en/stable/index.html
     - the **dplyr** package
 - [bcftools](https://samtools.github.io/bcftools/bcftools.html)
 
-As mentioned above, a docker container with all the dependencies is available at [quay.io/jmonlong/sveval](https://quay.io/repository/jmonlong/sveval) (e.g. `quay.io/jmonlong/sveval:v2.2.0`). 
+As mentioned above, a docker container with all the dependencies is available at [quay.io/jmonlong/sveval](https://quay.io/repository/jmonlong/sveval) (e.g. `quay.io/jmonlong/sveval:v2.3.0`). 
 See [example below](#start-the-docker-container).
 
 
@@ -147,7 +147,7 @@ See [`config.example.yaml`](config.example.yaml).
 - `-u` to make sure files are created with permissions matching the user (and not created by 'root') 
 
 ```sh
-docker run -it --rm -v `pwd`:/app -w /app -u `id -u $USER` quay.io/jmonlong/sveval:v2.2.0
+docker run -it --rm -v `pwd`:/app -w /app -u `id -u $USER` quay.io/jmonlong/sveval:v2.3.0
 ```
 
 #### Run the snakemake pipeline within the container

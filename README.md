@@ -24,7 +24,7 @@ It uses:
 1. [Methods](#methods)
 1. [Docker](#docker)
 1. [Interactive exploration of the results](#interactive-exploration-of-the-results)
-    1. [Interactive exploration of FPs/FNs/TPs](#interactive-exploration-of-fps-fns-tps)
+    1. [Interactive exploration of FPs/FNs/TPs](#interactive-exploration-of-fpsfnstps)
     1. [Interactive exploration of SVs in a variation graph](#interactive-exploration-of-svs-in-a-variation-graph)
 1. [Reading a VCF with SVs](#reading-a-vcf-with-svs)
 1. [BND and translocations](#bnd-and-translocations)
@@ -230,7 +230,7 @@ Similarly, if two heterozygous variants are extremely similar, they can be merge
 
 ## Docker
 
-A docker image of R with this package installed is available at [quay.io/jmonlong/sveval](https://quay.io/repository/jmonlong/sveval) (e.g. `quay.io/jmonlong/sveval:v2.2.0`). 
+A docker image of R with this package installed is available at [quay.io/jmonlong/sveval](https://quay.io/repository/jmonlong/sveval) (e.g. `quay.io/jmonlong/sveval:v2.3.0`). 
 More information about starting the container and using sveval or the snakemake pipeline at [snakemake/README.md#start-the-docker-container](snakemake/README.md#start-the-docker-container).
 
 ## Interactive exploration of the results
