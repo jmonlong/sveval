@@ -11,9 +11,18 @@ EVAL = config['eval'].split()
 EXPS  = config['exp'].split()
 METHODS  = config['methods'].split()
 SAMPLES = config['samples'].split()
+if 'check_inv' not in config:
+    config['check_inv'] = False
 INV = config['check_inv']
 OUT_PREFIX =  config['out_prefix']
+if 'min_cov' not in config:
+    config['min_cov'] = 0.5
 MIN_COV=config['min_cov']
+if 'envm' not in config:
+    config['envm'] = {'bgzip': 'bgzip',
+                      'bcftools': 'bcftools',
+                      'sveval': 'sveval'}
+                      
 
 ## Simple repeat track?
 if 'simprep_bed' in config:
