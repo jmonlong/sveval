@@ -30,11 +30,11 @@ RUN apt-get update && \
     && rm -rf /var/lib/apt/lists/*
 
 ## R with sveval package
-ADD install.R /home
+ADD . /sveval
 
-RUN R -f /home/install.R
+WORKDIR /sveval
 
-RUN Rscript -e "BiocManager::install('jmonlong/sveval')"
+RUN R -f install.R
 
 ## bcftools
 RUN wget --no-check-certificate https://github.com/samtools/bcftools/releases/download/1.17/bcftools-1.17.tar.bz2 && \

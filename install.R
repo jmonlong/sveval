@@ -26,3 +26,5 @@ if (!is.null(warnings()))
 }
 
 ## suppressWarnings(BiocManager::install(update=TRUE, ask=FALSE))
+
+remotes::install_local()
