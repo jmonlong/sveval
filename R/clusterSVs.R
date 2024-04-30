@@ -12,8 +12,8 @@
 ##' @param max.ins.dist maximum distance for insertions to be clustered.
 ##' @param range.seq.comp compare sequence instead of overlapping deletions/inversion/etc. Default is FALSE.
 ##' @param ins.seq.comp compare sequence instead of insertion sizes. Default is FALSE.
+##' @param simprep optional simple repeat annotation. Default is NULL. If non-NULL, GRanges to be used to add wiggle room to match SVs touching the same simple repeat.
 ##' @param nb.cores number of processors to use. Default is 1.
-##' @param simprep optional simple repeat annotation. Default is NULL. If non-NULL, GRanges to be used to
 ##' @param batch.maxsize batch size to aim. To reduce memory usage, see Details. Default is 5000.
 ##' @param log.level the level of information in the log. Default is "CRITICAL" (basically no log).
 ##' @return the svs.gr object annotated with two new columns:
@@ -51,28 +51,13 @@ clusterSVs <- function(svs.gr, min.rol=.8, max.ins.dist=20,
                       range.seq.comp=range.seq.comp, ins.seq.comp=ins.seq.comp,
                       simprep=simprep,
                       log.level=log.level) %>%
-      as.data.frame %>%
-      dplyr::filter(.data$queryHits!=.data$subjectHits)
-    ## make graph
-    adj.mat = Matrix::sparseMatrix(ol.df$queryHits, ol.df$subjectHits, x=rep(1, nrow(ol.df)), dims=c(length(gr), length(gr)))
-    rownames(adj.mat) = colnames(adj.mat) = gr$svid
-    ## extract components
-    cmp.o = igraph::components(igraph::graph_from_adjacency_matrix(adj.mat, mode='undirected'))
-    ## annotate GRanges, checking if components are cliques
-    svid.idx = 1:length(gr)
-    names(svid.idx) = as.character(gr$svid)
-    gr.cl = lapply(unique(as.numeric(cmp.o$membership)), function(cmp){
-      cmp.ii = which(cmp.o$membership == cmp)
-      gr.ss = gr[svid.idx[rownames(adj.mat)[cmp.ii]]]
-      gr.ss$svsite = rownames(adj.mat)[cmp.ii[1]]
-      if(length(cmp.ii) < 3){
-        gr.ss$clique = TRUE
-      } else {
-        gr.ss$clique = is_clique(adj.mat[cmp.ii, cmp.ii])
-      }
-      return(gr.ss)
-    })
-    return(do.call(c, gr.cl))
+      as.data.frame %>% 
+      dplyr::filter(.data$queryHits<.data$subjectHits)
+    ## find connected components and annotate as clique or not
+    cl.l = prepare_cluster_cpp(ol.df$queryHits, ol.df$subjectHits, length(gr))
+    gr$svsite = gr$svid[cl.l$cl]
+    gr$clique = cl.l$clique
+    return(gr)
   }
 
   ## add SV ids is missing
@@ -89,14 +74,19 @@ clusterSVs <- function(svs.gr, min.rol=.8, max.ins.dist=20,
   ## quick clustering to split dataset for analysis
   ## make batches of the SV clusters to have {batch.maxsize} variants
   ## (possibly many more if a cluster can't be split)
-  cl.gr = GenomicRanges::reduce(svs.gr, min.gapwidth=2*max.ins.dist)
+  if(is.null(simprep)){
+    cl.gr = GenomicRanges::reduce(svs.gr, min.gapwidth=2*max.ins.dist)
+  } else {
+    cl.gr = GenomicRanges::reduce(c(simprep, svs.gr), min.gapwidth=2*max.ins.dist)
+  }
   cl.gr$n = GenomicRanges::countOverlaps(cl.gr, svs.gr)
+  cl.gr = cl.gr[which(cl.gr$n > 0)]
   cl.gr = cl.gr[order(cl.gr$n)]
   cl.gr$batch = cumsum(cl.gr$n) %>% cut(seq(0,sum(cl.gr$n)+batch.maxsize, batch.maxsize))
   svs.per.batch = unlist(tapply(cl.gr$n, cl.gr$batch, sum))
   svs.per.batch = svs.per.batch[which(!is.na(svs.per.batch))]
   logging::loginfo(paste('SV clustering. Number of batches:', length(svs.per.batch)))
-  logging::loginfo(paste('SV clustering. Average number of SVs per batch:', mean(svs.per.batch)))
+  logging::loginfo(paste('SV clustering. Average number of SVs per batch:', round(mean(svs.per.batch))))
   logging::loginfo(paste('SV clustering. Maximum number of SVs per batch:', max(svs.per.batch)))
 
   ## merge each batch of large SV cluster

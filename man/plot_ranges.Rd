@@ -13,7 +13,8 @@ plot_ranges(
   scale.legend = "auto",
   show.svids = TRUE,
   gr.l.2 = NULL,
-  run.names = c("run1", "run2")
+  run.names = c("run1", "run2"),
+  gr.annot = NULL
 )
 }
 \arguments{
@@ -34,6 +35,8 @@ plot_ranges(
 \item{gr.l.2}{(Optional) a second list of GRanges, like gr.l but from another run for example. If provided the graph will show a second panel for this run (change names with \code{run.names=}.}
 
 \item{run.names}{names to use for the panels when a second input, \code{gr.l.2}, is provided. Vector of two characters.}
+
+\item{gr.annot}{optional annotation. Default is NULL. If non-NULL, highlight those regions}
 }
 \value{
 a ggplot2 object

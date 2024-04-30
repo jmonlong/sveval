@@ -12,6 +12,21 @@ aldist <- function(seq1, seq2) {
     .Call(`_sveval_aldist`, seq1, seq2)
 }
 
+#' Prepare clusters from pairwise overlap information. Assumes that only one overlap
+#' relationship is present for each pair, i.e. only "SV1 overlaps SV2", no
+#' "SV2 overlaps SV1". Also no self-overlap. This is done by keeping only
+#' "queryHits<subjectHits", for example.
+#' @title Prepare clusters from pairwise overlap information
+#' @param queryHits the IDs of the first SVs
+#' @param subjectHits the IDs of the second SVs
+#' @param total total number of SVs
+#' @return list with two vectors: 'cl' with cluster ID, 'clique' with boolean about clique configuration
+#' @author Jean Monlong
+#' @keywords internal
+prepare_cluster_cpp <- function(queryHits, subjectHits, totalNbSVs) {
+    .Call(`_sveval_prepare_cluster_cpp`, queryHits, subjectHits, totalNbSVs)
+}
+
 #' Count allele at the SV site level. This function will use variant ids
 #' created by read_vcf_multisamps_cpp
 #' @title Count alleles in SV sites across samples

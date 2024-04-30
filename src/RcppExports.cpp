@@ -22,6 +22,19 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// prepare_cluster_cpp
+List prepare_cluster_cpp(IntegerVector queryHits, IntegerVector subjectHits, IntegerVector totalNbSVs);
+RcppExport SEXP _sveval_prepare_cluster_cpp(SEXP queryHitsSEXP, SEXP subjectHitsSEXP, SEXP totalNbSVsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< IntegerVector >::type queryHits(queryHitsSEXP);
+    Rcpp::traits::input_parameter< IntegerVector >::type subjectHits(subjectHitsSEXP);
+    Rcpp::traits::input_parameter< IntegerVector >::type totalNbSVs(totalNbSVsSEXP);
+    rcpp_result_gen = Rcpp::wrap(prepare_cluster_cpp(queryHits, subjectHits, totalNbSVs));
+    return rcpp_result_gen;
+END_RCPP
+}
 // merge_ac_svsites_cpp
 IntegerMatrix merge_ac_svsites_cpp(std::string filename, bool use_gz, List sv_sites);
 RcppExport SEXP _sveval_merge_ac_svsites_cpp(SEXP filenameSEXP, SEXP use_gzSEXP, SEXP sv_sitesSEXP) {
@@ -87,6 +100,7 @@ END_RCPP
 
 static const R_CallMethodDef CallEntries[] = {
     {"_sveval_aldist", (DL_FUNC) &_sveval_aldist, 2},
+    {"_sveval_prepare_cluster_cpp", (DL_FUNC) &_sveval_prepare_cluster_cpp, 3},
     {"_sveval_merge_ac_svsites_cpp", (DL_FUNC) &_sveval_merge_ac_svsites_cpp, 3},
     {"_sveval_merge_gq_svsites_cpp", (DL_FUNC) &_sveval_merge_gq_svsites_cpp, 3},
     {"_sveval_read_vcf_multisamps_cpp", (DL_FUNC) &_sveval_read_vcf_multisamps_cpp, 6},

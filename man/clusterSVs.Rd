@@ -27,7 +27,7 @@ clusterSVs(
 
 \item{ins.seq.comp}{compare sequence instead of insertion sizes. Default is FALSE.}
 
-\item{simprep}{optional simple repeat annotation. Default is NULL. If non-NULL, GRanges to be used to}
+\item{simprep}{optional simple repeat annotation. Default is NULL. If non-NULL, GRanges to be used to add wiggle room to match SVs touching the same simple repeat.}
 
 \item{nb.cores}{number of processors to use. Default is 1.}
 

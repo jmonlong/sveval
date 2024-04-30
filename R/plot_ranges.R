@@ -12,10 +12,14 @@
 ##' @param show.svids should the SV ids be shown on the y-axis. Default is TRUE
 ##' @param gr.l.2 (Optional) a second list of GRanges, like gr.l but from another run for example. If provided the graph will show a second panel for this run (change names with \code{run.names=}.
 ##' @param run.names names to use for the panels when a second input, \code{gr.l.2}, is provided. Vector of two characters.
+##' @param gr.annot optional annotation. Default is NULL. If non-NULL, highlight those regions
 ##' @return a ggplot2 object
 ##' @author Jean Monlong
 ##' @export
-plot_ranges <- function(gr.l, region.gr=NULL, pt.size=2, lab.size=4, maxgap=20, scale.legend='auto', show.svids=TRUE, gr.l.2=NULL, run.names=c('run1', 'run2')){
+plot_ranges <- function(gr.l, region.gr=NULL, pt.size=2, lab.size=4,
+                        maxgap=20, scale.legend='auto', show.svids=TRUE,
+                        gr.l.2=NULL, run.names=c('run1', 'run2'),
+                        gr.annot=NULL){
 
   ## add number as names if missing
   if(is.null(names(gr.l))){
@@ -34,6 +38,9 @@ plot_ranges <- function(gr.l, region.gr=NULL, pt.size=2, lab.size=4, maxgap=20, 
       gr.l.2 = lapply(gr.l.2, function(gr){
         IRanges::subsetByOverlaps(gr, region.gr, maxgap=maxgap)
       })
+    }
+    if(!is.null(gr.annot)){
+      gr.annot = IRanges::subsetByOverlaps(gr.annot, region.gr, maxgap=maxgap)
     }
   }
   ## keep elements with variants
@@ -95,7 +102,7 @@ plot_ranges <- function(gr.l, region.gr=NULL, pt.size=2, lab.size=4, maxgap=20, 
     if(all(is.na(df$svid))){
       df$svid = 1:nrow(df)
     } else {
-      df$svid = factor(df$svid, levels=unique(df$svid))
+      df$svid = as.numeric(factor(df$svid, levels=unique(df$svid)))
     }
 
     ## label: "SIZE AC" or just "SIZE"
@@ -113,8 +120,21 @@ plot_ranges <- function(gr.l, region.gr=NULL, pt.size=2, lab.size=4, maxgap=20, 
   start = end = type = svid = set = label = size = NULL
   min.pos = min(df$start, na.rm=TRUE)
   max.pos = max(df$end, na.rm=TRUE)
+  if(!is.null(gr.annot)){
+    annot.df = as.data.frame(gr.annot)
+    annot.ii = which(annot.df$start < max.pos & annot.df$end > min.pos)
+    if(length(annot.ii) > 0){
+      annot.df = annot.df[annot.ii, ]
+      min.pos = min(c(df$start, annot.df$start), na.rm=TRUE)
+      max.pos = max(c(df$end, annot.df$end), na.rm=TRUE)
+    }
+  }
   pad.pos = max((max.pos-min.pos) * .1, 30)
   ggp = ggplot2::ggplot(df, ggplot2::aes(color=set))
+  if(!is.null(gr.annot)){
+    ggp = ggp + ggplot2::geom_segment(ggplot2::aes(x=start, xend=end, y=0, yend=0),
+                                      alpha=.2, size=20, data=annot.df, show.legend=FALSE)
+  }
   if(pt.size=='auto'){
     ggp = ggp + ggplot2::geom_point(ggplot2::aes(x=start, y=svid, shape=type, size=2*size)) +
       ggplot2::geom_segment(ggplot2::aes(x=start, y=svid, xend=end, yend=svid, linewidth=size))

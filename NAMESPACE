@@ -3,6 +3,7 @@
 export(clusterSVs)
 export(countAlleles)
 export(explore_eval_svs)
+export(explore_sv_clusters)
 export(filterSVs)
 export(findNocalls)
 export(freqAnnotate)
