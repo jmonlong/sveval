@@ -85,7 +85,7 @@ As mentioned above, a docker container with all the dependencies is available at
 See [example below](#start-the-docker-container).
 
 
-### Example: evaluating SVs on GRCh37 agains the GIAB SV truthset
+### Example: evaluating SVs on GRCh37 against the GIAB SV truthset
 
 Here are the commands one could use to evaluate a VCF file against the GIAB truthset from scratch.
 
@@ -155,3 +155,12 @@ docker run -it --rm -v `pwd`:/app -w /app -u `id -u $USER` quay.io/jmonlong/svev
 ```sh
 snakemake --configfile config.example.yaml --cores 4
 ```
+
+### Example: evaluating SVs on GRCh38 against the GIAB SV truthset
+
+We had lifted the SV in the GIAB truthset from GRCh37 to GRCh38, to be able to compare with SV calls on GRCh38.
+Here are the relevant files:
+
+- SV truthset: [`../docs/HG002_SVs_GIAB_v0.6.lifted_grch38.vcf.gz`](../docs/HG002_SVs_GIAB_v0.6.lifted_grch38.vcf.gz)
+- Confident regions: [`../docs/HG002_SVs_Tier1_v0.6.lifted_grch38.bed`](../docs/HG002_SVs_Tier1_v0.6.lifted_grch38.bed)
+- Simple repeat track: [`../docs/simpleRepeat_GRCh38.bed.gz`](../docs/simpleRepeat_GRCh38.bed.gz)
